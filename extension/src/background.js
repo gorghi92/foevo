@@ -1,0 +1,186 @@
+/* Foveo — background service worker
+ * Captures a full-page screenshot (scroll + stitch), builds a downscaled
+ * display image + a tiny RGB sample for server-side saliency, and POSTs it. */
+
+const MAX_PAGE_HEIGHT = 20000   // px cap (very long pages)
+const MAX_SLICES = 24
+const DISPLAY_MAX_W = 1440
+const SAMPLE_W = 192
+const CAPTURE_GAP_MS = 520      // respect captureVisibleTab rate limit (~2/s)
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function getSettings() {
+  const s = await chrome.storage.sync.get(['apiBase', 'apiKey'])
+  return { apiBase: (s.apiBase || 'https://foveo.app').replace(/\/+$/, ''), apiKey: s.apiKey || '' }
+}
+function progress(text) { chrome.runtime.sendMessage({ type: 'PROGRESS', text }).catch(() => {}) }
+
+/* ---- injected page functions (must be self-contained) ---- */
+function pageMetrics() {
+  const d = document.documentElement, b = document.body
+  return {
+    scrollHeight: Math.max(d.scrollHeight, b ? b.scrollHeight : 0, d.clientHeight),
+    innerHeight: window.innerHeight,
+    innerWidth: window.innerWidth,
+    dpr: window.devicePixelRatio || 1,
+    title: document.title,
+    url: location.href,
+  }
+}
+function pagePrepare() {
+  const w = window
+  w.__foveo = { x: w.scrollX, y: w.scrollY, htmlOverflow: document.documentElement.style.overflow }
+  const s = document.createElement('style')
+  s.id = '__foveo_style'
+  s.textContent = '::-webkit-scrollbar{display:none!important}html{scroll-behavior:auto!important}'
+  document.documentElement.appendChild(s)
+}
+function pageHideSticky() {
+  // Hide fixed/sticky elements so they aren't repeated in every stitched slice.
+  const hidden = []
+  const nodes = document.body ? document.body.querySelectorAll('*') : []
+  for (const el of nodes) {
+    const pos = getComputedStyle(el).position
+    if (pos === 'fixed' || pos === 'sticky') {
+      hidden.push([el, el.style.visibility])
+      el.style.visibility = 'hidden'
+    }
+  }
+  window.__foveo = window.__foveo || {}
+  window.__foveo.hidden = hidden
+}
+function pageScrollTo(y) { window.scrollTo(0, y) }
+function pageRestore() {
+  const g = window.__foveo || {}
+  ;(g.hidden || []).forEach(([el, v]) => { el.style.visibility = v })
+  const s = document.getElementById('__foveo_style'); if (s) s.remove()
+  document.documentElement.style.overflow = g.htmlOverflow || ''
+  window.scrollTo(g.x || 0, g.y || 0)
+}
+
+async function runInTab(tabId, func, args = []) {
+  const [res] = await chrome.scripting.executeScript({ target: { tabId }, func, args })
+  return res?.result
+}
+
+async function bitmapFromDataUrl(dataUrl) {
+  const blob = await (await fetch(dataUrl)).blob()
+  return createImageBitmap(blob)
+}
+
+function u8ToBase64(u8) {
+  let s = ''
+  const chunk = 0x8000
+  for (let i = 0; i < u8.length; i += chunk) s += String.fromCharCode.apply(null, u8.subarray(i, i + chunk))
+  return btoa(s)
+}
+
+async function captureFullPage(tab) {
+  const tabId = tab.id
+  const m = await runInTab(tabId, pageMetrics)
+  const dpr = m.dpr
+  const pageH = Math.min(m.scrollHeight, MAX_PAGE_HEIGHT)
+  const step = Math.max(200, m.innerHeight)
+  let offsets = []
+  for (let y = 0; y < pageH; y += step) offsets.push(Math.min(y, Math.max(0, pageH - m.innerHeight)))
+  offsets = [...new Set(offsets)].slice(0, MAX_SLICES)
+
+  await runInTab(tabId, pagePrepare)
+  const slices = []
+  try {
+    for (let i = 0; i < offsets.length; i++) {
+      await runInTab(tabId, pageScrollTo, [offsets[i]])
+      if (i === 1) await runInTab(tabId, pageHideSticky) // keep sticky on 1st slice only
+      await sleep(i === 0 ? 260 : CAPTURE_GAP_MS)
+      progress(`Cattura ${i + 1}/${offsets.length}…`)
+      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 85 })
+      slices.push({ y: offsets[i], bmp: await bitmapFromDataUrl(dataUrl) })
+    }
+  } finally {
+    await runInTab(tabId, pageRestore).catch(() => {})
+  }
+
+  // stitch at device pixels
+  const bw = slices[0].bmp.width
+  const canvasW = bw
+  const canvasH = Math.round(pageH * dpr)
+  const stitch = new OffscreenCanvas(canvasW, canvasH)
+  const sctx = stitch.getContext('2d')
+  for (const s of slices) { sctx.drawImage(s.bmp, 0, Math.round(s.y * dpr)); s.bmp.close() }
+
+  // display image (downscaled JPEG)
+  const scale = Math.min(1, DISPLAY_MAX_W / canvasW)
+  const outW = Math.max(1, Math.round(canvasW * scale))
+  const outH = Math.max(1, Math.round(canvasH * scale))
+  const disp = new OffscreenCanvas(outW, outH)
+  disp.getContext('2d').drawImage(stitch, 0, 0, outW, outH)
+  const dispBlob = await disp.convertToBlob({ type: 'image/jpeg', quality: 0.72 })
+  const screenshot = await blobToDataUrl(dispBlob)
+
+  // tiny RGB sample for saliency
+  const sampleH = Math.max(1, Math.round(SAMPLE_W * canvasH / canvasW))
+  const samp = new OffscreenCanvas(SAMPLE_W, sampleH)
+  samp.getContext('2d').drawImage(stitch, 0, 0, SAMPLE_W, sampleH)
+  const img = samp.getContext('2d').getImageData(0, 0, SAMPLE_W, sampleH).data
+  const rgb = new Uint8Array(SAMPLE_W * sampleH * 3)
+  for (let i = 0, j = 0; i < img.length; i += 4) { rgb[j++] = img[i]; rgb[j++] = img[i + 1]; rgb[j++] = img[i + 2] }
+
+  return {
+    meta: m,
+    image: { width: outW, height: outH },
+    fullSize: { width: canvasW, height: canvasH },
+    screenshot,
+    sample: { w: SAMPLE_W, h: sampleH, b64: u8ToBase64(rgb) },
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result)
+    r.onerror = reject
+    r.readAsDataURL(blob)
+  })
+}
+
+async function analyze({ tabId, goal, note }) {
+  const { apiBase, apiKey } = await getSettings()
+  if (!apiKey) return { ok: false, error: 'API key mancante' }
+  const tab = await chrome.tabs.get(tabId)
+
+  const cap = await captureFullPage(tab)
+  progress('Invio al motore di analisi…')
+
+  const body = {
+    url: cap.meta.url,
+    title: cap.meta.title,
+    goal: goal || null,
+    note: note || null,
+    viewport: { width: cap.meta.innerWidth, height: cap.meta.innerHeight, dpr: cap.meta.dpr },
+    image: cap.image,
+    fullSize: cap.fullSize,
+    screenshot: cap.screenshot,
+    sample: cap.sample,
+  }
+
+  const resp = await fetch(`${apiBase}/api/v1/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+  })
+  const text = await resp.text()
+  let data = {}
+  try { data = JSON.parse(text) } catch { /* non-json */ }
+  if (!resp.ok) {
+    return { ok: false, error: data.error || `HTTP ${resp.status}: ${text.slice(0, 140)}` }
+  }
+  return { ok: true, id: data.id, resultPath: data.resultPath || `/analyses/${data.id}` }
+}
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type === 'ANALYZE') {
+    analyze(msg).then(sendResponse).catch((e) => sendResponse({ ok: false, error: String(e.message || e) }))
+    return true // async
+  }
+})

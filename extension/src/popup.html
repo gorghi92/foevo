@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="hdr">
+    <div class="logo"></div>
+    <div>
+      <div class="hdr-title">Foveo</div>
+      <div class="hdr-sub">Heatmap &amp; analisi AI</div>
+    </div>
+    <button id="settings-btn" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">⚙</button>
+  </header>
+
+  <!-- MAIN -->
+  <section id="view-main" class="view">
+    <label class="lbl" for="goal">Obiettivo della pagina <span class="muted">(opzionale)</span></label>
+    <select id="goal" class="input">
+      <option value="">Rileva automaticamente</option>
+      <option value="lead">Generare lead / iscrizioni</option>
+      <option value="sale">Vendita diretta / checkout</option>
+      <option value="product">Scheda prodotto e-commerce</option>
+      <option value="booking">Prenotazione / appuntamento</option>
+      <option value="signup">Registrazione / trial</option>
+    </select>
+
+    <label class="lbl" for="note">Contesto <span class="muted">(opzionale)</span></label>
+    <input id="note" class="input" type="text" maxlength="140" placeholder="es. audience freddo da Meta Ads" />
+
+    <button id="analyze-btn" class="btn btn-primary">Analizza questa pagina</button>
+
+    <div id="status" class="status" hidden>
+      <div class="spinner"></div>
+      <span id="status-text">Cattura in corso…</span>
+    </div>
+    <p id="error" class="error" hidden></p>
+    <p class="tier-hint" id="tier-hint"></p>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" class="view" hidden>
+    <label class="lbl" for="api-base">Endpoint piattaforma</label>
+    <input id="api-base" class="input" type="url" placeholder="https://foveo.app" />
+
+    <label class="lbl" for="api-key">API key <span class="muted">(inizia con grl_)</span></label>
+    <input id="api-key" class="input" type="password" placeholder="grl_..." />
+    <a id="get-key-link" class="link" target="_blank">Come ottengo una API key? →</a>
+
+    <div class="row">
+      <button id="save-settings" class="btn btn-primary">Salva</button>
+      <button id="back-btn" class="btn btn-ghost">Indietro</button>
+    </div>
+    <p id="settings-saved" class="ok" hidden>Salvato ✓</p>
+  </section>
+
+  <footer class="ftr">
+    <span id="acct" class="muted"></span>
+    <a href="#" id="dashboard-link" target="_blank">Le mie analisi →</a>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
