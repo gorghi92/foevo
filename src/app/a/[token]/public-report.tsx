@@ -6,7 +6,27 @@ import { ExternalLink } from 'lucide-react'
 import { HeatmapCanvas, type ViewMode } from '@/components/heatmap-canvas'
 
 const PRIO: Record<string, string> = { alta: '#dc2626', media: '#d97706', bassa: '#2563eb' }
+const PORD: Record<string, number> = { alta: 0, media: 1, bassa: 2 }
 const sc = (v: number) => (v >= 70 ? '#16a34a' : v >= 45 ? '#d97706' : '#dc2626')
+
+function PriorityCallout({ recs }: { recs: any[] }) {
+  if (!recs?.length) return null
+  const top = recs.map((rec, i) => ({ rec, i })).sort((a, b) => (PORD[a.rec.priority] ?? 1) - (PORD[b.rec.priority] ?? 1)).slice(0, 3)
+  return (
+    <div className="card mt-4 flex flex-wrap items-center gap-2 border-l-4 border-brand p-3">
+      <span className="text-sm font-semibold">⚡ Azioni prioritarie</span>
+      <div className="flex flex-wrap gap-1.5">
+        {top.map(({ rec, i }) => (
+          <a key={i} href={`#rec-${i}`} className="inline-flex items-center gap-1 rounded-full border border-line bg-bg px-2 py-0.5 text-xs hover:border-brand">
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: PRIO[rec.priority] ?? '#666' }} />
+            <span className="max-w-[220px] truncate">{rec.title}</span>
+          </a>
+        ))}
+      </div>
+      <a href="#raccomandazioni" className="btn btn-primary ml-auto px-3 py-1.5 text-[13px]">Tutte le raccomandazioni ↓</a>
+    </div>
+  )
+}
 
 function Gauge({ label, value }: { label: string; value: number }) {
   return (
@@ -56,6 +76,8 @@ export function PublicReport({ data }: { data: any }) {
               <Gauge label="CTA" value={r.scores?.cta ?? 0} />
             </div>
 
+            <PriorityCallout recs={r.recommendations} />
+
             <div className="mt-5 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
               <div>
                 <div className="mb-2.5 flex flex-wrap gap-2">
@@ -97,10 +119,10 @@ export function PublicReport({ data }: { data: any }) {
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               {r.recommendations?.length > 0 && (
-                <div className="card p-4">
+                <div id="raccomandazioni" className="card scroll-mt-20 p-4">
                   <div className="mb-2.5 font-semibold">Raccomandazioni</div>
                   {r.recommendations.map((rec: any, i: number) => (
-                    <div key={i} className={`py-2.5 ${i ? 'border-t border-line' : ''}`}>
+                    <div key={i} id={`rec-${i}`} className={`scroll-mt-20 py-2.5 ${i ? 'border-t border-line' : ''}`}>
                       <div className="flex items-center gap-2">
                         <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-white" style={{ background: PRIO[rec.priority] ?? '#666' }}>{rec.priority}</span>
                         <b className="text-[13.5px]">{rec.title}</b>

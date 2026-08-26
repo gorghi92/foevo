@@ -2,6 +2,7 @@ import { withKey } from '@/server/api-key'
 import { r2Configured, r2Put, r2PublicUrl } from '@/lib/r2'
 import { runEngine, providerAvailable, type Tier } from '@/lib/attention/engine'
 import { resolveEntitlement, monthlyUsage, createAnalysis, attachScreenshot, completeAnalysis, failAnalysis } from '@/server/store'
+import type { PageElement } from '@/lib/attention/types'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,6 +14,25 @@ interface Body {
   fullSize?: { width: number; height: number }
   screenshot?: string
   sample?: { w: number; h: number; b64: string }
+  elements?: unknown
+}
+
+/** Untrusted DOM rects from the extension: clamp, bound size, cap count. */
+function sanitizeElements(raw: unknown): PageElement[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: PageElement[] = []
+  for (const e of raw.slice(0, 80)) {
+    const bb = (e as any)?.bbox
+    if (!Array.isArray(bb) || bb.length < 4) continue
+    const b = bb.map((n: any) => { const v = Number(n); return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0 })
+    out.push({
+      type: String((e as any)?.type || 'el').slice(0, 24),
+      text: String((e as any)?.text || '').slice(0, 100),
+      bbox: [b[0], b[1], Math.max(0.005, b[2]), Math.max(0.005, b[3])],
+    })
+    if (out.length >= 40) break
+  }
+  return out.length ? out : undefined
 }
 
 function pickTier(preferred: Tier): Tier | null {
@@ -41,6 +61,7 @@ export async function POST(req: Request): Promise<Response> {
 
     const url = String(body.url || ''); const title = String(body.title || '')
     const ctx = { url, title, goal: body.goal ?? null, note: body.note ?? null }
+    const elements = sanitizeElements(body.elements)
 
     const id = await createAnalysis({
       userId, url, title, goal: ctx.goal, note: ctx.note, tier,
@@ -61,7 +82,7 @@ export async function POST(req: Request): Promise<Response> {
     await attachScreenshot(id, screenshotUrl)
 
     try {
-      const out = await runEngine({ tier, screenshot: body.screenshot, sample: body.sample, ctx })
+      const out = await runEngine({ tier, screenshot: body.screenshot, sample: body.sample, ctx, elements })
       await completeAnalysis(id, { result: out.result, heatmap: out.heatmap, provider: out.provider, model: out.model })
       return Response.json({ id, resultPath: `/analyses/${id}`, tier: out.provider === 'claude' ? 'premium' : 'base' }, { status: 201 })
     } catch (e) {

@@ -5,7 +5,7 @@
  */
 import { computeSaliency, decodeSample, downscaleGrid, type Grid } from './saliency'
 import { analyze, providerAvailable, type Tier, type AnalyzeCtx } from './llm'
-import type { AttentionResult, AttentionZone } from './types'
+import type { AttentionResult, AttentionZone, PageElement } from './types'
 
 const HEATMAP_W = 100
 
@@ -22,6 +22,7 @@ export interface EngineInput {
   screenshot: string // data URL (downscaled JPEG)
   sample: { w: number; h: number; b64: string }
   ctx: AnalyzeCtx
+  elements?: PageElement[] // real DOM rects from the extension (accurate zone boundaries)
 }
 
 /**
@@ -79,7 +80,7 @@ export async function runEngine(input: EngineInput): Promise<EngineOutput> {
   const sal = downscaleGrid(computeSaliency(sample), HEATMAP_W)
 
   // 2. LLM semantic analysis (tier-dependent provider)
-  const { result, provider, model } = await analyze(input.tier, input.screenshot, input.ctx)
+  const { result, provider, model } = await analyze(input.tier, input.screenshot, input.ctx, input.elements)
 
   // 3. merge → heatmap
   const heatmap = mergeHeatmap(sal, result.attention.zones)

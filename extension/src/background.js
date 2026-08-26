@@ -28,6 +28,45 @@ function pageMetrics() {
     url: location.href,
   }
 }
+function pageCollectElements(vw, pageH) {
+  // Real DOM rects (document-absolute, normalized 0..1) so the server can anchor
+  // attention zones to actual elements instead of the model guessing coordinates.
+  const out = []
+  const sx = window.scrollX || 0, sy = window.scrollY || 0
+  const seen = new Set()
+  const clamp01 = (v) => Math.max(0, Math.min(1, v))
+  const vis = (el) => {
+    const s = getComputedStyle(el)
+    return !(s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity || '1') < 0.05)
+  }
+  const push = (el, type) => {
+    if (out.length >= 40) return
+    let r
+    try { r = el.getBoundingClientRect() } catch { return }
+    if (!r || r.width < 24 || r.height < 12) return
+    const x = (r.left + sx) / vw, y = (r.top + sy) / pageH
+    const nw = r.width / vw, nh = r.height / pageH
+    if (y > 1.02 || y + nh < -0.02 || x > 1.02) return
+    const key = type + '|' + Math.round(r.left) + '|' + Math.round(r.top + sy) + '|' + Math.round(r.width)
+    if (seen.has(key)) return
+    seen.add(key)
+    let text = ''
+    try { text = (el.innerText || el.value || el.getAttribute('alt') || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 80) } catch (e) {}
+    out.push({ type, text, bbox: [clamp01(x), clamp01(y), Math.min(1, nw), Math.min(1, nh)] })
+  }
+  const add = (sel, type, limit) => {
+    let n = 0, nodes = []
+    try { nodes = document.querySelectorAll(sel) } catch (e) { return }
+    for (const el of nodes) { if (n >= limit) break; if (!vis(el)) continue; push(el, type); n++ }
+  }
+  add('h1,h2', 'heading', 8)
+  add('h3', 'subheading', 6)
+  add('button,[role=button],input[type=submit],input[type=button],a[class*="btn"],a[class*="button"],a[class*="cta"]', 'cta', 12)
+  add('form', 'form', 4)
+  add('img', 'image', 8)
+  add('nav,header', 'nav', 3)
+  return out.slice(0, 40)
+}
 function pagePrepare() {
   const w = window
   w.__foveo = { x: w.scrollX, y: w.scrollY, htmlOverflow: document.documentElement.style.overflow }
@@ -81,6 +120,8 @@ async function captureFullPage(tab) {
   const m = await runInTab(tabId, pageMetrics)
   const dpr = m.dpr
   const pageH = Math.min(m.scrollHeight, MAX_PAGE_HEIGHT)
+  // Collect real element rects before we scroll/hide anything (natural layout).
+  const elements = await runInTab(tabId, pageCollectElements, [m.innerWidth, pageH]).catch(() => [])
   const step = Math.max(200, m.innerHeight)
   let offsets = []
   for (let y = 0; y < pageH; y += step) offsets.push(Math.min(y, Math.max(0, pageH - m.innerHeight)))
@@ -132,6 +173,7 @@ async function captureFullPage(tab) {
     fullSize: { width: canvasW, height: canvasH },
     screenshot,
     sample: { w: SAMPLE_W, h: sampleH, b64: u8ToBase64(rgb) },
+    elements: Array.isArray(elements) ? elements : [],
   }
 }
 
@@ -162,6 +204,7 @@ async function analyze({ tabId, goal, note }) {
     fullSize: cap.fullSize,
     screenshot: cap.screenshot,
     sample: cap.sample,
+    elements: cap.elements,
   }
 
   const resp = await fetch(`${apiBase}/api/v1/analyze`, {

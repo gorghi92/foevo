@@ -4,7 +4,7 @@
  *  - premium tier → Anthropic Claude (Messages API, vision)
  *  - base tier    → Qwen-VL via DashScope (OpenAI-compatible, vision)
  */
-import { systemPrompt, premiumPrompt, basePrompt, extractJson, normalizeResult, type AttentionResult } from './types'
+import { systemPrompt, premiumPrompt, basePrompt, extractJson, normalizeResult, type AttentionResult, type PageElement } from './types'
 
 export type Tier = 'base' | 'premium'
 export interface AnalyzeCtx { url: string; title: string; goal: string | null; note: string | null }
@@ -73,15 +73,15 @@ async function callQwen(dataUrl: string, system: string, user: string): Promise<
   return flat
 }
 
-export async function analyze(tier: Tier, dataUrl: string, ctx: AnalyzeCtx): Promise<LlmOutput> {
+export async function analyze(tier: Tier, dataUrl: string, ctx: AnalyzeCtx, elements?: PageElement[]): Promise<LlmOutput> {
   const system = systemPrompt()
   const fallbackGoal = ctx.goal || 'conversione'
   if (tier === 'premium') {
-    const text = await callClaude(dataUrl, system, premiumPrompt(ctx))
-    return { result: normalizeResult(extractJson(text), fallbackGoal), provider: 'claude', model: CLAUDE_MODEL }
+    const text = await callClaude(dataUrl, system, premiumPrompt(ctx, elements))
+    return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'claude', model: CLAUDE_MODEL }
   }
-  const text = await callQwen(dataUrl, system, basePrompt(ctx))
-  return { result: normalizeResult(extractJson(text), fallbackGoal), provider: 'qwen', model: QWEN_MODEL }
+  const text = await callQwen(dataUrl, system, basePrompt(ctx, elements))
+  return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'qwen', model: QWEN_MODEL }
 }
 
 export function providerAvailable(tier: Tier): boolean {

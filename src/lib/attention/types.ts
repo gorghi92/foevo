@@ -3,6 +3,9 @@
 export type Priority = 'alta' | 'media' | 'bassa'
 export type Bbox = [number, number, number, number] // x,y,w,h normalized 0..1 over the full page
 
+/** Real DOM element rect captured by the extension (pixel-accurate boundaries). */
+export interface PageElement { type: string; text: string; bbox: Bbox }
+
 export interface AttentionZone { label: string; bbox: Bbox; score: number; reason: string }
 export interface CtaItem { text: string; bbox: Bbox | null; color: string | null; contrast: number; visibility: number; issues: string[] }
 export interface BrandColor { hex: string; role: string }
@@ -47,8 +50,20 @@ export function systemPrompt(): string {
   ].join(' ')
 }
 
+/** Formats the real DOM elements the extension captured, so the model can
+ *  reference their EXACT coordinates instead of estimating bboxes. */
+export function elementsBlock(elements?: PageElement[]): string {
+  if (!elements?.length) return ''
+  const lines = elements.slice(0, 40).map((e, i) => {
+    const b = e.bbox.map((n) => Math.round(n * 1000) / 1000).join(',')
+    const t = (e.text || '').replace(/\s+/g, ' ').slice(0, 60)
+    return `[${i}] ${e.type} "${t}" bbox=[${b}]`
+  }).join('\n')
+  return `\n\nELEMENTI REALI rilevati sulla pagina (coordinate ESATTE dal DOM, 0..1 sull'intera immagine):\n${lines}\n\nIMPORTANTE per le "zones": quando una zona corrisponde a uno di questi elementi, imposta il campo "ref" con l'INDICE dell'elemento (numero tra parentesi) e NON inventare "bbox" — verrà usato il rettangolo reale. Usa "bbox" tuo solo se nessun elemento combacia. Preferisci sempre gli elementi reali.`
+}
+
 /** Premium (Claude) — full brand + CTA + copy + conversion analysis. */
-export function premiumPrompt(ctx: { url: string; title: string; goal: string | null; note: string | null }): string {
+export function premiumPrompt(ctx: { url: string; title: string; goal: string | null; note: string | null }, elements?: PageElement[]): string {
   return `Contesto pagina:
 - URL: ${ctx.url}
 - Titolo: ${ctx.title}
@@ -66,7 +81,7 @@ Analizza e restituisci ESATTAMENTE questo JSON:
     "tone": "<tono percepito del brand: es. premium, amichevole, tecnico>"
   },
   "attention": {
-    "zones": [{"label":"<es. Headline, CTA principale, Immagine hero, Prezzo>","bbox":[x,y,w,h],"score":0-100,"reason":"<perché attira o no>"}],
+    "zones": [{"label":"<es. Headline, CTA principale, Immagine hero, Prezzo>","ref":<indice elemento reale o null>,"bbox":[x,y,w,h],"score":0-100,"reason":"<perché attira o no>"}],
     "firstGlance": ["<label>", "..."]  // ordine dei 3-5 elementi visti per primi
   },
   "cta": [{"text":"<testo bottone>","bbox":[x,y,w,h],"color":"#rrggbb","contrast":0-100,"visibility":0-100,"issues":["..."]}],
@@ -79,23 +94,23 @@ Analizza e restituisci ESATTAMENTE questo JSON:
 Regole:
 - Identifica i colori REALI usati (specialmente quello delle CTA) e valuta se la CTA "stacca" abbastanza dal resto.
 - Valuta se ciò che cattura l'attenzione (score alto nelle zones) coincide con l'elemento che porta alla conversione. Se no, spiegalo in summary e in recommendations.
-- Includi 4-8 zones, 1-4 cta, 3-6 recommendations ordinate per priorità.`
+- Includi 4-8 zones, 1-4 cta, 3-6 recommendations ordinate per priorità.${elementsBlock(elements)}`
 }
 
 /** Base (Qwen) — lighter zone + score analysis. */
-export function basePrompt(ctx: { url: string; title: string; goal: string | null }): string {
+export function basePrompt(ctx: { url: string; title: string; goal: string | null }, elements?: PageElement[]): string {
   return `Contesto: URL ${ctx.url}; Titolo "${ctx.title}"; Obiettivo: ${goalHint(ctx.goal)}.
 Restituisci ESATTAMENTE questo JSON (in italiano):
 {
   "pageType":"landing|product|homepage|other",
   "goal":"<obiettivo dedotto>",
   "summary":"<2 frasi su cosa attira l'attenzione e se aiuta la conversione>",
-  "attention":{"zones":[{"label":"...","bbox":[x,y,w,h],"score":0-100,"reason":"..."}],"firstGlance":["..."]},
+  "attention":{"zones":[{"label":"...","ref":<indice elemento reale o null>,"bbox":[x,y,w,h],"score":0-100,"reason":"..."}],"firstGlance":["..."]},
   "cta":[{"text":"...","bbox":[x,y,w,h],"color":"#rrggbb","contrast":0-100,"visibility":0-100,"issues":[]}],
   "scores":{"attentionAlignment":0-100,"clarity":0-100,"cta":0-100,"conversion":0-100},
   "recommendations":[{"priority":"alta|media|bassa","title":"...","detail":"...","impact":"..."}]
 }
-Includi 3-6 zones e 2-4 recommendations. bbox normalizzate 0..1 sull'intera immagine.`
+Includi 3-6 zones e 2-4 recommendations. bbox normalizzate 0..1 sull'intera immagine.${elementsBlock(elements)}`
 }
 
 // ---- defensive normalization (LLMs drift; never throw on a missing field) ----
@@ -113,12 +128,18 @@ function normBbox(b: unknown): Bbox | null {
   return [n[0], n[1], Math.max(0.01, n[2]), Math.max(0.01, n[3])]
 }
 
-export function normalizeResult(raw: any, fallbackGoal: string): AttentionResult {
+export function normalizeResult(raw: any, fallbackGoal: string, elements?: PageElement[]): AttentionResult {
   const r = raw && typeof raw === 'object' ? raw : {}
-  const zones = arr<any>(r?.attention?.zones).map((z) => ({
-    label: str(z?.label, 'Zona'), bbox: normBbox(z?.bbox) ?? [0.4, 0.1, 0.2, 0.1],
-    score: clamp(z?.score), reason: str(z?.reason),
-  })).filter((z) => z.label).slice(0, 12)
+  const zones = arr<any>(r?.attention?.zones).map((z) => {
+    // Prefer the real DOM element's exact rect when the model referenced one.
+    const ref = Number(z?.ref)
+    const refBox = elements && Number.isInteger(ref) && ref >= 0 && ref < elements.length ? elements[ref].bbox : null
+    return {
+      label: str(z?.label, 'Zona'),
+      bbox: refBox ?? normBbox(z?.bbox) ?? [0.4, 0.1, 0.2, 0.1],
+      score: clamp(z?.score), reason: str(z?.reason),
+    }
+  }).filter((z) => z.label).slice(0, 12)
 
   return {
     pageType: str(r.pageType, 'other'),
