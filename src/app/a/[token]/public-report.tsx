@@ -114,6 +114,49 @@ export function PublicReport({ data }: { data: any }) {
                     ))}
                   </div>
                 )}
+
+                {(r.brand?.palette?.length > 0 || r.brand?.tone) && (
+                  <div className="card p-4">
+                    <div className="mb-2 font-semibold">Brand</div>
+                    {r.brand.palette?.length > 0 && (
+                      <div className="mb-2.5 flex flex-wrap gap-2">
+                        {r.brand.palette.map((c: any, i: number) => (
+                          <div key={i} className="text-center">
+                            <div className="h-9 w-9 rounded-lg border border-black/10" style={{ background: c.hex?.startsWith('#') ? c.hex : `#${c.hex}` }} />
+                            <div className="mt-0.5 text-[9px] text-muted">{c.role}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {r.brand.fonts?.length > 0 && <div className="text-[13px]"><b>Font:</b> {r.brand.fonts.map((f: any) => `${f.family} (${f.usage})`).join(', ')}</div>}
+                    {r.brand.tone && <div className="mt-1 text-[13px]"><b>Tono:</b> {r.brand.tone}</div>}
+                  </div>
+                )}
+
+                {r.cta?.length > 0 && (
+                  <div className="card p-4">
+                    <div className="mb-2 font-semibold">Call to action</div>
+                    {r.cta.map((c: any, i: number) => (
+                      <div key={i} className={`py-2 ${i ? 'border-t border-line' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          {c.color && <span className="h-3.5 w-3.5 rounded border border-black/15" style={{ background: c.color.startsWith('#') ? c.color : `#${c.color}` }} />}
+                          <b className="text-[13px]">{c.text}</b>
+                        </div>
+                        <div className="mt-1 text-xs text-muted">Contrasto {c.contrast} · Visibilità {c.visibility}</div>
+                        {c.issues?.length > 0 && <ul className="mt-1 list-disc pl-4 text-xs">{c.issues.map((s: string, j: number) => <li key={j}>{s}</li>)}</ul>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {r.copy && (r.copy.headline || r.copy.issues?.length > 0 || r.copy.suggestions?.length > 0) && (
+                  <div className="card p-4">
+                    <div className="mb-2 font-semibold">Copy {typeof r.copy.clarity === 'number' && <span className="text-xs text-muted">· chiarezza {r.copy.clarity}</span>}</div>
+                    {r.copy.headline && <div className="mb-1.5 text-[13px]"><b>Headline:</b> “{r.copy.headline}”</div>}
+                    {r.copy.issues?.length > 0 && <><div className="text-xs font-semibold">Problemi</div><ul className="mb-2 mt-0.5 list-disc pl-4 text-xs">{r.copy.issues.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></>}
+                    {r.copy.suggestions?.length > 0 && <><div className="text-xs font-semibold">Riscritture</div><ul className="mt-0.5 list-disc pl-4 text-xs">{r.copy.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></>}
+                  </div>
+                )}
               </div>
             </div>
 
