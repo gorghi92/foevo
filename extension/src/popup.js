@@ -1,5 +1,5 @@
 /* Foveo — popup controller */
-const DEFAULT_BASE = 'https://foveo.app'
+const DEFAULT_BASE = 'https://foevo.vercel.app'
 const $ = (id) => document.getElementById(id)
 
 const els = {

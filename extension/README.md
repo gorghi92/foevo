@@ -6,14 +6,16 @@ conversion analysis** (brand, colors, CTAs, copy, frictions, recommendations).
 
 ## Install (dev / unpacked)
 
-1. Run `node scripts/gen-icons.mjs` once (already committed, regenerate if needed).
-2. Open `chrome://extensions`, enable **Developer mode**.
-3. **Load unpacked** → select this `apps/extension` folder.
-4. Open the popup → ⚙ Settings → set:
-   - **Endpoint**: your platform origin (default `https://foveo.app`)
-   - **API key**: create one in the dashboard at `/settings/api-keys` (starts with `grl_`,
-     needs the `attention:write` scope).
-5. Open any landing/product page → click **Analizza questa pagina**.
+> End-user, non-technical guide in Italian: see **`INSTALLAZIONE.md`**.
+
+1. Open `chrome://extensions`, enable **Developer mode** (top-right toggle).
+2. **Load unpacked** → select this `extension/` folder (the one containing
+   `manifest.json`). A `.zip` cannot be loaded directly — extract it first.
+3. Open the popup → ⚙ Settings → set:
+   - **Endpoint**: your platform origin (default `https://foevo.vercel.app`)
+   - **API key**: create one in the dashboard at `/settings/api-keys` (starts with `fv_`,
+     scope `analyze:write`).
+4. Open any landing/product page → click **Analizza questa pagina**.
 
 ## How it works
 
@@ -22,7 +24,7 @@ conversion analysis** (brand, colors, CTAs, copy, frictions, recommendations).
   avoid repeats).
 - It produces two things: a downscaled JPEG for display, and a tiny raw-RGB
   sample (192px wide) used server-side to compute a computer-vision saliency map.
-- `POST /api/v1/attention/analyze` (Bearer API key) runs the hybrid engine
+- `POST /api/v1/analyze` (Bearer API key) runs the hybrid engine
   (CV saliency + LLM semantic zones) and returns `{ id, resultPath }`.
 - The extension opens the result page on the platform.
 
@@ -37,10 +39,11 @@ conversion analysis** (brand, colors, CTAs, copy, frictions, recommendations).
 
 - `activeTab` + `scripting` — capture/scroll only the tab the user clicks on.
 - `storage` — store endpoint + API key locally.
-- `host_permissions: https://foveo.app/*` — upload to the default endpoint.
-- `optional_host_permissions: https://*/*` — requested **at runtime** only when
-  the user sets a custom (self-hosted) https endpoint in Settings. A local `http://`
-  dev endpoint isn't requestable at runtime — use the unpacked build for that.
+- No default `host_permissions`: the extension ships with none.
+- `optional_host_permissions: https://*/*` — the configured https endpoint is
+  granted **at runtime** when you press **Salva** in Settings (Chrome shows a
+  one-time permission prompt for that origin). A local `http://` dev endpoint
+  isn't requestable at runtime — use the unpacked build for that.
 
 ## Packaging / publishing to the Chrome Web Store
 
