@@ -88,11 +88,13 @@ export function HeatmapCanvas({
           style={{
             position: 'absolute', left: `${z.bbox[0] * 100}%`, top: `${z.bbox[1] * 100}%`,
             width: `${z.bbox[2] * 100}%`, height: `${z.bbox[3] * 100}%`,
-            border: '1.5px dashed rgba(255,255,255,.55)', borderRadius: 6, pointerEvents: 'none',
+            border: '1.5px dashed rgba(255,255,255,.5)', borderRadius: 6, pointerEvents: 'none',
+            boxShadow: '0 0 0 1px rgba(0,0,0,.25)', overflow: 'hidden',
           }}>
           <span style={{
-            position: 'absolute', top: -18, left: 0, fontSize: 10, fontWeight: 700,
-            background: 'rgba(17,17,25,.8)', color: '#fff', padding: '1px 5px', borderRadius: 5, whiteSpace: 'nowrap',
+            position: 'absolute', top: 2, left: 2, fontSize: 10, fontWeight: 700, lineHeight: 1.3,
+            background: 'rgba(17,17,25,.82)', color: '#fff', padding: '1px 5px', borderRadius: 5,
+            whiteSpace: 'nowrap', maxWidth: 'calc(100% - 4px)', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>{z.label} · {z.score}</span>
         </div>
       ))}

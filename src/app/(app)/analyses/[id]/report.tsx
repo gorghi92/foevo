@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, ExternalLink, RefreshCw, AlertTriangle, Share2, Check, Copy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { HeatmapCanvas, type ViewMode } from '@/components/heatmap-canvas'
 
@@ -23,7 +23,32 @@ export default function Report({ initial }: { initial: any }) {
   const [data, setData] = useState<any>(initial)
   const [mode, setMode] = useState<ViewMode>('heat')
   const [zones, setZones] = useState(true)
+  const [sharePath, setSharePath] = useState<string>(initial?.share_token ? `/a/${initial.share_token}` : '')
+  const [origin, setOrigin] = useState('')
+  const [sharing, setSharing] = useState(false)
+  const [copied, setCopied] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => { setOrigin(window.location.origin) }, [])
+  const shareUrl = useMemo(() => (sharePath ? origin + sharePath : ''), [origin, sharePath])
+
+  async function share() {
+    setSharing(true)
+    try {
+      const res = await fetch(`/api/analyses/${data.id}/share`, { method: 'POST' })
+      const j = await res.json()
+      if (!res.ok) throw new Error(j?.error || 'Errore condivisione')
+      setSharePath(j.path)
+      try { await navigator.clipboard.writeText(window.location.origin + j.path); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
+    } catch (e) {
+      alert(String((e as Error).message || e))
+    } finally {
+      setSharing(false)
+    }
+  }
+  async function copyShare() {
+    try { await navigator.clipboard.writeText(shareUrl || window.location.origin + sharePath); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
+  }
 
   useEffect(() => {
     if (data.status !== 'processing') return
@@ -46,7 +71,19 @@ export default function Report({ initial }: { initial: any }) {
           {data.url && <a href={data.url} target="_blank" rel="noreferrer" className="text-xs text-muted">{String(data.url).replace(/^https?:\/\//, '')} <ExternalLink size={11} className="inline" /></a>}
         </div>
         <span className="rounded-md border border-line px-2.5 py-1 text-xs font-bold">{data.tier === 'premium' ? 'Premium · Claude' : 'Base · Qwen'}</span>
+        {data.status === 'done' && (
+          sharePath
+            ? <button onClick={copyShare} className="btn btn-ghost px-3 py-1.5 text-[13px]" title={shareUrl}>{copied ? <><Check size={14} /> Copiato</> : <><Copy size={14} /> Link pubblico</>}</button>
+            : <button onClick={share} disabled={sharing} className="btn btn-primary px-3 py-1.5 text-[13px]"><Share2 size={14} /> {sharing ? 'Creo link…' : 'Condividi'}</button>
+        )}
       </div>
+      {sharePath && (
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-bg px-3 py-2 text-xs">
+          <Share2 size={13} className="shrink-0 text-brand" />
+          <span className="flex-1 truncate">Link pubblico attivo: <a href={shareUrl || sharePath} target="_blank" rel="noreferrer" className="font-semibold text-brand">{(shareUrl || sharePath).replace(/^https?:\/\//, '')}</a></span>
+          <button onClick={copyShare} className="shrink-0 font-semibold text-brand">{copied ? 'Copiato ✓' : 'Copia'}</button>
+        </div>
+      )}
 
       {data.status === 'processing' && (
         <div className="card mt-4 flex items-center gap-2 p-4 text-sm"><RefreshCw size={16} className="animate-spin" /> Analisi in corso… si aggiorna da sola.</div>
@@ -77,6 +114,11 @@ export default function Report({ initial }: { initial: any }) {
               {data.screenshot_url
                 ? <HeatmapCanvas screenshotUrl={data.screenshot_url} heatmap={data.heatmap} mode={mode} zones={zones ? r.attention?.zones : undefined} />
                 : <div className="card p-8 text-center text-muted">Screenshot non disponibile.</div>}
+              <p className="mt-2 text-[11px] leading-snug text-muted">
+                La heatmap deriva dai pixel reali (contrasto + colore); i riquadri delle zone sono
+                <b> stime dell&apos;AI</b> e su pagine molto lunghe la posizione può non essere pixel-perfect —
+                usa la lista <b>Zone di attenzione</b> a lato per l&apos;interpretazione.
+              </p>
             </div>
 
             <div className="flex flex-col gap-4">
@@ -89,6 +131,22 @@ export default function Report({ initial }: { initial: any }) {
                   </div>
                 )}
               </div>
+
+              {r.attention?.zones?.length > 0 && (
+                <div className="card p-4">
+                  <div className="mb-2 font-semibold">Zone di attenzione <span className="text-xs text-muted">· ordinate per impatto</span></div>
+                  {[...r.attention.zones].sort((a: any, b: any) => b.score - a.score).slice(0, 8).map((z: any, i: number) => (
+                    <div key={i} className={`py-1.5 ${i ? 'border-t border-line' : ''}`}>
+                      <div className="flex items-center gap-2">
+                        <b className="flex-1 truncate text-[13px]">{z.label}</b>
+                        <span className="text-xs font-bold" style={{ color: sc(z.score) }}>{z.score}</span>
+                      </div>
+                      <div className="mt-1 h-1 overflow-hidden rounded bg-line"><div style={{ width: `${z.score}%`, height: '100%', background: sc(z.score) }} /></div>
+                      {z.reason && <p className="mt-1 text-xs leading-snug text-muted">{z.reason}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {(r.brand?.palette?.length > 0 || r.brand?.tone) && (
                 <div className="card p-4">

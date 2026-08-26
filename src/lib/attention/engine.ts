@@ -24,7 +24,14 @@ export interface EngineInput {
   ctx: AnalyzeCtx
 }
 
-/** Blend a normalized saliency grid with gaussian blobs from the LLM's attention zones. */
+/**
+ * Blend the (pixel-accurate) CV saliency grid with anisotropic gaussian blobs
+ * from the LLM's attention zones. The CV layer leads spatially — VLM bbox
+ * coordinates on a tall full-page screenshot are only approximate, so the
+ * zones nudge/weight the map rather than dominate it. Each blob matches its
+ * box size on each axis (sigmaX from width, sigmaY from height) instead of one
+ * huge isotropic sigma that smeared attention across half the page.
+ */
 function mergeHeatmap(sal: Grid, zones: AttentionZone[]): HeatmapData {
   const { w, h } = sal
   const zone = new Float32Array(w * h)
@@ -33,14 +40,17 @@ function mergeHeatmap(sal: Grid, zones: AttentionZone[]): HeatmapData {
     const [zx, zy, zw, zh] = z.bbox
     const cx = (zx + zw / 2) * w
     const cy = (zy + zh / 2) * h
-    const sigma = Math.max(2, Math.max(zw, zh) * Math.max(w, h) * 0.5)
-    const s2 = 2 * sigma * sigma
+    // half-size of the box in grid cells (min 1.2 so tiny CTAs still register)
+    const sx = Math.max(1.2, zw * w * 0.5)
+    const sy = Math.max(1.2, zh * h * 0.5)
     const weight = z.score / 100
-    const rad = Math.ceil(sigma * 2.2)
-    for (let y = Math.max(0, Math.floor(cy - rad)); y < Math.min(h, cy + rad); y++) {
-      for (let x = Math.max(0, Math.floor(cx - rad)); x < Math.min(w, cx + rad); x++) {
-        const d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy)
-        const v = weight * Math.exp(-d2 / s2)
+    const radX = Math.ceil(sx * 2.2)
+    const radY = Math.ceil(sy * 2.2)
+    for (let y = Math.max(0, Math.floor(cy - radY)); y < Math.min(h, cy + radY); y++) {
+      for (let x = Math.max(0, Math.floor(cx - radX)); x < Math.min(w, cx + radX); x++) {
+        const dx = (x - cx) / sx
+        const dy = (y - cy) / sy
+        const v = weight * Math.exp(-(dx * dx + dy * dy) / 2)
         const i = y * w + x
         zone[i] += v
         if (zone[i] > zmax) zmax = zone[i]
@@ -51,9 +61,11 @@ function mergeHeatmap(sal: Grid, zones: AttentionZone[]): HeatmapData {
 
   const cells = new Float32Array(w * h)
   let max = 1e-6
-  const salWeight = zones.length ? 0.5 : 1.0
+  // CV-led: saliency carries the map, zones add semantic emphasis on top.
+  const salWeight = zones.length ? 0.7 : 1.0
+  const zoneWeight = zones.length ? 0.55 : 0
   for (let i = 0; i < cells.length; i++) {
-    cells[i] = salWeight * sal.cells[i] + (zones.length ? 1.0 : 0) * zone[i]
+    cells[i] = salWeight * sal.cells[i] + zoneWeight * zone[i]
     if (cells[i] > max) max = cells[i]
   }
   const out: number[] = new Array(w * h)
