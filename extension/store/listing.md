@@ -10,7 +10,9 @@ into the Web Store Developer Dashboard.
 - **Default language:** Italian (add English translation optionally)
 - **Homepage:** https://foevo.app
 - **Privacy policy URL:** https://foevo.app/privacy  ← required, must be live
-- **Support email:** info@akmehub.com
+- **Support URL:** https://foevo.app/supporto  ← required, must be live
+- **Support email:** info@akmehub.com (the /supporto form delivers here; set
+  SUPPORT_EMAIL under Superadmin → Impostazioni to route it elsewhere)
 
 ## Short description (≤132 chars)
 
