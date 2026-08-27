@@ -1,12 +1,11 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
-  darkMode: ['class', '[data-theme="dark"]'],
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Foveo palette — violet base + heatmap accents (see src/app/globals.css tokens)
+        // Foveo palette — tema chiaro, accento corallo + heatmap (token in src/app/globals.css)
         bg: 'rgb(var(--bg) / <alpha-value>)',
         panel: 'rgb(var(--panel) / <alpha-value>)',
         ink: 'rgb(var(--ink) / <alpha-value>)',
@@ -14,8 +13,10 @@ const config: Config = {
         line: 'rgb(var(--line) / <alpha-value>)',
         brand: 'rgb(var(--brand) / <alpha-value>)',
         'brand-fg': 'rgb(var(--brand-fg) / <alpha-value>)',
+        'brand-soft': 'rgb(var(--brand-soft) / <alpha-value>)',
         hot: 'rgb(var(--hot) / <alpha-value>)',
         warm: 'rgb(var(--warm) / <alpha-value>)',
+        dot: 'rgb(var(--dot) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],

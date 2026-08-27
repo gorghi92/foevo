@@ -3,39 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --bg: 250 249 252;
+  /* Foveo — tema chiaro, accento corallo caldo coerente con la heatmap */
+  --bg: 250 249 247;
   --panel: 255 255 255;
-  --ink: 27 23 38;
-  --muted: 107 101 128;
-  --line: 231 227 240;
-  --brand: 109 40 217;
+  --ink: 28 25 23;
+  --muted: 120 113 108;
+  --line: 233 229 225;
+  --brand: 229 80 46;
   --brand-fg: 255 255 255;
+  --brand-soft: 255 240 234;
   --hot: 255 90 60;
   --warm: 255 176 32;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: 19 16 25;
-    --panel: 27 22 38;
-    --ink: 243 240 251;
-    --muted: 164 157 186;
-    --line: 45 39 64;
-    --brand: 167 139 250;
-    --brand-fg: 24 18 33;
-    --hot: 255 111 82;
-    --warm: 255 194 77;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: 19 16 25;
-  --panel: 27 22 38;
-  --ink: 243 240 251;
-  --muted: 164 157 186;
-  --line: 45 39 64;
-  --brand: 167 139 250;
-  --brand-fg: 24 18 33;
-  --hot: 255 111 82;
-  --warm: 255 194 77;
+  --dot: 109 40 217; /* viola del logo — non modificare, il logo resta identico */
+  color-scheme: light;
 }
 
 @layer base {
@@ -57,5 +37,5 @@
   .input { @apply w-full rounded-xl border border-line bg-panel px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-brand; }
   .card { @apply rounded-2xl border border-line bg-panel; }
   .label { @apply text-xs font-semibold uppercase tracking-wide text-muted; }
-  .heat-dot { background: radial-gradient(circle at 50% 42%, rgb(var(--hot)) 0%, rgb(var(--warm)) 42%, rgb(var(--brand)) 66%); }
+  .heat-dot { background: radial-gradient(circle at 50% 42%, rgb(var(--hot)) 0%, rgb(var(--warm)) 42%, rgb(var(--dot)) 66%); }
 }
