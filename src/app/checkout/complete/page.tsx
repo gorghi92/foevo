@@ -6,9 +6,10 @@ import { ActivationPoller, ClaimPoller } from './poller'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CheckoutComplete({ searchParams }: { searchParams: { status?: string; plan?: string } }) {
+export default async function CheckoutComplete({ searchParams }: { searchParams: { status?: string; plan?: string; payment_id?: string; receipt_id?: string } }) {
   const status = searchParams.status ?? 'success'
   const planSlug = searchParams.plan ?? ''
+  const paymentId = searchParams.payment_id || searchParams.receipt_id || ''
   const failed = status === 'error'
 
   const user = await getUser()
@@ -33,7 +34,7 @@ export default async function CheckoutComplete({ searchParams }: { searchParams:
             <Link href="/billing" className="btn btn-primary mt-6 w-full">Riprova</Link>
           </>
         ) : !user ? (
-          <ClaimPoller />
+          <ClaimPoller paymentId={paymentId} />
         ) : active ? (
           <>
             <CheckCircle2 size={44} className="mx-auto text-green-600" />

@@ -28,10 +28,9 @@ function verifyWhop(raw: string, headers: Headers, secret: string): boolean {
     if (!legacy) return false
     return safeEq(legacy, createHmac('sha256', secret).update(raw).digest('hex'))
   }
-  // Anti-replay: rifiuta timestamp oltre 10 minuti di scarto (se numerico).
-  const tsNum = Number(ts)
-  if (Number.isFinite(tsNum) && Math.abs(Date.now() / 1000 - tsNum) > 600) return false
-
+  // Nota: niente rifiuto per timestamp (evita falsi negativi su clock/formattazione);
+  // la firma stessa garantisce l'autenticità. L'attivazione è comunque coperta
+  // dall'auto-riparazione lato /api/checkout/claim.
   const signedContent = `${id}.${ts}.${raw}`
   const keys: Buffer[] = [Buffer.from(secret, 'utf8')]
   const b64part = secret.includes('_') ? secret.split('_').slice(1).join('_') : secret

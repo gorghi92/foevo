@@ -33,7 +33,7 @@ export function ActivationPoller({ done, tries = 15, intervalMs = 3000 }: { done
  * pronti, poi entriamo automaticamente. Nessun login se il pagamento non è
  * confermato.
  */
-export function ClaimPoller() {
+export function ClaimPoller({ paymentId }: { paymentId?: string }) {
   const [state, setState] = useState<'pending' | 'ok' | 'none' | 'slow'>('pending')
   const [n, setN] = useState(0)
   const MAX = 25
@@ -43,7 +43,10 @@ export function ClaimPoller() {
     let stop = false
     const t = setTimeout(async () => {
       try {
-        const r = await fetch('/api/checkout/claim', { method: 'POST' })
+        const r = await fetch('/api/checkout/claim', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ paymentId: paymentId || '' }),
+        })
         const j = await r.json().catch(() => ({}))
         if (stop) return
         if (j.status === 'ok') { setState('ok'); window.location.assign('/dashboard'); return }
