@@ -4,6 +4,7 @@ import { r2Configured, r2Put, r2PublicUrl } from '@/lib/r2'
 import { runEngine, providerAvailable, type Tier } from '@/lib/attention/engine'
 import { resolveEntitlement, monthlyUsage, createAnalysis, attachScreenshot, completeAnalysis, failAnalysis } from '@/server/store'
 import type { PageElement } from '@/lib/attention/types'
+import { exceedsModelLimit } from '@/lib/attention/image-size'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -14,6 +15,8 @@ interface Body {
   image?: { width: number; height: number }
   fullSize?: { width: number; height: number }
   screenshot?: string
+  aiImage?: string
+  aiSize?: { width: number; height: number }
   sample?: { w: number; h: number; b64: string }
   elements?: unknown
 }
@@ -57,6 +60,21 @@ export async function POST(req: Request): Promise<Response> {
       }
     }
 
+    // Limite del modello: nessun lato oltre MAX_IMAGE_SIDE px. Le versioni
+    // vecchie dell'estensione non mandano `aiImage` e su pagine molto lunghe
+    // producevano uno screenshot fuori limite. Le dimensioni le leggiamo dai
+    // byte, non da quelle dichiarate nel payload: così il controllo tiene
+    // qualunque cosa mandi il client.
+    const aiImage = body.aiImage || body.screenshot
+    if (exceedsModelLimit(aiImage)) {
+      return Response.json({
+        error: body.aiImage
+          ? 'Immagine troppo grande per l\u2019analisi: riprova su una pagina meno lunga.'
+          : 'Pagina troppo lunga per questa versione dell\u2019estensione: aggiorna all\u2019ultima versione dalla dashboard.',
+        code: 'image_too_large',
+      }, { status: 400 })
+    }
+
     const tier = pickTier(ent.tier)
     if (!tier) return Response.json({ error: 'Nessun provider AI configurato.' }, { status: 503 })
 
@@ -84,7 +102,10 @@ export async function POST(req: Request): Promise<Response> {
     await attachScreenshot(id, screenshotUrl)
 
     try {
-      const out = await runEngine({ tier, screenshot: body.screenshot, sample: body.sample, ctx, elements })
+      // L'analisi usa l'immagine dedicata quando l'estensione la fornisce: è
+      // già entro i limiti di dimensione del modello. Lo screenshot di
+      // visualizzazione resta quello mostrato nel report.
+      const out = await runEngine({ tier, screenshot: aiImage, sample: body.sample, ctx, elements })
       await completeAnalysis(id, {
         result: out.result, heatmap: out.heatmap, provider: out.provider, model: out.model,
         inputTokens: out.usage.input, outputTokens: out.usage.output, costUsd: out.costUsd,

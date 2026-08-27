@@ -5,14 +5,23 @@
 const MAX_PAGE_HEIGHT = 20000   // px cap (very long pages)
 const MAX_SLICES = 24
 const DISPLAY_MAX_W = 1440
+const DISPLAY_MAX_H = 7800     // sotto il limite di 8000px per lato dell'API di analisi
+// Limiti dell'immagine inviata al modello di analisi (Claude Opus 5, tier
+// high-resolution): lato lungo max 2576px e 4784 "visual token" da 28x28px.
+// Oltre queste soglie l'immagine viene comunque ridotta lato server, quindi
+// mandarla piu' grande aggiunge peso e latenza senza aggiungere dettaglio.
+const AI_MAX_SIDE = 2576
+const AI_MAX_TOKENS = 4784
+const AI_PATCH = 28
 const SAMPLE_W = 192
 const CAPTURE_GAP_MS = 520      // respect captureVisibleTab rate limit (~2/s)
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function getSettings() {
-  const s = await chrome.storage.sync.get(['apiBase', 'apiKey'])
-  return { apiBase: (s.apiBase || 'https://foevo.app').replace(/\/+$/, ''), apiKey: s.apiKey || '' }
+  const s = await chrome.storage.sync.get(['apiKey'])
+  // Endpoint fisso: coincide con l'host dichiarato in host_permissions.
+  return { apiBase: 'https://foevo.app', apiKey: s.apiKey || '' }
 }
 function progress(text) { chrome.runtime.sendMessage({ type: 'PROGRESS', text }).catch(() => {}) }
 
@@ -164,14 +173,38 @@ async function captureFullPage(tab) {
   const sctx = stitch.getContext('2d')
   for (const s of slices) { sctx.drawImage(s.bmp, 0, Math.round(s.y * dpr)); s.bmp.close() }
 
-  // display image (downscaled JPEG)
-  const scale = Math.min(1, DISPLAY_MAX_W / canvasW)
+  // Immagine di visualizzazione (JPEG ridotto). Il vincolo sull'altezza evita
+  // di produrre immagini oltre il limite per lato accettato dall'analisi.
+  const scale = Math.min(1, DISPLAY_MAX_W / canvasW, DISPLAY_MAX_H / canvasH)
   const outW = Math.max(1, Math.round(canvasW * scale))
   const outH = Math.max(1, Math.round(canvasH * scale))
   const disp = new OffscreenCanvas(outW, outH)
   disp.getContext('2d').drawImage(stitch, 0, 0, outW, outH)
   const dispBlob = await disp.convertToBlob({ type: 'image/jpeg', quality: 0.72 })
   const screenshot = await blobToDataUrl(dispBlob)
+
+  // Immagine dedicata all'analisi, entro i limiti nativi del modello: nessun
+  // lato oltre AI_MAX_SIDE e costo entro AI_MAX_TOKENS. Le proporzioni restano
+  // invariate, quindi le bbox normalizzate 0-1 continuano a combaciare con lo
+  // screenshot mostrato nel report.
+  let aiScale = Math.min(
+    1,
+    AI_MAX_SIDE / Math.max(canvasW, canvasH),
+    Math.sqrt((AI_MAX_TOKENS * AI_PATCH * AI_PATCH) / (canvasW * canvasH)),
+  )
+  let aiW = Math.max(1, Math.round(canvasW * aiScale))
+  let aiH = Math.max(1, Math.round(canvasH * aiScale))
+  // I token si contano per patch intere, quindi l'arrotondamento può sforare di
+  // poco il budget: stringi finché non rientra (un paio di giri al massimo).
+  for (let i = 0; i < 6 && visualTokens(aiW, aiH) > AI_MAX_TOKENS; i++) {
+    aiScale *= Math.sqrt(AI_MAX_TOKENS / visualTokens(aiW, aiH)) * 0.99
+    aiW = Math.max(1, Math.round(canvasW * aiScale))
+    aiH = Math.max(1, Math.round(canvasH * aiScale))
+  }
+  const aiCanvas = new OffscreenCanvas(aiW, aiH)
+  aiCanvas.getContext('2d').drawImage(stitch, 0, 0, aiW, aiH)
+  const aiBlob = await aiCanvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 })
+  const aiImage = await blobToDataUrl(aiBlob)
 
   // tiny RGB sample for saliency
   const sampleH = Math.max(1, Math.round(SAMPLE_W * canvasH / canvasW))
@@ -186,9 +219,16 @@ async function captureFullPage(tab) {
     image: { width: outW, height: outH },
     fullSize: { width: canvasW, height: canvasH },
     screenshot,
+    aiImage,
+    aiSize: { width: aiW, height: aiH },
     sample: { w: SAMPLE_W, h: sampleH, b64: u8ToBase64(rgb) },
     elements: Array.isArray(elements) ? elements : [],
   }
+}
+
+/** Costo in "visual token" dell'immagine: una patch da 28x28px ciascuno. */
+function visualTokens(w, h) {
+  return Math.ceil(w / AI_PATCH) * Math.ceil(h / AI_PATCH)
 }
 
 function blobToDataUrl(blob) {
@@ -217,6 +257,8 @@ async function analyze({ tabId, goal, note }) {
     image: cap.image,
     fullSize: cap.fullSize,
     screenshot: cap.screenshot,
+    aiImage: cap.aiImage,
+    aiSize: cap.aiSize,
     sample: cap.sample,
     elements: cap.elements,
   }
