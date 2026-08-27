@@ -25,7 +25,7 @@ and a conversion-oriented analysis. This policy explains exactly what is handled
 ## Where data is sent
 
 - The screenshot and page metadata are sent over HTTPS to the **endpoint you
-  configure** (default `https://foveo.app`) using your API key.
+  configure** (default `https://foevo.app`) using your API key.
 - On that platform, to produce the analysis, the screenshot is processed by an
   **AI provider** (Anthropic Claude for the premium tier, or Alibaba Qwen for the
   base tier). The screenshot and the resulting analysis are stored in **your own

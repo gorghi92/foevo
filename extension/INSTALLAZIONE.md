@@ -10,7 +10,7 @@ Funziona su Chrome, Edge, Brave e altri browser basati su Chromium.
 
 Hai due modi:
 
-- **A) Dallo zip:** scarica `https://foevo.vercel.app/extension/foveo-attention.zip`
+- **A) Dallo zip:** scarica `https://foevo.app/extension/foveo-attention.zip`
   e **estrailo** (tasto destro → *Estrai tutto*). Ottieni una cartella con dentro
   `manifest.json`, `src/`, `icons/`.
 - **B) Dal repo:** usa la cartella `extension/` del progetto.
@@ -40,14 +40,14 @@ puzzle 🧩 → pin.
 
 ## 5. Collega il tuo account (API key)
 
-1. Accedi a **https://foevo.vercel.app** con il tuo account.
+1. Accedi a **https://foevo.app** con il tuo account.
 2. Vai su **Impostazioni → API keys** (`/settings/api-keys`) e crea una chiave:
    copiala subito (viene mostrata **una sola volta**). Inizia con `fv_`.
 3. Apri il popup dell'estensione → icona **⚙ (Impostazioni)** e imposta:
-   - **Endpoint piattaforma**: `https://foevo.vercel.app`
+   - **Endpoint piattaforma**: `https://foevo.app`
    - **API key**: incolla la chiave `fv_…`
 4. Premi **Salva**. Chrome chiederà **una volta** il permesso per il sito
-   `foevo.vercel.app`: accetta (serve a inviare lo screenshot al motore di analisi).
+   `foevo.app`: accetta (serve a inviare lo screenshot al motore di analisi).
 
 ## 6. Analizza una pagina
 

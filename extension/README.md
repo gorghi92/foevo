@@ -12,7 +12,7 @@ conversion analysis** (brand, colors, CTAs, copy, frictions, recommendations).
 2. **Load unpacked** → select this `extension/` folder (the one containing
    `manifest.json`). A `.zip` cannot be loaded directly — extract it first.
 3. Open the popup → ⚙ Settings → set:
-   - **Endpoint**: your platform origin (default `https://foevo.vercel.app`)
+   - **Endpoint**: your platform origin (default `https://foevo.app`)
    - **API key**: create one in the dashboard at `/settings/api-keys` (starts with `fv_`,
      scope `analyze:write`).
 4. Open any landing/product page → click **Analizza questa pagina**.

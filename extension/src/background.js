@@ -12,7 +12,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function getSettings() {
   const s = await chrome.storage.sync.get(['apiBase', 'apiKey'])
-  return { apiBase: (s.apiBase || 'https://foevo.vercel.app').replace(/\/+$/, ''), apiKey: s.apiKey || '' }
+  return { apiBase: (s.apiBase || 'https://foevo.app').replace(/\/+$/, ''), apiKey: s.apiKey || '' }
 }
 function progress(text) { chrome.runtime.sendMessage({ type: 'PROGRESS', text }).catch(() => {}) }
 

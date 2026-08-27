@@ -8,8 +8,8 @@ into the Web Store Developer Dashboard.
 - **Name:** Foveo — Heatmap & AI Page Analysis
 - **Category:** Productivity (alt: Developer Tools)
 - **Default language:** Italian (add English translation optionally)
-- **Homepage:** https://foveo.app
-- **Privacy policy URL:** https://foveo.app/privacy  ← required, must be live
+- **Homepage:** https://foevo.app
+- **Privacy policy URL:** https://foevo.app/privacy  ← required, must be live
 - **Support email:** info@akmehub.com
 
 ## Short description (≤132 chars)
@@ -45,7 +45,7 @@ into the Web Store Developer Dashboard.
 | `activeTab` | Capture a screenshot of, and read the URL/title of, the tab **only when the user clicks the button**. No background access. |
 | `scripting` | Scroll the active tab and hide sticky/fixed elements so the full page can be stitched into one screenshot. Runs only during a user-initiated analysis. |
 | `storage` | Store the user's platform endpoint and API key locally (`chrome.storage`). |
-| `host_permissions: https://foveo.app/*` | Upload the screenshot to the default Foveo platform endpoint. |
+| `host_permissions: https://foevo.app/*` | Upload the screenshot to the default Foveo platform endpoint. |
 | `optional_host_permissions: https://*/*` | Requested **at runtime only** if the user configures a self-hosted Foveo endpoint on another domain. Not requested on install. |
 
 ## Data-use disclosures (Privacy practices tab)
@@ -82,7 +82,7 @@ brand violet + heatmap-dot motif from `icons/`.
 2. Verify `manifest.json` version is bumped for each upload (store rejects
    duplicate versions).
 3. Build the release zip (see extension `README.md` → Packaging).
-4. Confirm **https://foveo.app/privacy** returns 200 (deploy first).
+4. Confirm **https://foevo.app/privacy** returns 200 (deploy first).
 5. Create the item in the Web Store Developer Dashboard, upload the zip.
 6. Fill Identity + descriptions + privacy URL + permission justifications +
    Privacy practices from this file.
