@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, CreditCard, User, Shield, Gift, type LucideIcon } from 'lucide-react'
+import { LayoutGrid, CreditCard, User, Shield, Gift, Share2, type LucideIcon } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: LucideIcon }
 
@@ -14,19 +14,24 @@ const MAIN: NavItem[] = [
   { href: '/profile', label: 'Profilo', icon: User },
   { href: '/invita', label: 'Invita e guadagna', icon: Gift },
 ]
-const ADMIN: NavItem[] = [{ href: '/admin', label: 'Superadmin', icon: Shield }]
+const ADMIN: NavItem[] = [
+  { href: '/admin', label: 'Superadmin', icon: Shield },
+  { href: '/admin/affiliates', label: 'Affiliazione', icon: Share2 },
+]
 
 function isActive(path: string, href: string) {
-  return href === '/dashboard'
-    ? path === '/dashboard' || path.startsWith('/analyses')
-    : path === href || path.startsWith(`${href}/`)
+  if (href === '/dashboard') return path === '/dashboard' || path.startsWith('/analyses')
+  // "Superadmin" non si accende sulle rotte dell'affiliazione (voce a parte).
+  if (href === '/admin') return (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/affiliates')
+  return path === href || path.startsWith(`${href}/`)
 }
 
-function Items({ items, path }: { items: NavItem[]; path: string }) {
+function Items({ items, path, badges }: { items: NavItem[]; path: string; badges?: Record<string, number> }) {
   return (
     <nav className="flex flex-col gap-1">
       {items.map((n) => {
         const active = isActive(path, n.href)
+        const badge = badges?.[n.href] || 0
         return (
           <Link
             key={n.href}
@@ -39,6 +44,11 @@ function Items({ items, path }: { items: NavItem[]; path: string }) {
             {active && <span className="heat-rule absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full" aria-hidden />}
             <n.icon size={17} className={active ? 'text-brand' : 'text-muted group-hover:text-ink'} />
             {n.label}
+            {badge > 0 && (
+              <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-4 text-white">
+                {badge}
+              </span>
+            )}
           </Link>
         )
       })}
@@ -47,15 +57,16 @@ function Items({ items, path }: { items: NavItem[]; path: string }) {
 }
 
 /** Voci della sidebar, con sezione amministrazione opzionale. */
-export function SidebarNav({ admin = false }: { admin?: boolean }) {
+export function SidebarNav({ admin = false, alertCount = 0 }: { admin?: boolean; alertCount?: number }) {
   const path = usePathname()
+  const badges = { '/admin/affiliates': alertCount }
   return (
     <>
       <Items items={MAIN} path={path} />
       {admin && (
         <>
           <div className="label mt-6 px-3 text-muted">Amministrazione</div>
-          <div className="mt-2"><Items items={ADMIN} path={path} /></div>
+          <div className="mt-2"><Items items={ADMIN} path={path} badges={badges} /></div>
         </>
       )}
     </>

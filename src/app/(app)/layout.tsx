@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
 import { isSuperadmin } from '@/lib/superadmin'
+import { unreadAlerts } from '@/lib/affiliate/admin'
 import { LogOut } from 'lucide-react'
 import { ImpersonationBanner } from './impersonation-banner'
 import { SidebarNav, MobileNav } from '@/components/app/nav'
@@ -14,7 +15,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
   const admin = isSuperadmin(user.email)
   const impersonating = cookies().get('imp_active')?.value || null
-  const [ent, used] = await Promise.all([resolveEntitlement(user.id), monthlyUsage(user.id)])
+  const [ent, used, alerts] = await Promise.all([
+    resolveEntitlement(user.id),
+    monthlyUsage(user.id),
+    admin ? unreadAlerts(1).catch(() => ({ count: 0 })) : Promise.resolve({ count: 0 }),
+  ])
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -25,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="font-display text-base font-extrabold tracking-tight">Foevo</span>
         </Link>
 
-        <SidebarNav admin={admin} />
+        <SidebarNav admin={admin} alertCount={alerts.count} />
 
         <div className="mt-auto space-y-3 pt-6">
           <UsageMeter used={used} quota={ent.quota} unlimited={ent.unlimited} />

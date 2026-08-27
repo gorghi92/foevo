@@ -4,7 +4,7 @@ import { RatesPanel } from '../panels'
 export const dynamic = 'force-dynamic'
 
 export default async function AffiliateSettingsPage() {
-  const rules = await getAffiliateRules()
+  const rules = await getAffiliateRules(true) // lettura fresca: riflette subito i salvataggi
   return (
     <div className="space-y-3">
       <div>

@@ -1,4 +1,4 @@
-import { getSettings } from '@/lib/settings'
+import { getSettings, getSettingsFresh } from '@/lib/settings'
 
 /**
  * Regole economiche dell'affiliazione, in un solo posto e senza dipendenze,
@@ -21,9 +21,11 @@ const num = (v: unknown, d: number) => {
   return Number.isFinite(n) && n >= 0 ? n : d
 }
 
-/** Legge le regole dalle impostazioni (con default sensati). */
-export async function getAffiliateRules(): Promise<AffiliateRules> {
-  const s = await getSettings()
+/** Legge le regole dalle impostazioni (con default sensati). `fresh` bypassa la
+ * cache di istanza: usalo nelle pagine di configurazione per riflettere subito i
+ * salvataggi. */
+export async function getAffiliateRules(fresh = false): Promise<AffiliateRules> {
+  const s = fresh ? await getSettingsFresh() : await getSettings()
   return {
     baseBps: num(s.AFFILIATE_RATE_BASE_BPS, 2000), // 20%
     premiumBps: num(s.AFFILIATE_RATE_PREMIUM_BPS, 2000), // 20%

@@ -166,15 +166,20 @@ export async function handleRefund(sc: SC, args: {
 
   // Email al superadmin (best-effort): così l'avviso arriva anche senza login.
   try {
-    const { sendEmail } = await import('@/lib/email')
+    const { sendEmail, refundAlertEmail } = await import('@/lib/email')
     const admins = (process.env.SUPERADMIN_EMAILS || '').split(',').map((s) => s.trim()).filter(Boolean)
-    for (const to of admins) {
-      await sendEmail({
-        to, subject: `[Foevo] ${title}`,
-        html: `<div style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#1c1917">
-          <p><b>${title}</b></p><p>${body}</p>
-          <p><a href="https://foevo.app/admin/affiliates">Apri il pannello affiliati →</a></p></div>`,
+    if (admins.length) {
+      const { subject, html } = refundAlertEmail({
+        title,
+        paymentId: args.whopPaymentId,
+        email: args.email,
+        amount: args.amountCents ? eur(args.amountCents) : null,
+        commissionAmount: comm ? eur(comm.amount_cents) : null,
+        commissionState: comm ? stateLabel : null,
+        affiliate: affiliate?.username ?? null,
+        severity,
       })
+      for (const to of admins) await sendEmail({ to, subject, html })
     }
   } catch (e) { console.error('[foevo] email avviso rimborso', e) }
 }

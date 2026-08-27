@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AlertTriangle, Bell, Check, RotateCcw } from 'lucide-react'
@@ -86,6 +86,8 @@ export function AlertsPanel({ alerts }: { alerts: Alert[] }) {
 export function RatesPanel({ init }: { init: { basePct: number; premiumPct: number; minEur: number; months: number } }) {
   const router = useRouter()
   const [f, setF] = useState(init)
+  // Riallinea ai valori del server dopo un router.refresh() (post-salvataggio).
+  useEffect(() => { setF(init) }, [init.basePct, init.premiumPct, init.minEur, init.months])
   const set = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: Number(v) }))
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
@@ -96,7 +98,7 @@ export function RatesPanel({ init }: { init: { basePct: number; premiumPct: numb
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(f),
     })
     setBusy(false)
-    setMsg(r.ok ? 'Salvato.' : 'Errore nel salvataggio.')
+    setMsg(r.ok ? 'Salvato ✓' : 'Errore nel salvataggio.')
     if (r.ok) router.refresh()
   }
 

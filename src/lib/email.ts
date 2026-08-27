@@ -153,6 +153,44 @@ export function emailChangeOtpEmail(code: string, newEmail: string): { subject: 
   return { subject: `${code} — conferma la nuova email Foevo`, html: shell({ title: 'Conferma la nuova email', preheader: `Codice ${code} per confermare ${newEmail}.`, body }) }
 }
 
+export function refundAlertEmail(d: {
+  title: string
+  paymentId: string
+  email?: string | null
+  amount?: string | null
+  commissionAmount?: string | null
+  commissionState?: string | null
+  affiliate?: string | null
+  severity: 'info' | 'warning' | 'critical'
+}): { subject: string; html: string } {
+  const tint = d.severity === 'critical' ? '#dc2626' : d.severity === 'warning' ? '#d97706' : '#0891b2'
+  const badge = d.severity === 'critical' ? 'Da gestire subito' : d.severity === 'warning' ? 'Da verificare' : 'Per conoscenza'
+  const row = (l: string, v: string, top = true) =>
+    `<tr><td style="padding:12px 16px;${top ? 'border-top:1px solid #f2eee9;' : ''}font-size:13px;color:#78716c;vertical-align:top">${l}</td><td style="padding:12px 16px;${top ? 'border-top:1px solid #f2eee9;' : ''}font-size:13px;font-weight:700;color:#1c1917;text-align:right;vertical-align:top">${v}</td></tr>`
+  const rows = [
+    row('Pagamento', d.paymentId, false),
+    d.email ? row('Cliente', d.email) : '',
+    d.amount ? row('Importo rimborsato', d.amount) : '',
+    d.affiliate ? row('Affiliato', d.affiliate) : '',
+    d.commissionAmount ? row('Commissione collegata', d.commissionAmount) : '',
+  ].filter(Boolean).join('')
+  const stateNote = d.commissionState
+    ? `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${tint};font-weight:600">${d.commissionState}</p>`
+    : `<p style="${P}">Nessuna commissione affiliato collegata a questo pagamento.</p>`
+  const body = `
+    <div style="display:inline-block;padding:5px 12px;border-radius:999px;background:${tint}1a;color:${tint};font-size:12px;font-weight:700;margin:0 0 14px">${badge}</div>
+    <p style="${P}">È stato registrato un <strong style="color:#1c1917">rimborso o una contestazione</strong> su un pagamento. Non abbiamo stornato nulla in automatico: decidi tu dal pannello.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;overflow:hidden;margin:0 0 20px;background:#fdfcfb">
+      ${rows}
+    </table>
+    ${stateNote}
+    ${ctaButton(`${appUrl()}/admin/affiliates/pagamenti`, 'Apri il pannello affiliati')}`
+  return {
+    subject: `Foevo · ${d.title}`,
+    html: shell({ title: d.title, preheader: 'Rimborso/contestazione su un pagamento — nessuno storno automatico.', body }),
+  }
+}
+
 export function magicLinkEmail(link: string): { subject: string; html: string } {
   const body = `
     <p style="${P}">Usa il pulsante qui sotto per accedere al tuo account Foevo. Il link scade a breve e può essere usato una sola volta.</p>

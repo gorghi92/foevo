@@ -52,6 +52,26 @@ export function clearSettingsCache() {
   cache = null
 }
 
+/**
+ * Lettura FRESCA dal DB, ignorando la cache di istanza. Serve nelle pagine di
+ * configurazione superadmin: in serverless la cache è per-istanza, quindi un
+ * reload subito dopo il salvataggio potrebbe colpire un'istanza calda con valori
+ * vecchi. Questa aggiorna anche la cache condivisa con i valori appena letti.
+ */
+export async function getSettingsFresh(): Promise<Record<string, string>> {
+  const data: Record<string, string> = {}
+  try {
+    const sc = createServiceClient()
+    const { data: rows } = await sc.from('app_settings').select('key, value')
+    for (const r of rows ?? []) if (r.value) data[r.key as string] = r.value as string
+  } catch {
+    /* tabella assente o DB irraggiungibile → si usa solo l'env */
+  }
+  cache = { at: Date.now(), data }
+  applyStorageSettings(data)
+  return data
+}
+
 /** Valore di una chiave: prima il DB, poi l'env. */
 export async function getSetting(key: SettingKey): Promise<string> {
   const s = await getSettings()

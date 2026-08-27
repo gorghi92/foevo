@@ -21,7 +21,10 @@ export default async function DiventaAffiliato() {
   if (aff) redirect('/affiliati')
 
   const rules = await getAffiliateRules()
-  const rate = Math.max(rules.baseBps, rules.premiumBps)
+  const baseRate = rules.baseBps
+  const premRate = rules.premiumBps
+  const rate = Math.max(baseRate, premRate)
+  const sameRate = baseRate === premRate
   const minEur = (rules.minPayoutCents / 100).toFixed(0)
   const months = rules.commissionMonths
 
@@ -38,8 +41,8 @@ export default async function DiventaAffiliato() {
     },
     {
       icon: Wallet,
-      title: 'Paghiamo in bonifico',
-      body: `Richiedi il pagamento quando vuoi, dai ${minEur} € di saldo disponibile. Inserisci l’IBAN e ci pensiamo noi.`,
+      title: 'Paghiamo con bonifico istantaneo',
+      body: `Richiedi il pagamento quando vuoi, dai ${minEur} € di saldo disponibile. Inserisci l’IBAN e ricevi il bonifico istantaneo.`,
     },
     {
       icon: TrendingUp,
@@ -63,7 +66,7 @@ export default async function DiventaAffiliato() {
           <Gift size={14} /> Programma affiliazione
         </div>
         <h1 className="mx-auto max-w-3xl font-display text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-          Consiglia Foevo.<br />Guadagna il <span className="text-brand">{pct(rate)}</span> per {months} mesi.
+          Consiglia Foevo.<br />Guadagna {sameRate ? 'il' : 'fino al'} <span className="text-brand">{pct(rate)}</span> per {months} mesi.
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-base text-muted">
           Ogni cliente che si abbona dal tuo link ti fa guadagnare una commissione ricorrente,
@@ -81,9 +84,9 @@ export default async function DiventaAffiliato() {
 
       {/* numeri chiave */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Metric value={pct(rate)} label={`Commissione, per ${months} mesi`} />
+        <Metric value={`${sameRate ? '' : 'fino al '}${pct(rate)}`} label={`Commissione, per ${months} mesi`} />
         <Metric value={`${minEur} €`} label="Soglia minima di pagamento" />
-        <Metric value="Bonifico" label="Come ti paghiamo" />
+        <Metric value="Bonifico" label="istantaneo, come ti paghiamo" />
       </div>
 
       {/* perché */}
@@ -99,6 +102,16 @@ export default async function DiventaAffiliato() {
               <p className="mt-2 text-sm text-muted">{p.body}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* commissione per piano */}
+      <div>
+        <h2 className="mb-1 text-center font-display text-2xl font-extrabold">Quanto guadagni, per piano</h2>
+        <p className="mb-5 text-center text-sm text-muted">Su ogni pagamento del cliente, per i primi {months} mesi.</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PlanRate name="Piano Base" rate={pct(baseRate)} months={months} />
+          <PlanRate name="Piano Premium" rate={pct(premRate)} months={months} accent />
         </div>
       </div>
 
@@ -139,6 +152,16 @@ function Metric({ value, label }: { value: string; label: string }) {
     <div className="card p-5 text-center">
       <div className="font-display text-3xl font-extrabold text-brand">{value}</div>
       <div className="mt-1 text-xs font-medium text-muted">{label}</div>
+    </div>
+  )
+}
+
+function PlanRate({ name, rate, months, accent }: { name: string; rate: string; months: number; accent?: boolean }) {
+  return (
+    <div className={`card p-6 text-center ${accent ? 'border-brand/40 bg-brand-soft/40' : ''}`}>
+      <div className="text-sm font-semibold text-muted">{name}</div>
+      <div className="mt-1 font-display text-4xl font-extrabold text-brand">{rate}</div>
+      <div className="mt-1 text-xs text-muted">di commissione, per {months} mesi</div>
     </div>
   )
 }
