@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Image, BarChart3, Wallet, Package, ServerCog } from 'lucide-react'
+import { LayoutDashboard, Users, Image, BarChart3, Wallet, Package, SlidersHorizontal, ServerCog } from 'lucide-react'
 
 const TABS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const TABS = [
   { href: '/admin/usage', label: 'Consumo', icon: BarChart3 },
   { href: '/admin/revenue', label: 'Ricavi', icon: Wallet },
   { href: '/admin/packages', label: 'Pacchetti', icon: Package },
+  { href: '/admin/settings', label: 'Impostazioni', icon: SlidersHorizontal },
   { href: '/admin/system', label: 'Sistema', icon: ServerCog },
 ]
 

@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { getSettingsStatus } from '@/lib/settings'
 import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -7,13 +8,18 @@ const has = (v?: string | null) => !!(v && v.trim())
 
 export default async function SystemPage() {
   const sc = createServiceClient()
-  const [a, u, p, e, k] = await Promise.all([
+  const [a, u, p, e, k, st] = await Promise.all([
     sc.from('analyses').select('id', { count: 'exact', head: true }),
     sc.from('profiles').select('id', { count: 'exact', head: true }),
     sc.from('payments').select('id', { count: 'exact', head: true }),
     sc.from('entitlements').select('user_id', { count: 'exact', head: true }),
     sc.from('api_keys').select('id', { count: 'exact', head: true }).is('revoked_at', null),
+    getSettingsStatus(),
   ])
+
+  // Config runtime: DB (Impostazioni) ha priorità, poi env.
+  const src = (key: string) => (st[key] === 'db' ? 'da pannello' : st[key] === 'env' ? 'da env' : '')
+  const cfgOk = (key: string) => st[key] !== 'none'
 
   const checks = [
     { label: 'Supabase URL', ok: has(process.env.NEXT_PUBLIC_SUPABASE_URL), val: process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') },
@@ -21,10 +27,10 @@ export default async function SystemPage() {
     { label: 'Dominio app', ok: has(process.env.NEXT_PUBLIC_APP_URL), val: process.env.NEXT_PUBLIC_APP_URL },
     { label: 'AI premium (Claude)', ok: has(process.env.ANTHROPIC_API_KEY), val: process.env.ATTENTION_CLAUDE_MODEL || 'claude-opus-4-8' },
     { label: 'AI base (Qwen)', ok: has(process.env.DASHSCOPE_API_KEY), val: process.env.ATTENTION_QWEN_MODEL || 'qwen-vl-max' },
-    { label: 'Whop API key', ok: has(process.env.WHOP_API_KEY), warn: true },
-    { label: 'Whop webhook secret', ok: has(process.env.WHOP_WEBHOOK_SECRET), warn: true },
-    { label: 'Whop checkout base', ok: has(process.env.WHOP_CHECKOUT_BASE), warn: true },
-    { label: 'Storage R2', ok: has(process.env.R2_ACCESS_KEY_ID), warn: true, val: has(process.env.R2_ACCESS_KEY_ID) ? process.env.R2_BUCKET : 'inline data-URL' },
+    { label: 'Whop API key', ok: cfgOk('WHOP_API_KEY'), warn: true, val: src('WHOP_API_KEY') },
+    { label: 'Whop webhook secret', ok: cfgOk('WHOP_WEBHOOK_SECRET'), warn: true, val: src('WHOP_WEBHOOK_SECRET') },
+    { label: 'Whop checkout base', ok: cfgOk('WHOP_CHECKOUT_BASE'), warn: true, val: src('WHOP_CHECKOUT_BASE') },
+    { label: 'Storage R2', ok: cfgOk('R2_ACCESS_KEY_ID'), warn: true, val: cfgOk('R2_ACCESS_KEY_ID') ? src('R2_ACCESS_KEY_ID') : 'inline data-URL' },
     { label: 'Superadmin', ok: has(process.env.SUPERADMIN_EMAILS), val: process.env.SUPERADMIN_EMAILS },
     { label: 'Quota trial/mese', ok: true, val: process.env.FOVEO_TRIAL_QUOTA || '3' },
   ]

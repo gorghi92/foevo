@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { getWhopConfig } from '@/lib/settings'
 import { createHmac, timingSafeEqual } from 'crypto'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function verify(raw: string, sig: string): boolean {
-  const secret = process.env.WHOP_WEBHOOK_SECRET
+function verify(raw: string, sig: string, secret: string): boolean {
   if (!secret) return false
   const expected = createHmac('sha256', secret).update(raw).digest('hex')
   try { return timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) } catch { return false }
@@ -15,7 +15,8 @@ function verify(raw: string, sig: string): boolean {
 export async function POST(req: Request) {
   const raw = await req.text()
   const sig = req.headers.get('x-whop-signature') ?? ''
-  if (!verify(raw, sig)) return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+  const { webhookSecret } = await getWhopConfig()
+  if (!verify(raw, sig, webhookSecret)) return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
 
   let payload: any
   try { payload = JSON.parse(raw) } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }

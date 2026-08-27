@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/server'
-import { Users, Image, BarChart3, Wallet, Package, ServerCog, ArrowRight } from 'lucide-react'
+import { Users, Image, BarChart3, Wallet, Package, SlidersHorizontal, ServerCog, ArrowRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,8 +63,9 @@ export default async function AdminOverview() {
     { href: '/admin/analyses', label: 'Analisi', desc: 'Tutte le analisi, filtri e ricerca', icon: Image },
     { href: '/admin/usage', label: 'Consumo', desc: 'Costo AI e token per utente', icon: BarChart3 },
     { href: '/admin/revenue', label: 'Ricavi', desc: 'MRR, rinnovi, disiscritti', icon: Wallet },
-    { href: '/admin/packages', label: 'Pacchetti', desc: 'Piani e diritti utente', icon: Package },
-    { href: '/admin/system', label: 'Sistema', desc: 'Diagnostica e configurazione', icon: ServerCog },
+    { href: '/admin/packages', label: 'Pacchetti', desc: 'Piani, prezzi e Plan ID Whop', icon: Package },
+    { href: '/admin/settings', label: 'Impostazioni', desc: 'Configura Whop e lo storage', icon: SlidersHorizontal },
+    { href: '/admin/system', label: 'Sistema', desc: 'Diagnostica e stato config', icon: ServerCog },
   ]
 
   return (

@@ -1,5 +1,6 @@
 import { createClient, getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
+import { getWhopConfig } from '@/lib/settings'
 import { Check, Download } from 'lucide-react'
 import { DowngradeButton } from './billing-actions'
 
@@ -17,9 +18,9 @@ export default async function BillingPage() {
     supabase.from('payments').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(50),
   ])
 
-  const checkoutBase = process.env.WHOP_CHECKOUT_BASE || ''
+  const { checkoutBase } = await getWhopConfig()
   const checkoutUrl = (planId: string | null) =>
-    planId && checkoutBase ? `${checkoutBase.replace(/\/$/, '')}/${planId}?email=${encodeURIComponent(user!.email || '')}` : null
+    planId && checkoutBase ? `${checkoutBase}/${planId}?email=${encodeURIComponent(user!.email || '')}` : null
 
   return (
     <div className="mx-auto max-w-4xl">

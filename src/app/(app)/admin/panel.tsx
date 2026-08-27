@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 type Pkg = { id?: string; name: string; slug: string; tier: string; monthly_quota: number; unlimited: boolean; whop_plan_id: string | null; price_monthly: number; features: string[]; active: boolean; order_index: number }
 const EMPTY: Pkg = { name: '', slug: '', tier: 'base', monthly_quota: 30, unlimited: false, whop_plan_id: '', price_monthly: 0, features: [], active: true, order_index: 0 }
@@ -29,15 +30,14 @@ export default function AdminPanel({ packages, entitlements, stats }: { packages
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-bold">Superadmin</h1>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {[['Analisi', stats.total], ['Mese', stats.month], ['Completate', stats.done], ['Errori', stats.error], ['Abbonamenti', stats.activeEntitlements]].map(([l, v]) => (
-          <div key={l as string} className="card p-4 text-center"><div className="font-display text-2xl font-extrabold">{v as number}</div><div className="text-xs text-muted">{l as string}</div></div>
-        ))}
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold">Pacchetti</h2>
+          <p className="text-sm text-muted">Ogni pacchetto attivo ha bisogno del suo <strong>Whop plan ID</strong> per essere acquistabile.</p>
+        </div>
+        <Link href="/admin/settings" className="btn btn-ghost">Configura Whop</Link>
       </div>
-
-      <h2 className="mt-8 text-lg font-bold">Pacchetti</h2>
       <div className="mt-3 grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">

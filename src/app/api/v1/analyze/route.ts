@@ -1,4 +1,5 @@
 import { withKey } from '@/server/api-key'
+import { getSettings } from '@/lib/settings'
 import { r2Configured, r2Put, r2PublicUrl } from '@/lib/r2'
 import { runEngine, providerAvailable, type Tier } from '@/lib/attention/engine'
 import { resolveEntitlement, monthlyUsage, createAnalysis, attachScreenshot, completeAnalysis, failAnalysis } from '@/server/store'
@@ -71,6 +72,7 @@ export async function POST(req: Request): Promise<Response> {
 
     let screenshotUrl = body.screenshot
     try {
+      await getSettings() // allinea la config storage (DB → r2.ts) prima dell'upload
       if (r2Configured()) {
         const m = body.screenshot.match(/^data:(image\/[a-z]+);base64,(.*)$/i)
         if (m) {
