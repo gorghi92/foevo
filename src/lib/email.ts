@@ -24,53 +24,89 @@ export async function emailConfigured(): Promise<boolean> {
 }
 
 const CORAL = '#e5502e'
-
-function shell(title: string, bodyHtml: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1c1917">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7;padding:32px 16px">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:460px;background:#fff;border:1px solid #e9e5e1;border-radius:16px;overflow:hidden">
-        <tr><td style="padding:26px 28px 0">
-          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td style="width:30px"><div style="width:26px;height:26px;border-radius:8px;background:radial-gradient(circle at 50% 42%, #ff5a3c 0%, #ffb020 42%, #6d28d9 66%)"></div></td>
-            <td style="padding-left:10px;font-size:17px;font-weight:800;letter-spacing:-.2px">Foveo</td>
-          </tr></table>
-        </td></tr>
-        <tr><td style="padding:20px 28px 28px">
-          <h1 style="margin:0 0 10px;font-size:20px;font-weight:800">${title}</h1>
-          ${bodyHtml}
-        </td></tr>
-      </table>
-      <div style="max-width:460px;margin-top:16px;font-size:12px;color:#78716c;text-align:center">Foveo · Attention heatmaps &amp; AI conversion analysis</div>
-    </td></tr>
-  </table></body></html>`
-}
-
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL || 'https://foevo.app').replace(/\/$/, '')
 
-function ctaButton(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block;background:${CORAL};color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 22px;border-radius:12px">${label}</a>`
+/** Guscio email responsive, table-based, con header brandizzato, CTA e footer. */
+function shell(opts: { title: string; preheader?: string; body: string }): string {
+  const { title, preheader = '', body } = opts
+  return `<!doctype html>
+<html lang="it" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light">
+<title>${title}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f2ef;-webkit-font-smoothing:antialiased;font-family:${FONT};color:#1c1917">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#f4f2ef">${preheader}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f2ef">
+  <tr><td align="center" style="padding:32px 16px">
+    <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="width:480px;max-width:480px;background:#ffffff;border:1px solid #ece8e3;border-radius:18px;overflow:hidden">
+      <!-- header -->
+      <tr><td style="padding:22px 30px;border-bottom:1px solid #f2eee9">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="vertical-align:middle">
+            <div style="width:30px;height:30px;border-radius:9px;background-color:#ff5a3c;background-image:radial-gradient(circle at 50% 40%, #ff5a3c 0%, #ffb020 45%, #6d28d9 78%)"></div>
+          </td>
+          <td style="vertical-align:middle;padding-left:11px;font-size:18px;font-weight:800;letter-spacing:-.3px;color:#1c1917">Foveo</td>
+        </tr></table>
+      </td></tr>
+      <!-- body -->
+      <tr><td style="padding:30px 30px 28px">
+        <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;font-weight:800;color:#1c1917">${title}</h1>
+        ${body}
+      </td></tr>
+      <!-- footer -->
+      <tr><td style="padding:0 30px 26px">
+        <div style="border-top:1px solid #f2eee9;padding-top:18px;font-size:12px;line-height:1.6;color:#a8a29e">
+          <strong style="color:#78716c">Foveo</strong> — Attention heatmaps &amp; AI conversion analysis<br>
+          <a href="${appUrl()}" style="color:${CORAL};text-decoration:none">foevo.app</a>
+        </div>
+      </td></tr>
+    </table>
+    <div style="width:480px;max-width:480px;margin-top:14px;font-size:11px;line-height:1.5;color:#b8b2ab;text-align:center">
+      Ricevi questa email perché hai un account Foveo.
+    </div>
+  </td></tr>
+</table>
+</body></html>`
 }
 
+/** Pulsante "bulletproof" (renderizza bene anche su Outlook). */
+function ctaButton(href: string, label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 2px">
+    <tr><td align="center" bgcolor="${CORAL}" style="border-radius:12px">
+      <a href="${href}" target="_blank" style="display:inline-block;padding:13px 28px;font-family:${FONT};font-size:15px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;border-radius:12px">${label} &nbsp;&rarr;</a>
+    </td></tr>
+  </table>`
+}
+
+const P = 'margin:0 0 16px;font-size:15px;line-height:1.6;color:#57534e'
+const SMALL = 'margin:18px 0 0;font-size:12px;line-height:1.6;color:#a8a29e'
+
 export function orderConfirmationEmail(d: { planName: string; amount: string; date: string }): { subject: string; html: string } {
+  const row = (l: string, v: string, top = true) =>
+    `<tr><td style="padding:13px 16px;${top ? 'border-top:1px solid #f2eee9;' : ''}font-size:13px;color:#78716c">${l}</td><td style="padding:13px 16px;${top ? 'border-top:1px solid #f2eee9;' : ''}font-size:13px;font-weight:700;color:#1c1917;text-align:right">${v}</td></tr>`
   const body = `
-    <p style="margin:0 0 16px;font-size:14px;color:#57534e;line-height:1.5">Grazie! Il tuo pagamento è andato a buon fine e il tuo piano è attivo.</p>
-    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e9e5e1;border-radius:12px;margin:0 0 18px">
-      <tr><td style="padding:12px 14px;font-size:13px;color:#78716c">Piano</td><td style="padding:12px 14px;font-size:13px;font-weight:700;text-align:right">${d.planName}</td></tr>
-      <tr><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;color:#78716c">Importo</td><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;font-weight:700;text-align:right">${d.amount}</td></tr>
-      <tr><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;color:#78716c">Data</td><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;font-weight:700;text-align:right">${d.date}</td></tr>
+    <p style="${P}">Grazie! Il pagamento è andato a buon fine e il tuo piano è <strong style="color:#16a34a">attivo</strong>. Puoi iniziare subito.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;overflow:hidden;margin:0 0 22px;background:#fdfcfb">
+      ${row('Piano', d.planName, false)}
+      ${row('Importo', d.amount)}
+      ${row('Data', d.date)}
     </table>
     ${ctaButton(`${appUrl()}/dashboard`, 'Vai alla dashboard')}
-    <p style="margin:18px 0 0;font-size:12px;color:#a8a29e">Trovi lo storico pagamenti e le fatture nella sezione Piano del tuo account.</p>`
-  return { subject: 'Conferma acquisto — Foveo', html: shell('Grazie per l’acquisto', body) }
+    <p style="${SMALL}">Trovi lo storico pagamenti e le fatture nella sezione <a href="${appUrl()}/billing" style="color:${CORAL};text-decoration:none">Piano</a> del tuo account.</p>`
+  return { subject: 'Il tuo piano Foveo è attivo 🎉', html: shell({ title: 'Grazie per l’acquisto', preheader: 'Pagamento confermato: il tuo piano Foveo è attivo.', body }) }
 }
 
 export function cancellationEmail(d: { until?: string | null }): { subject: string; html: string } {
   const body = `
-    <p style="margin:0 0 16px;font-size:14px;color:#57534e;line-height:1.5">Abbiamo registrato la richiesta di annullamento del tuo abbonamento.${d.until ? ` Resterà <b>attivo fino al ${d.until}</b>, poi non verrà più rinnovato.` : ' Non verrà più rinnovato.'}</p>
-    <p style="margin:0 0 18px;font-size:14px;color:#57534e;line-height:1.5">Puoi continuare a usare Foveo fino alla scadenza. Se cambi idea, puoi riattivarlo quando vuoi.</p>
+    <p style="${P}">Abbiamo registrato la richiesta di annullamento del tuo abbonamento.${d.until ? ` Resterà <strong style="color:#1c1917">attivo fino al ${d.until}</strong>, poi non verrà più rinnovato.` : ' Non verrà più rinnovato.'}</p>
+    <p style="${P}">Puoi continuare a usare Foveo fino alla scadenza. Se cambi idea, puoi riattivarlo quando vuoi dalla sezione Piano.</p>
     ${ctaButton(`${appUrl()}/billing`, 'Gestisci il piano')}`
-  return { subject: 'Abbonamento annullato — Foveo', html: shell('Abbonamento annullato', body) }
+  return { subject: 'Abbonamento annullato — Foveo', html: shell({ title: 'Abbonamento annullato', preheader: d.until ? `Attivo fino al ${d.until}.` : 'Non verrà più rinnovato.', body }) }
 }
 
 /**
@@ -93,9 +129,9 @@ export async function sendReceiptOnce(
 
 export function magicLinkEmail(link: string): { subject: string; html: string } {
   const body = `
-    <p style="margin:0 0 18px;font-size:14px;color:#57534e;line-height:1.5">Ciao! Usa il pulsante qui sotto per accedere al tuo account Foveo. Il link scade a breve e può essere usato una sola volta.</p>
-    <a href="${link}" style="display:inline-block;background:${CORAL};color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 22px;border-radius:12px">Accedi a Foveo</a>
-    <p style="margin:18px 0 0;font-size:12px;color:#a8a29e;line-height:1.5">Se il pulsante non funziona, copia e incolla questo indirizzo nel browser:<br><span style="color:#78716c;word-break:break-all">${link}</span></p>
-    <p style="margin:16px 0 0;font-size:12px;color:#a8a29e">Se non hai richiesto tu l'accesso, ignora questa email.</p>`
-  return { subject: 'Il tuo link di accesso a Foveo', html: shell('Il tuo link di accesso', body) }
+    <p style="${P}">Usa il pulsante qui sotto per accedere al tuo account Foveo. Il link scade a breve e può essere usato una sola volta.</p>
+    ${ctaButton(link, 'Accedi a Foveo')}
+    <p style="${SMALL}">Se il pulsante non funziona, copia e incolla questo indirizzo nel browser:<br><span style="color:#78716c;word-break:break-all">${link}</span></p>
+    <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a8a29e">Se non hai richiesto tu l'accesso, ignora questa email.</p>`
+  return { subject: 'Il tuo link di accesso a Foveo', html: shell({ title: 'Il tuo link di accesso', preheader: 'Accedi al tuo account Foveo con un click.', body }) }
 }
