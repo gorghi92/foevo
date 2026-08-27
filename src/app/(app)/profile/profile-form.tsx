@@ -110,10 +110,11 @@ export function ProfileForm({ email, initial }: { email: string; initial: Billin
               className="input mt-1 text-center text-xl font-bold tracking-[0.5em]"
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
               placeholder="000000"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              /* niente maxLength: altrimenti un incolla con spazi verrebbe
+                 troncato prima di essere ripulito */
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               autoFocus
             />
           </>

@@ -128,12 +128,11 @@ export async function sendReceiptOnce(
 }
 
 export function extensionOtpEmail(code: string): { subject: string; html: string } {
-  const spaced = code.split('').join('&nbsp;&nbsp;')
   const body = `
     <p style="${P}">Ecco il codice per collegare l’estensione Foveo al tuo account. Scade tra <b style="color:#1c1917">10 minuti</b>.</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;background:#fdfcfb;margin:0 0 20px">
       <tr><td align="center" style="padding:22px 16px">
-        <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:6px;color:${CORAL}">${spaced}</div>
+        <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:10px;text-indent:10px;color:${CORAL}">${code}</div>
       </td></tr>
     </table>
     <p style="${SMALL}">Inseriscilo nella finestra dell’estensione per completare l’accesso. Il codice funziona una sola volta.</p>
@@ -142,12 +141,11 @@ export function extensionOtpEmail(code: string): { subject: string; html: string
 }
 
 export function emailChangeOtpEmail(code: string, newEmail: string): { subject: string; html: string } {
-  const spaced = code.split('').join('&nbsp;&nbsp;')
   const body = `
     <p style="${P}">Hai chiesto di usare <b style="color:#1c1917">${newEmail}</b> come nuova email di accesso a Foveo. Conferma con questo codice, valido <b style="color:#1c1917">10 minuti</b>.</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;background:#fdfcfb;margin:0 0 20px">
       <tr><td align="center" style="padding:22px 16px">
-        <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:6px;color:${CORAL}">${spaced}</div>
+        <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:10px;text-indent:10px;color:${CORAL}">${code}</div>
       </td></tr>
     </table>
     <p style="${SMALL}">Il cambio diventa effettivo solo dopo aver inserito il codice nella pagina Profilo.</p>

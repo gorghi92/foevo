@@ -79,6 +79,7 @@ function saveMsg(text, error) {
 /* Login in due passi, senza password: chiediamo un codice via email e lo
  * verifichiamo. L'app risponde con la API key del device. */
 let otpStep = 'email'
+let running = false
 
 function resetOtp() {
   otpStep = 'email'
@@ -157,8 +158,12 @@ els.saveBtn.addEventListener('click', async () => {
   }
 })
 
-// Invio con Enter dal campo del codice
+// Campo codice: accetta solo cifre e tollera l'incolla con spazi o separatori.
 if (els.code) {
+  els.code.addEventListener('input', () => {
+    const clean = (els.code.value || '').replace(/\D/g, '').slice(0, 6)
+    if (els.code.value !== clean) els.code.value = clean
+  })
   els.code.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.saveBtn.click() })
 }
 
@@ -173,6 +178,7 @@ els.analyzeBtn.addEventListener('click', async () => {
     setError('Apri una pagina web (http/https) da analizzare.'); return
   }
 
+  running = true
   busy(true); setStatus('Cattura della pagina…')
   try {
     const res = await chrome.runtime.sendMessage({
@@ -188,13 +194,16 @@ els.analyzeBtn.addEventListener('click', async () => {
   } catch (e) {
     setError(String(e.message || e))
   } finally {
+    running = false
     busy(false); setStatus(null)
   }
 })
 
-// live progress from background
+/* Avanzamento dal background: lo mostriamo solo se l'analisi è stata avviata da
+ * questo popup. Altrimenti, riaprendo il popup, si vedrebbe "Cattura in corso"
+ * per un'analisi che l'utente non ha lanciato in questa sessione. */
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.type === 'PROGRESS') setStatus(msg.text)
+  if (msg?.type === 'PROGRESS' && running) setStatus(msg.text)
 })
 
 refreshLinks()
