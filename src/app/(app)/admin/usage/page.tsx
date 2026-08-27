@@ -1,6 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 
@@ -96,13 +94,8 @@ export default async function UsagePage() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="flex items-center gap-3">
-        <Link href="/admin" className="btn btn-ghost"><ArrowLeft size={15} /> Superadmin</Link>
-        <h1 className="text-lg font-bold">Consumo &amp; costi</h1>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="Ricavo ricorrente (MRR)" value={eur(mrrCents)} sub="piani attivi" />
         <Card label="Costo AI questo mese" value={usd2(monthCost)} sub={`${num(monthAnalyses)} analisi`} />
         <Card label="Margine mese (stima)" value={`€${(mrrCents / 100 - monthCost).toFixed(2)}`} sub="MRR € − costo $ (≈ parità)" />

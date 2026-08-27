@@ -1,23 +1,21 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { getUser } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
-import { LayoutGrid, KeyRound, CreditCard, Shield, BarChart3, Wallet, LogOut } from 'lucide-react'
+import { LayoutGrid, CreditCard, Shield, LogOut } from 'lucide-react'
+import { ImpersonationBanner } from './impersonation-banner'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser()
   if (!user) redirect('/login')
   const admin = isSuperadmin(user.email)
+  const impersonating = cookies().get('imp_active')?.value || null
 
   const nav = [
     { href: '/dashboard', label: 'Analisi', icon: LayoutGrid },
-    { href: '/settings/api-keys', label: 'API key', icon: KeyRound },
     { href: '/billing', label: 'Piano', icon: CreditCard },
-    ...(admin ? [
-      { href: '/admin', label: 'Superadmin', icon: Shield },
-      { href: '/admin/usage', label: 'Consumo', icon: BarChart3 },
-      { href: '/admin/revenue', label: 'Ricavi', icon: Wallet },
-    ] : []),
+    ...(admin ? [{ href: '/admin', label: 'Superadmin', icon: Shield }] : []),
   ]
 
   return (
@@ -43,7 +41,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </aside>
-      <main className="min-w-0 flex-1 px-5 py-6 md:px-8 md:py-8">{children}</main>
+      <main className="min-w-0 flex-1">
+        {impersonating && <ImpersonationBanner email={impersonating} />}
+        <div className="px-5 py-6 md:px-8 md:py-8">{children}</div>
+      </main>
     </div>
   )
 }

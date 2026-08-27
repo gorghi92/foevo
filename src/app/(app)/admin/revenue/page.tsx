@@ -1,6 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { RevenueLive } from './revenue-live'
@@ -57,14 +55,10 @@ export default async function RevenuePage() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/admin" className="btn btn-ghost"><ArrowLeft size={15} /> Superadmin</Link>
-        <h1 className="text-lg font-bold">Ricavi</h1>
-        <span className="ml-auto"><RevenueLive /></span>
-      </div>
+    <div>
+      <div className="mb-4 flex items-center justify-end"><RevenueLive /></div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="MRR (IVA escl.)" value={eur(mrr)} sub={`${active.length} abbonamenti attivi`} />
         <Card label="Incassato questo mese" value={eur(revMonth)} sub="IVA inclusa (Whop)" />
         <Card label="Incassato totale" value={eur(revTotal)} sub={`${paid.length} pagamenti`} />

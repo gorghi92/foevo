@@ -1,7 +1,6 @@
-import Link from 'next/link'
 import { createClient, getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
-import { KeyRound, Chrome } from 'lucide-react'
+import { Chrome } from 'lucide-react'
 import AnalysesGrid from './grid'
 
 export const dynamic = 'force-dynamic'
@@ -28,15 +27,14 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2.5">
-          <Link href="/settings/api-keys" className="btn btn-ghost"><KeyRound size={15} /> API key</Link>
-          <a href="/extension/foveo-attention.zip" download className="btn btn-primary"><Chrome size={15} /> Estensione</a>
+          <a href="/extension/foveo-attention.zip" download className="btn btn-primary"><Chrome size={15} /> Scarica estensione</a>
         </div>
       </div>
 
       <div className="card mb-6 p-5">
         <p className="text-sm font-semibold">Come iniziare</p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
-          <li>Crea una <Link href="/settings/api-keys" className="text-brand">API key</Link> e installala nell’estensione.</li>
+          <li>Installa l’estensione e <b>accedi con la tua email</b> dalle impostazioni (⚙).</li>
           <li>Apri una landing o scheda prodotto e premi <b>Analizza</b>.</li>
           <li>La heatmap e il report compaiono qui.</li>
         </ol>

@@ -17,7 +17,7 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  'Installa l’estensione Chrome e incolla la tua API key.',
+  'Installa l’estensione Chrome e accedi con la tua email.',
   'Apri una landing o scheda prodotto e premi "Analizza".',
   'Ricevi heatmap + report azionabile nella tua dashboard.',
 ]

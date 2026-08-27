@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       </ul>
 
       <h2 className="mt-8 text-xl font-bold">Dati salvati sul dispositivo</h2>
-      <p className="mt-2 text-muted">Endpoint e API key sono salvati in <code>chrome.storage</code> e lasciano il browser solo come header <code>Authorization</code> verso l’endpoint Foveo che hai configurato.</p>
+      <p className="mt-2 text-muted">Endpoint e credenziali di sessione sono salvati in <code>chrome.storage</code> e lasciano il browser solo come header <code>Authorization</code> verso l’endpoint Foveo che hai configurato.</p>
 
       <h2 className="mt-8 text-xl font-bold">Dove vanno i dati</h2>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-muted">
