@@ -88,6 +88,16 @@ export function RatesPanel({ init }: { init: { basePct: number; premiumPct: numb
   const [f, setF] = useState(init)
   // Riallinea ai valori del server dopo un router.refresh() (post-salvataggio).
   useEffect(() => { setF(init) }, [init.basePct, init.premiumPct, init.minEur, init.months])
+  // Al montaggio legge SEMPRE i valori vivi dal DB (bypassa la cache del router
+  // di Next: navigando tra le schede potrebbe servire una copia vecchia).
+  useEffect(() => {
+    let alive = true
+    fetch('/api/admin/affiliate/rates', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((live) => { if (alive && live && typeof live.basePct === 'number') setF(live) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
   const set = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: Number(v) }))
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')

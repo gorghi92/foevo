@@ -2,8 +2,22 @@ import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { clearSettingsCache } from '@/lib/settings'
+import { getAffiliateRules } from '@/lib/affiliate/commission'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+/** Valori correnti, sempre freschi dal DB: usato dal form per non mostrare mai
+ *  una copia in cache del router/Next. */
+export async function GET() {
+  const user = await getUser()
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  const r = await getAffiliateRules(true)
+  return NextResponse.json({
+    basePct: r.baseBps / 100, premiumPct: r.premiumBps / 100,
+    minEur: r.minPayoutCents / 100, months: r.commissionMonths,
+  }, { headers: { 'Cache-Control': 'no-store' } })
+}
 
 const bps = (pct: unknown) => Math.max(0, Math.min(10000, Math.round(Number(pct) * 100)))
 const cents = (eur: unknown) => Math.max(0, Math.round(Number(eur) * 100))
