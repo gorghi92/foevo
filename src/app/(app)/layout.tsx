@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { getUser } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
-import { LayoutGrid, CreditCard, Shield, LogOut } from 'lucide-react'
+import { LayoutGrid, CreditCard, User, Shield, LogOut } from 'lucide-react'
 import { ImpersonationBanner } from './impersonation-banner'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const nav = [
     { href: '/dashboard', label: 'Analisi', icon: LayoutGrid },
     { href: '/billing', label: 'Piano', icon: CreditCard },
+    { href: '/profile', label: 'Profilo', icon: User },
     ...(admin ? [{ href: '/admin', label: 'Superadmin', icon: Shield }] : []),
   ]
 

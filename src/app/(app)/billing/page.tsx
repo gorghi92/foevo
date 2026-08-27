@@ -1,7 +1,7 @@
 import { createClient, getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
 import { Download } from 'lucide-react'
-import { DowngradeButton } from './billing-actions'
+import { DowngradeButton, CancelButton } from './billing-actions'
 import { Checkout } from './checkout'
 
 export const dynamic = 'force-dynamic'
@@ -11,13 +11,18 @@ const money = (cents: number, cur = 'EUR') => `${cur === 'EUR' ? '€' : cur + '
 export default async function BillingPage() {
   const user = await getUser()
   const supabase = createClient()
-  const [{ data: packages }, ent, used, { data: payments }, { data: profile }] = await Promise.all([
+  const [{ data: packages }, ent, used, { data: payments }, { data: profile }, { data: entRow }] = await Promise.all([
     supabase.from('packages').select('*').eq('active', true).order('order_index'),
     resolveEntitlement(user!.id),
     monthlyUsage(user!.id),
     supabase.from('payments').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(50),
     supabase.from('profiles').select('full_name').eq('id', user!.id).maybeSingle(),
+    supabase.from('entitlements').select('current_period_end, cancel_at_period_end, source').eq('user_id', user!.id).maybeSingle(),
   ])
+
+  const isWhop = entRow?.source === 'whop'
+  const canceling = !!entRow?.cancel_at_period_end
+  const renewal = entRow?.current_period_end ? new Date(entRow.current_period_end).toLocaleDateString('it-IT') : null
 
   const pkgs = (packages ?? []).map((p: any) => ({
     id: p.id, name: p.name, tier: p.tier, slug: p.slug,
@@ -32,10 +37,17 @@ export default async function BillingPage() {
         <div>
           <div className="font-semibold">Piano attuale: {ent.tier === 'premium' ? 'Premium' : 'Base'}{ent.source === 'trial' ? ' (prova)' : ''}</div>
           <div className="text-sm text-muted">Uso questo mese: {used} / {ent.unlimited ? '∞' : ent.quota} · pagamenti gestiti da Whop</div>
+          {canceling && renewal && (
+            <div className="mt-1 text-sm font-medium text-amber-600">Abbonamento annullato — attivo fino al {renewal}, poi non verrà rinnovato.</div>
+          )}
+          {!canceling && isWhop && renewal && (
+            <div className="mt-1 text-xs text-muted">Prossimo rinnovo: {renewal}</div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-md border border-line px-2.5 py-1 text-xs font-semibold">{ent.status}</span>
-          {ent.tier === 'premium' && <DowngradeButton isWhop={ent.source === 'whop'} />}
+          {ent.tier === 'premium' && <DowngradeButton isWhop={isWhop} />}
+          {isWhop && !canceling && <CancelButton />}
         </div>
       </div>
 
