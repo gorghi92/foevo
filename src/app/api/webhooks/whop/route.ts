@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
+import { sendReceiptOnce } from '@/lib/email'
 import { createHmac, timingSafeEqual } from 'crypto'
 
 export const runtime = 'nodejs'
@@ -99,6 +100,13 @@ export async function POST(req: Request) {
       plan, description: data?.plan_name ?? data?.product ?? 'Abbonamento Foevo',
       created_at: data?.created_at ? new Date(Number(data.created_at) * 1000).toISOString() : new Date().toISOString(),
     }, { onConflict: 'whop_payment_id' })
+
+    if (email) await sendReceiptOnce(sc, {
+      whopPaymentId: data?.id, to: email,
+      planName: String(data?.plan_name ?? data?.product ?? 'Abbonamento Foevo'),
+      amount: `${String(data?.currency || 'EUR').toUpperCase()} ${(cents / 100).toFixed(2)}`,
+      date: new Date(data?.created_at ? Number(data.created_at) * 1000 : Date.now()).toLocaleDateString('it-IT'),
+    })
     return NextResponse.json({ ok: true })
   }
 

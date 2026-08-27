@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
+import { sendReceiptOnce } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -97,6 +98,13 @@ export async function POST(req: Request) {
                 description: 'Abbonamento Foevo',
                 created_at: pay?.paid_at ? new Date(Number(pay.paid_at) * 1000).toISOString() : new Date().toISOString(),
               }, { onConflict: 'whop_payment_id' })
+
+              await sendReceiptOnce(sc, {
+                whopPaymentId: pay?.id ?? paymentId, to: finalEmail,
+                planName: (pkg as any)?.tier ? ((pkg as any).tier === 'premium' ? 'Premium' : 'Base') : 'Abbonamento Foevo',
+                amount: `${String(pay?.currency || 'eur').toUpperCase()} ${(cents / 100).toFixed(2)}`,
+                date: new Date(pay?.paid_at ? Number(pay.paid_at) * 1000 : Date.now()).toLocaleDateString('it-IT'),
+              })
 
               if (await openSession(finalEmail)) { jar.delete('fv_signup'); return NextResponse.json({ status: 'ok' }) }
             }

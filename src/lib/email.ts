@@ -46,6 +46,51 @@ function shell(title: string, bodyHtml: string): string {
   </table></body></html>`
 }
 
+const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL || 'https://foevo.app').replace(/\/$/, '')
+
+function ctaButton(href: string, label: string): string {
+  return `<a href="${href}" style="display:inline-block;background:${CORAL};color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 22px;border-radius:12px">${label}</a>`
+}
+
+export function orderConfirmationEmail(d: { planName: string; amount: string; date: string }): { subject: string; html: string } {
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#57534e;line-height:1.5">Grazie! Il tuo pagamento è andato a buon fine e il tuo piano è attivo.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e9e5e1;border-radius:12px;margin:0 0 18px">
+      <tr><td style="padding:12px 14px;font-size:13px;color:#78716c">Piano</td><td style="padding:12px 14px;font-size:13px;font-weight:700;text-align:right">${d.planName}</td></tr>
+      <tr><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;color:#78716c">Importo</td><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;font-weight:700;text-align:right">${d.amount}</td></tr>
+      <tr><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;color:#78716c">Data</td><td style="padding:12px 14px;border-top:1px solid #f0ece8;font-size:13px;font-weight:700;text-align:right">${d.date}</td></tr>
+    </table>
+    ${ctaButton(`${appUrl()}/dashboard`, 'Vai alla dashboard')}
+    <p style="margin:18px 0 0;font-size:12px;color:#a8a29e">Trovi lo storico pagamenti e le fatture nella sezione Piano del tuo account.</p>`
+  return { subject: 'Conferma acquisto — Foveo', html: shell('Grazie per l’acquisto', body) }
+}
+
+export function cancellationEmail(d: { until?: string | null }): { subject: string; html: string } {
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;color:#57534e;line-height:1.5">Abbiamo registrato la richiesta di annullamento del tuo abbonamento.${d.until ? ` Resterà <b>attivo fino al ${d.until}</b>, poi non verrà più rinnovato.` : ' Non verrà più rinnovato.'}</p>
+    <p style="margin:0 0 18px;font-size:14px;color:#57534e;line-height:1.5">Puoi continuare a usare Foveo fino alla scadenza. Se cambi idea, puoi riattivarlo quando vuoi.</p>
+    ${ctaButton(`${appUrl()}/billing`, 'Gestisci il piano')}`
+  return { subject: 'Abbonamento annullato — Foveo', html: shell('Abbonamento annullato', body) }
+}
+
+/**
+ * Invia la conferma d'acquisto UNA SOLA VOLTA per pagamento (dedup atomico sul
+ * flag receipt_sent). `sc` è il service client Supabase.
+ */
+export async function sendReceiptOnce(
+  sc: { from: (t: string) => any },
+  d: { whopPaymentId?: string | null; to: string; planName: string; amount: string; date: string },
+): Promise<void> {
+  if (!d.whopPaymentId || !d.to) return
+  const { data } = await sc.from('payments')
+    .update({ receipt_sent: true })
+    .eq('whop_payment_id', d.whopPaymentId).eq('receipt_sent', false)
+    .select('id')
+  if (!data || data.length === 0) return // già inviata o pagamento non presente
+  const { subject, html } = orderConfirmationEmail({ planName: d.planName, amount: d.amount, date: d.date })
+  await sendEmail({ to: d.to, subject, html })
+}
+
 export function magicLinkEmail(link: string): { subject: string; html: string } {
   const body = `
     <p style="margin:0 0 18px;font-size:14px;color:#57534e;line-height:1.5">Ciao! Usa il pulsante qui sotto per accedere al tuo account Foveo. Il link scade a breve e può essere usato una sola volta.</p>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
+import { sendEmail, cancellationEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -11,7 +12,7 @@ export async function POST() {
 
   const sc = createServiceClient()
   const { data: ent } = await sc.from('entitlements')
-    .select('whop_membership_id, source, status').eq('user_id', user.id).maybeSingle()
+    .select('whop_membership_id, source, status, current_period_end').eq('user_id', user.id).maybeSingle()
   if (!ent || ent.source !== 'whop' || !ent.whop_membership_id) {
     return NextResponse.json({ error: 'Nessun abbonamento Whop da annullare' }, { status: 400 })
   }
@@ -35,5 +36,12 @@ export async function POST() {
   if (!ok) return NextResponse.json({ error: `Impossibile annullare su Whop (${lastErr})` }, { status: 502 })
 
   await sc.from('entitlements').update({ cancel_at_period_end: true, updated_at: new Date().toISOString() }).eq('user_id', user.id)
+
+  // Email brandizzata di conferma annullamento (best-effort).
+  if (user.email) {
+    const until = ent.current_period_end ? new Date(ent.current_period_end as string).toLocaleDateString('it-IT') : null
+    const { subject, html } = cancellationEmail({ until })
+    await sendEmail({ to: user.email, subject, html })
+  }
   return NextResponse.json({ ok: true })
 }
