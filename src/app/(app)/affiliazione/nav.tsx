@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, Wallet, SlidersHorizontal } from 'lucide-react'
 
 const SUB = [
-  { href: '/admin/affiliates', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/admin/affiliates/lista', label: 'Affiliati', icon: Users },
-  { href: '/admin/affiliates/pagamenti', label: 'Pagamenti', icon: Wallet },
-  { href: '/admin/affiliates/impostazioni', label: 'Impostazioni', icon: SlidersHorizontal },
+  { href: '/affiliazione', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/affiliazione/lista', label: 'Affiliati', icon: Users },
+  { href: '/affiliazione/pagamenti', label: 'Pagamenti', icon: Wallet },
+  { href: '/affiliazione/impostazioni', label: 'Impostazioni', icon: SlidersHorizontal },
 ]
 
-// True per la scheda dettaglio /admin/affiliates/<uuid> (che sta sotto "Affiliati").
-const DETAIL = /^\/admin\/affiliates\/[0-9a-fA-F-]{20,}$/
+// True per la scheda dettaglio /affiliazione/<uuid> (che sta sotto "Affiliati").
+const DETAIL = /^\/affiliazione\/[0-9a-fA-F-]{20,}$/
 
 export function AffiliateAdminNav({ alertCount = 0 }: { alertCount?: number }) {
   const path = usePathname()
@@ -21,10 +21,10 @@ export function AffiliateAdminNav({ alertCount = 0 }: { alertCount?: number }) {
       {SUB.map((s) => {
         const active = s.exact
           ? path === s.href
-          : s.href === '/admin/affiliates/lista'
+          : s.href === '/affiliazione/lista'
             ? path.startsWith(s.href) || DETAIL.test(path)
             : path.startsWith(s.href)
-        const badge = s.href === '/admin/affiliates/pagamenti' && alertCount > 0
+        const badge = s.href === '/affiliazione/pagamenti' && alertCount > 0
         return (
           <Link key={s.href} href={s.href}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium ${active ? 'bg-brand text-brand-fg' : 'text-muted hover:bg-bg hover:text-ink'}`}>

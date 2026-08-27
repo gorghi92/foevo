@@ -188,7 +188,7 @@ export function AffiliatesTable({ rows }: { rows: Row[] }) {
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-line/60">
               <td className="p-3">
-                <Link href={`/admin/affiliates/${r.id}`} className="font-semibold text-brand hover:underline">{r.username}</Link>
+                <Link href={`/affiliazione/${r.id}`} className="font-semibold text-brand hover:underline">{r.username}</Link>
                 <div className="text-xs text-muted">{r.full_name || r.email}</div>
               </td>
               <td className="p-3 font-mono text-xs">{r.code}</td>

@@ -84,7 +84,7 @@ export default async function AffiliateDashboardPage() {
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-display text-base font-extrabold">Migliori affiliati</h2>
-          <Link href="/admin/affiliates/lista" className="text-sm text-brand hover:underline">Vedi tutti →</Link>
+          <Link href="/affiliazione/lista" className="text-sm text-brand hover:underline">Vedi tutti →</Link>
         </div>
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
@@ -95,7 +95,7 @@ export default async function AffiliateDashboardPage() {
             <tbody>
               {top.map((r) => (
                 <tr key={r.id} className="border-b border-line/60">
-                  <td className="p-3"><Link href={`/admin/affiliates/${r.id}`} className="font-semibold text-brand hover:underline">{r.username}</Link></td>
+                  <td className="p-3"><Link href={`/affiliazione/${r.id}`} className="font-semibold text-brand hover:underline">{r.username}</Link></td>
                   <td className="p-3 text-right">{r.conversions}</td>
                   <td className="p-3 text-right font-semibold">{eur(r.earnedCents)}</td>
                   <td className="p-3 text-right">{eur(r.availableCents)}</td>

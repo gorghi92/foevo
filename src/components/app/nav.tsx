@@ -16,13 +16,11 @@ const MAIN: NavItem[] = [
 ]
 const ADMIN: NavItem[] = [
   { href: '/admin', label: 'Superadmin', icon: Shield },
-  { href: '/admin/affiliates', label: 'Affiliazione', icon: Share2 },
+  { href: '/affiliazione', label: 'Affiliazione', icon: Share2 },
 ]
 
 function isActive(path: string, href: string) {
   if (href === '/dashboard') return path === '/dashboard' || path.startsWith('/analyses')
-  // "Superadmin" non si accende sulle rotte dell'affiliazione (voce a parte).
-  if (href === '/admin') return (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/affiliates')
   return path === href || path.startsWith(`${href}/`)
 }
 
@@ -59,7 +57,7 @@ function Items({ items, path, badges }: { items: NavItem[]; path: string; badges
 /** Voci della sidebar, con sezione amministrazione opzionale. */
 export function SidebarNav({ admin = false, alertCount = 0 }: { admin?: boolean; alertCount?: number }) {
   const path = usePathname()
-  const badges = { '/admin/affiliates': alertCount }
+  const badges = { '/affiliazione': alertCount }
   return (
     <>
       <Items items={MAIN} path={path} />

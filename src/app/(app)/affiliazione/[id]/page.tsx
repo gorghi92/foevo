@@ -21,7 +21,7 @@ export default async function AdminAffiliateDetail({ params }: { params: { id: s
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/affiliates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
+      <Link href="/affiliazione" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
         <ArrowLeft size={15} /> Tutti gli affiliati
       </Link>
 

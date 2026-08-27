@@ -184,7 +184,7 @@ export function refundAlertEmail(d: {
       ${rows}
     </table>
     ${stateNote}
-    ${ctaButton(`${appUrl()}/admin/affiliates/pagamenti`, 'Apri il pannello affiliati')}`
+    ${ctaButton(`${appUrl()}/affiliazione/pagamenti`, 'Apri il pannello affiliati')}`
   return {
     subject: `Foevo · ${d.title}`,
     html: shell({ title: d.title, preheader: 'Rimborso/contestazione su un pagamento — nessuno storno automatico.', body }),
