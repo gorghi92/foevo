@@ -513,6 +513,16 @@ export default function Landing() {
             <Link href="/login" className="hover:text-ink">Accedi</Link>
           </div>
         </div>
+
+        {/* origine del nome */}
+        <div className="mx-auto max-w-6xl px-6 pb-9">
+          <p className="max-w-2xl border-t border-line pt-5 text-xs leading-relaxed text-muted">
+            <b className="text-ink">Il nome.</b> La <i>fovea</i> è la piccola cavità al centro della
+            retina dove la vista è più nitida: il punto esatto su cui cade lo sguardo, mentre tutto
+            il resto resta periferia. In latino <i>foveo</i> significa anche «tenere caldo» — da lì
+            le mappe di calore.
+          </p>
+        </div>
       </footer>
     </div>
   )
