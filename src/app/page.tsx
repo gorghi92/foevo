@@ -249,6 +249,9 @@ export default function Landing() {
               </div>
             ))}
           </div>
+          <p className="mt-6 text-center text-sm text-muted">
+            Vuoi solo fare una prova? <Link href="/signup?plan=test" className="font-semibold text-brand">Attiva il piano Test a 1€</Link>
+          </p>
         </div>
       </section>
 
