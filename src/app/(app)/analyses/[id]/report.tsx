@@ -29,12 +29,17 @@ function PriorityCallout({ recs }: { recs: any[] }) {
   )
 }
 
-function Gauge({ label, value }: { label: string; value: number }) {
+function Gauge({ label, value, primary = false }: { label: string; value: number; primary?: boolean }) {
   return (
-    <div className="card flex-1 p-4 text-center" style={{ minWidth: 120 }}>
-      <div className="font-display text-3xl font-extrabold" style={{ color: sc(value) }}>{value}</div>
-      <div className="mt-1 text-[11px] uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded bg-line"><div style={{ width: `${value}%`, height: '100%', background: sc(value) }} /></div>
+    <div className={`card flex-1 p-5 ${primary ? 'heat-frame border-transparent' : ''}`} style={{ minWidth: 140 }}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1.5 flex items-baseline gap-1">
+        <span className="font-display text-[2.1rem] font-extrabold leading-none" style={{ color: sc(value) }}>{value}</span>
+        <span className="text-xs text-muted">/ 100</span>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
+        <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(2, value)}%`, background: sc(value) }} />
+      </div>
     </div>
   )
 }
@@ -84,13 +89,26 @@ export default function Report({ initial }: { initial: any }) {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/dashboard" className="btn btn-ghost"><ArrowLeft size={15} /> Analisi</Link>
+      <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-ink">
+        <ArrowLeft size={15} /> Tutte le analisi
+      </Link>
+
+      <div className="mt-4 flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-lg font-bold">{data.title || data.url}</div>
-          {data.url && <a href={data.url} target="_blank" rel="noreferrer" className="text-xs text-muted">{String(data.url).replace(/^https?:\/\//, '')} <ExternalLink size={11} className="inline" /></a>}
+          <div className="mb-2 flex items-center gap-2.5">
+            <span className="heat-rule h-[3px] w-6 rounded-full" aria-hidden />
+            <span className="label text-brand">Report</span>
+          </div>
+          <h1 className="truncate font-display text-[1.7rem] font-extrabold leading-tight tracking-tight md:text-3xl">
+            {data.title || data.url}
+          </h1>
+          {data.url && (
+            <a href={data.url} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-sm text-muted transition hover:text-brand">
+              {String(data.url).replace(/^https?:\/\//, '')} <ExternalLink size={12} />
+            </a>
+          )}
         </div>
-        <span className="rounded-md border border-line px-2.5 py-1 text-xs font-bold">{data.tier === 'premium' ? 'Premium' : 'Base'}</span>
+        <span className="rounded-lg border border-line bg-panel px-2.5 py-1 text-xs font-bold">{data.tier === 'premium' ? 'Premium' : 'Base'}</span>
         {data.status === 'done' && (
           sharePath
             ? <button onClick={copyShare} className="btn btn-ghost px-3 py-1.5 text-[13px]" title={shareUrl}>{copied ? <><Check size={14} /> Copiato</> : <><Copy size={14} /> Link pubblico</>}</button>
@@ -114,8 +132,8 @@ export default function Report({ initial }: { initial: any }) {
 
       {data.status === 'done' && r && (
         <>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Gauge label="Conversione" value={r.scores?.conversion ?? 0} />
+          <div className="mt-6 flex flex-wrap gap-4">
+            <Gauge label="Conversione" value={r.scores?.conversion ?? 0} primary />
             <Gauge label="Attenzione" value={r.scores?.attentionAlignment ?? 0} />
             <Gauge label="Chiarezza" value={r.scores?.clarity ?? 0} />
             <Gauge label="CTA" value={r.scores?.cta ?? 0} />

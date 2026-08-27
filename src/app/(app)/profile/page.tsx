@@ -1,5 +1,6 @@
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
+import { PageHeader } from '@/components/app/ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,8 +18,11 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold">Profilo</h1>
-      <p className="mt-1 text-sm text-muted">Gestisci i tuoi dati, l’accesso e i dati di fatturazione.</p>
+      <PageHeader
+        eyebrow="Account"
+        title="Profilo"
+        subtitle="Gestisci i tuoi dati, l’email di accesso e i dati di fatturazione."
+      />
       <ProfileForm
         email={user!.email || ''}
         initial={{

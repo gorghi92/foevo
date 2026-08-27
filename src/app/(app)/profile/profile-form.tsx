@@ -76,7 +76,7 @@ export function ProfileForm({ email, initial }: { email: string; initial: Billin
   const head = 'flex items-center gap-2 font-semibold'
 
   return (
-    <div className="mt-6 space-y-5">
+    <div className="space-y-5">
       <form onSubmit={saveName} className={card}>
         <div className={head}><User size={18} className="text-brand" /> Dati personali</div>
         <div className="mt-4 grid grid-cols-2 gap-3">

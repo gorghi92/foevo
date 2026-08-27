@@ -1,6 +1,7 @@
 import { createClient, getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
 import { Download } from 'lucide-react'
+import { PageHeader, UsageMeter } from '@/components/app/ui'
 import { DowngradeButton, CancelButton } from './billing-actions'
 import { Checkout } from './checkout'
 
@@ -31,12 +32,26 @@ export default async function BillingPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold">Piano &amp; fatturazione</h1>
+      <PageHeader
+        eyebrow="Abbonamento"
+        title="Piano e fatturazione"
+        subtitle="Gestisci il tuo piano, scarica le fatture e controlla i pagamenti."
+      />
 
-      <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-5">
-        <div>
-          <div className="font-semibold">Piano attuale: {ent.tier === 'premium' ? 'Premium' : 'Base'}{ent.source === 'trial' ? ' (prova)' : ''}</div>
-          <div className="text-sm text-muted">Uso questo mese: {used} / {ent.unlimited ? '∞' : ent.quota} · pagamenti gestiti da Whop</div>
+      <div className="card flex flex-wrap items-center justify-between gap-4 p-6">
+        <div className="min-w-[240px] flex-1">
+          <div className="flex items-center gap-2.5">
+            <span className="heat-dot h-9 w-9 rounded-xl" aria-hidden />
+            <div>
+              <div className="font-display text-lg font-extrabold leading-tight">
+                {ent.tier === 'premium' ? 'Premium' : 'Base'}{ent.source === 'trial' ? ' · prova' : ''}
+              </div>
+              <div className="text-xs text-muted">Piano attuale · pagamenti gestiti da Whop</div>
+            </div>
+          </div>
+          <div className="mt-4 max-w-xs">
+            <UsageMeter used={used} quota={ent.quota} unlimited={ent.unlimited} compact />
+          </div>
           {canceling && renewal && (
             <div className="mt-1 text-sm font-medium text-amber-600">Abbonamento annullato — attivo fino al {renewal}, poi non verrà rinnovato.</div>
           )}
@@ -60,7 +75,7 @@ export default async function BillingPage() {
       />
       <p className="mt-2 text-xs text-muted">I prezzi sono <b>IVA esclusa</b>: l’IVA/imposta viene calcolata da Whop in base al tuo paese al momento del pagamento.</p>
 
-      <h2 className="mt-8 text-lg font-bold">Storico pagamenti</h2>
+      <h2 className="mt-10 font-display text-xl font-extrabold">Storico pagamenti</h2>
       <div className="card mt-3 overflow-x-auto">
         <table className="w-full min-w-[520px] text-sm">
           <thead>
