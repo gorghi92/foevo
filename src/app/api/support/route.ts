@@ -1,22 +1,54 @@
 import { NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { getSettings } from '@/lib/settings'
 import { sendEmail } from '@/lib/email'
+import { createServiceClient } from '@/lib/supabase/server'
+import { verifyFormToken } from '@/lib/form-token'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-/** Piccolo limite in memoria: frena gli invii ripetuti dalla stessa origine. */
-const hits = new Map<string, number[]>()
 const WINDOW_MS = 10 * 60 * 1000
 const MAX_PER_WINDOW = 5
 
-function rateLimited(ip: string): boolean {
+/**
+ * Limite in memoria: su serverless vale solo finché la richiesta ricade sulla
+ * stessa istanza calda, quindi è una prima barriera, non la difesa principale.
+ */
+const hits = new Map<string, number[]>()
+function memoryLimited(key: string): boolean {
   const now = Date.now()
-  const list = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
+  const list = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS)
   list.push(now)
-  hits.set(ip, list)
-  if (hits.size > 5000) hits.clear() // il processo è effimero: evita crescita illimitata
+  hits.set(key, list)
+  if (hits.size > 5000) hits.clear()
   return list.length > MAX_PER_WINDOW
+}
+
+/**
+ * Limite affidabile, basato sul database: conta gli invii recenti dalla stessa
+ * origine. Richiede la tabella support_requests; se non esiste, la funzione si
+ * fa da parte invece di bloccare il modulo.
+ */
+async function dbLimited(ipHash: string): Promise<boolean> {
+  try {
+    const sc = createServiceClient()
+    const since = new Date(Date.now() - WINDOW_MS).toISOString()
+    const { count, error } = await sc
+      .from('support_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('ip_hash', ipHash)
+      .gte('created_at', since)
+    if (error) return false // tabella assente o non leggibile: non blocchiamo
+    return (count ?? 0) >= MAX_PER_WINDOW
+  } catch {
+    return false
+  }
+}
+
+/** Registra il messaggio; se la tabella non c'è, prosegue in silenzio. */
+async function record(row: Record<string, unknown>): Promise<void> {
+  try { await createServiceClient().from('support_requests').insert(row) } catch { /* opzionale */ }
 }
 
 const esc = (s: string) =>
@@ -24,14 +56,23 @@ const esc = (s: string) =>
 
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
-    name?: string; email?: string; topic?: string; message?: string; website?: string
+    name?: string; email?: string; topic?: string; message?: string; website?: string; token?: string
   }
 
   // Campo esca: i bot lo compilano, le persone no.
   if (String(body.website || '').trim()) return NextResponse.json({ ok: true })
 
+  // Il token è emesso dalla pagina: senza, resta il POST diretto all'endpoint.
+  if (!verifyFormToken((body as any).token, Date.now())) {
+    return NextResponse.json(
+      { error: 'Sessione del modulo scaduta. Ricarica la pagina e riprova.' },
+      { status: 400 },
+    )
+  }
+
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'sconosciuto'
-  if (rateLimited(ip)) {
+  const ipHash = createHash('sha256').update(`foevo:${ip}`).digest('hex')
+  if (memoryLimited(ipHash) || (await dbLimited(ipHash))) {
     return NextResponse.json({ error: 'Troppi invii ravvicinati. Riprova tra qualche minuto.' }, { status: 429 })
   }
 
@@ -64,6 +105,8 @@ export async function POST(req: Request) {
     </div>`
 
   const sent = await sendEmail({ to, subject: `[Assistenza Foevo] ${topic} — ${name || email}`, html })
+  // Registrato comunque: se l'email non parte, il messaggio non va perso.
+  await record({ ip_hash: ipHash, email, name: name || null, topic, message, delivered: sent })
   if (!sent) {
     return NextResponse.json({ error: 'Invio non riuscito. Riprova tra poco.' }, { status: 502 })
   }

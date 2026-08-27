@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SupportForm } from './support-form'
+import { issueFormToken } from '@/lib/form-token'
+
+// Il token è legato al momento del render, quindi la pagina non va messa in cache.
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Assistenza',
@@ -74,7 +78,7 @@ export default function SupportPage() {
         Rispondiamo di norma entro un giorno lavorativo. Più dettagli ci dai — pagina, browser, messaggio
         d’errore — più veloce è la risposta.
       </p>
-      <SupportForm />
+      <SupportForm token={issueFormToken(Date.now())} />
 
       <p className="mt-10 text-xs text-muted">
         Foevo · <Link href="/privacy" className="font-semibold text-brand">Privacy</Link>

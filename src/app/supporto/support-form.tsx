@@ -10,7 +10,7 @@ const TOPICS = [
   'Altro',
 ]
 
-export function SupportForm() {
+export function SupportForm({ token }: { token: string }) {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -26,6 +26,7 @@ export function SupportForm() {
         name: f.get('name'), email: f.get('email'),
         topic: f.get('topic'), message: f.get('message'),
         website: f.get('website'), // esca anti-bot
+        token,
       }),
     })
     const j = await r.json().catch(() => ({} as any))
