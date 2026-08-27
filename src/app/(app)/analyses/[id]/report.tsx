@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, ExternalLink, RefreshCw, AlertTriangle, Share2, Check, Copy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { HeatmapCanvas, type ViewMode } from '@/components/heatmap-canvas'
+import { AiPrompt } from './ai-prompt'
 
 const PRIO: Record<string, string> = { alta: '#dc2626', media: '#d97706', bassa: '#2563eb' }
 const PORD: Record<string, number> = { alta: 0, media: 1, bassa: 2 }
@@ -44,7 +45,7 @@ function Gauge({ label, value, primary = false }: { label: string; value: number
   )
 }
 
-export default function Report({ initial }: { initial: any }) {
+export default function Report({ initial, premium = false }: { initial: any; premium?: boolean }) {
   const [data, setData] = useState<any>(initial)
   const [mode, setMode] = useState<ViewMode>('heat')
   const [zones, setZones] = useState(true)
@@ -143,6 +144,8 @@ export default function Report({ initial }: { initial: any }) {
           </div>
 
           <PriorityCallout recs={r.recommendations} />
+
+          <AiPrompt result={r} url={data.url} title={data.title} premium={premium} />
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
             <div>
