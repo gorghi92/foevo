@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
-import { LayoutGrid, KeyRound, CreditCard, Shield, LogOut } from 'lucide-react'
+import { LayoutGrid, KeyRound, CreditCard, Shield, BarChart3, LogOut } from 'lucide-react'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser()
@@ -13,7 +13,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: '/dashboard', label: 'Analisi', icon: LayoutGrid },
     { href: '/settings/api-keys', label: 'API key', icon: KeyRound },
     { href: '/billing', label: 'Piano', icon: CreditCard },
-    ...(admin ? [{ href: '/admin', label: 'Superadmin', icon: Shield }] : []),
+    ...(admin ? [
+      { href: '/admin', label: 'Superadmin', icon: Shield },
+      { href: '/admin/usage', label: 'Consumo', icon: BarChart3 },
+    ] : []),
   ]
 
   return (

@@ -15,6 +15,8 @@ export interface EngineOutput {
   heatmap: HeatmapData
   provider: 'claude' | 'qwen'
   model: string
+  usage: { input: number; output: number }
+  costUsd: number
 }
 
 export interface EngineInput {
@@ -80,11 +82,11 @@ export async function runEngine(input: EngineInput): Promise<EngineOutput> {
   const sal = downscaleGrid(computeSaliency(sample), HEATMAP_W)
 
   // 2. LLM semantic analysis (tier-dependent provider)
-  const { result, provider, model } = await analyze(input.tier, input.screenshot, input.ctx, input.elements)
+  const { result, provider, model, usage, costUsd } = await analyze(input.tier, input.screenshot, input.ctx, input.elements)
 
   // 3. merge → heatmap
   const heatmap = mergeHeatmap(sal, result.attention.zones)
-  return { result, heatmap, provider, model }
+  return { result, heatmap, provider, model, usage, costUsd }
 }
 
 export { providerAvailable }

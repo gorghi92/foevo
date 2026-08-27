@@ -5,16 +5,16 @@ const $ = (id) => document.getElementById(id)
 const els = {
   viewMain: $('view-main'), viewSettings: $('view-settings'),
   settingsBtn: $('settings-btn'), backBtn: $('back-btn'),
-  apiBase: $('api-base'), apiKey: $('api-key'), saveBtn: $('save-settings'),
-  saved: $('settings-saved'), getKey: $('get-key-link'),
+  apiBase: $('api-base'), email: $('email'), password: $('password'),
+  saveBtn: $('save-settings'), saved: $('settings-saved'), signup: $('signup-link'),
   goal: $('goal'), note: $('note'), analyzeBtn: $('analyze-btn'),
   status: $('status'), statusText: $('status-text'), error: $('error'),
   tierHint: $('tier-hint'), acct: $('acct'), dashLink: $('dashboard-link'),
 }
 
 async function getSettings() {
-  const s = await chrome.storage.sync.get(['apiBase', 'apiKey'])
-  return { apiBase: (s.apiBase || DEFAULT_BASE).replace(/\/+$/, ''), apiKey: s.apiKey || '' }
+  const s = await chrome.storage.sync.get(['apiBase', 'apiKey', 'email'])
+  return { apiBase: (s.apiBase || DEFAULT_BASE).replace(/\/+$/, ''), apiKey: s.apiKey || '', email: s.email || '' }
 }
 
 function show(view) {
@@ -36,27 +36,28 @@ function busy(on) {
 }
 
 async function refreshLinks() {
-  const { apiBase, apiKey } = await getSettings()
-  els.getKey.href = `${apiBase}/settings/api-keys`
+  const { apiBase, apiKey, email } = await getSettings()
   els.dashLink.href = `${apiBase}/dashboard`
+  if (els.signup) els.signup.href = `${apiBase}/signup`
   els.tierHint.textContent = apiKey
     ? 'La profondità dell\'analisi dipende dal tuo piano Foveo.'
-    : '⚠ Nessuna API key: apri le impostazioni (⚙) per configurarla.'
-  els.acct.textContent = apiKey ? apiKey.slice(0, 10) + '…' : 'non connesso'
+    : '⚠ Accedi con il tuo account Foveo dalle impostazioni (⚙).'
+  els.acct.textContent = apiKey ? (email || 'connesso') : 'non connesso'
 }
 
-/* ---- settings view ---- */
+/* ---- settings / login view ---- */
 els.settingsBtn.addEventListener('click', async () => {
-  const { apiBase, apiKey } = await getSettings()
+  const { apiBase, email } = await getSettings()
   els.apiBase.value = apiBase
-  els.apiKey.value = apiKey
-  els.getKey.href = `${apiBase}/settings/api-keys`
+  els.email.value = email
+  els.password.value = ''
+  if (els.signup) els.signup.href = `${apiBase}/signup`
   els.saved.hidden = true
   show('settings')
 })
 els.backBtn.addEventListener('click', () => { show('main'); refreshLinks() })
-// The extension ships with no default host permission, so the endpoint the user
-// configures is granted at runtime (friendlier Web Store review).
+
+// No default host permission: the configured endpoint is granted at runtime.
 async function ensureHostPermission(apiBase) {
   let origin
   try { origin = new URL(apiBase).origin + '/*' } catch { return true }
@@ -67,30 +68,51 @@ async function ensureHostPermission(apiBase) {
   } catch { return false }
 }
 
+function saveMsg(text, error) {
+  els.saved.textContent = text
+  els.saved.style.color = error ? 'var(--danger)' : ''
+  els.saved.hidden = false
+}
+
+/* Login: manda le credenziali all'app, che le valida su Supabase e restituisce
+ * una API key per il device (l'utente non gestisce chiavi a mano). */
 els.saveBtn.addEventListener('click', async () => {
   const apiBase = (els.apiBase.value || DEFAULT_BASE).trim().replace(/\/+$/, '')
-  const apiKey = els.apiKey.value.trim()
-  // Persist FIRST: granting a host permission can restart the extension context
-  // and abort anything running after the prompt — that used to drop the key,
-  // forcing the user to re-enter and re-save. Saving first makes it stick.
-  await chrome.storage.sync.set({ apiBase, apiKey })
-  els.saved.textContent = 'Salvato ✓'
-  els.saved.style.color = ''
-  els.saved.hidden = false
+  const email = els.email.value.trim()
+  const password = els.password.value
+  if (!email || !password) { saveMsg('Inserisci email e password.', true); return }
+
+  // Persist the endpoint first — granting a host permission can restart the
+  // extension context and abort what runs after the prompt.
+  await chrome.storage.sync.set({ apiBase })
   const granted = await ensureHostPermission(apiBase)
-  if (!granted) {
-    els.saved.textContent = '⚠ Salvato. Manca però il permesso per il sito: premi di nuovo Salva e conferma.'
-    els.saved.style.color = 'var(--danger)'
-    return
+  if (!granted) { saveMsg('Concedi il permesso per il sito e premi di nuovo Accedi.', true); return }
+
+  saveMsg('Accesso in corso…', false)
+  els.saveBtn.disabled = true
+  try {
+    const resp = await fetch(`${apiBase}/api/extension/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const data = await resp.json().catch(() => ({}))
+    if (!resp.ok || !data.key) throw new Error(data.error || `Errore ${resp.status}`)
+    await chrome.storage.sync.set({ apiBase, apiKey: data.key, email: data.email || email })
+    saveMsg('Connesso ✓', false)
+    setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
+  } catch (e) {
+    saveMsg(String(e.message || e), true)
+  } finally {
+    els.saveBtn.disabled = false
   }
-  setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
 })
 
 /* ---- analyze ---- */
 els.analyzeBtn.addEventListener('click', async () => {
   setError('')
   const { apiBase, apiKey } = await getSettings()
-  if (!apiKey) { setError('Configura prima la API key (⚙).'); show('settings'); return }
+  if (!apiKey) { setError('Accedi prima con il tuo account Foveo (⚙).'); show('settings'); return }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab || !/^https?:/.test(tab.url || '')) {

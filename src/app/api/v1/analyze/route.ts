@@ -83,7 +83,10 @@ export async function POST(req: Request): Promise<Response> {
 
     try {
       const out = await runEngine({ tier, screenshot: body.screenshot, sample: body.sample, ctx, elements })
-      await completeAnalysis(id, { result: out.result, heatmap: out.heatmap, provider: out.provider, model: out.model })
+      await completeAnalysis(id, {
+        result: out.result, heatmap: out.heatmap, provider: out.provider, model: out.model,
+        inputTokens: out.usage.input, outputTokens: out.usage.output, costUsd: out.costUsd,
+      })
       return Response.json({ id, resultPath: `/analyses/${id}`, tier: out.provider === 'claude' ? 'premium' : 'base' }, { status: 201 })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Errore analisi'

@@ -40,20 +40,26 @@
     <p class="tier-hint" id="tier-hint"></p>
   </section>
 
-  <!-- SETTINGS -->
+  <!-- SETTINGS / LOGIN -->
   <section id="view-settings" class="view" hidden>
-    <label class="lbl" for="api-base">Endpoint piattaforma</label>
-    <input id="api-base" class="input" type="url" placeholder="https://foevo.vercel.app" />
+    <label class="lbl" for="email">Email Foveo</label>
+    <input id="email" class="input" type="email" placeholder="tu@esempio.com" autocomplete="username" />
 
-    <label class="lbl" for="api-key">API key <span class="muted">(inizia con fv_)</span></label>
-    <input id="api-key" class="input" type="password" placeholder="fv_..." />
-    <a id="get-key-link" class="link" target="_blank">Come ottengo una API key? →</a>
+    <label class="lbl" for="password">Password</label>
+    <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
+    <a id="signup-link" class="link" target="_blank">Non hai un account? Registrati →</a>
+
+    <details class="adv">
+      <summary>Impostazioni avanzate</summary>
+      <label class="lbl" for="api-base">Endpoint piattaforma</label>
+      <input id="api-base" class="input" type="url" placeholder="https://foevo.vercel.app" />
+    </details>
 
     <div class="row">
-      <button id="save-settings" class="btn btn-primary">Salva</button>
+      <button id="save-settings" class="btn btn-primary">Accedi</button>
       <button id="back-btn" class="btn btn-ghost">Indietro</button>
     </div>
-    <p id="settings-saved" class="ok" hidden>Salvato ✓</p>
+    <p id="settings-saved" class="ok" hidden>Connesso ✓</p>
   </section>
 
   <footer class="ftr">

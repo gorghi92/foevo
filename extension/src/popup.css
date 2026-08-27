@@ -72,3 +72,8 @@ body {
   .input { background:#211c2e; }
   .btn-ghost { background:#241f33; }
 }
+
+/* login: sezione avanzate (endpoint) */
+.adv { margin: 6px 0 2px; }
+.adv > summary { cursor: pointer; font-size: 12px; color: var(--muted); list-style: revert; padding: 4px 0; }
+.adv[open] > summary { margin-bottom: 4px; }

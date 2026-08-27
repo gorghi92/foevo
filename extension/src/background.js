@@ -39,25 +39,26 @@ function pageCollectElements(vw, pageH) {
     const s = getComputedStyle(el)
     return !(s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity || '1') < 0.05)
   }
-  // Fixed/sticky elements (cookie banners, sticky bars) are hidden after the
-  // first slice in the stitched screenshot, so their captured rect would land a
-  // box in the wrong place. Skip the element and any fixed/sticky ancestor.
-  const inFixed = (el) => {
+  // A `fixed` element (cookie banner, sticky bar) doesn't scroll: in the stitched
+  // screenshot it appears once at its VIEWPORT position (captured in the first
+  // slice, hidden after). So it must be mapped by the viewport-relative top,
+  // NOT document-absolute (rect.top + scrollY) which would land it elsewhere.
+  const isFixed = (el) => {
     let n = el, depth = 0
     while (n && n !== document.body && depth < 10) {
-      const p = getComputedStyle(n).position
-      if (p === 'fixed' || p === 'sticky') return true
+      if (getComputedStyle(n).position === 'fixed') return true
       n = n.parentElement; depth++
     }
     return false
   }
   const push = (el, type) => {
     if (out.length >= 40) return
-    if (inFixed(el)) return
     let r
     try { r = el.getBoundingClientRect() } catch { return }
     if (!r || r.width < 24 || r.height < 12) return
-    const x = (r.left + sx) / vw, y = (r.top + sy) / pageH
+    const fixed = isFixed(el)
+    const x = (r.left + (fixed ? 0 : sx)) / vw
+    const y = (r.top + (fixed ? 0 : sy)) / pageH
     const nw = r.width / vw, nh = r.height / pageH
     if (y > 1.02 || y + nh < -0.02 || x > 1.02) return
     const key = type + '|' + Math.round(r.left) + '|' + Math.round(r.top + sy) + '|' + Math.round(r.width)

@@ -5,10 +5,11 @@
  *  - base tier    → Qwen-VL via DashScope (OpenAI-compatible, vision)
  */
 import { systemPrompt, premiumPrompt, basePrompt, extractJson, normalizeResult, type AttentionResult, type PageElement } from './types'
+import { estimateCost, type Usage } from './pricing'
 
 export type Tier = 'base' | 'premium'
 export interface AnalyzeCtx { url: string; title: string; goal: string | null; note: string | null }
-export interface LlmOutput { result: AttentionResult; provider: 'claude' | 'qwen'; model: string }
+export interface LlmOutput { result: AttentionResult; provider: 'claude' | 'qwen'; model: string; usage: Usage; costUsd: number }
 
 const CLAUDE_MODEL = process.env.ATTENTION_CLAUDE_MODEL || 'claude-opus-5'
 const QWEN_MODEL = process.env.ATTENTION_QWEN_MODEL || 'qwen-vl-max'
@@ -20,7 +21,7 @@ function splitDataUrl(dataUrl: string): { media: string; b64: string } {
   return { media: m[1].toLowerCase(), b64: m[2] }
 }
 
-async function callClaude(dataUrl: string, system: string, user: string): Promise<string> {
+async function callClaude(dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
   const key = process.env.ANTHROPIC_API_KEY
   if (!key) throw new Error('Provider AI non configurato')
   const { media, b64 } = splitDataUrl(dataUrl)
@@ -43,10 +44,11 @@ async function callClaude(dataUrl: string, system: string, user: string): Promis
   if (data?.stop_reason === 'refusal') throw new Error('Il servizio AI ha rifiutato la richiesta')
   const text = (data?.content || []).filter((b: any) => b?.type === 'text').map((b: any) => b.text).join('\n')
   if (!text) throw new Error('Risposta AI vuota')
-  return text
+  const usage: Usage = { input: Number(data?.usage?.input_tokens) || 0, output: Number(data?.usage?.output_tokens) || 0 }
+  return { text, usage }
 }
 
-async function callQwen(dataUrl: string, system: string, user: string): Promise<string> {
+async function callQwen(dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
   const key = process.env.DASHSCOPE_API_KEY
   if (!key) throw new Error('Provider AI non configurato')
   const resp = await fetch(`${DASHSCOPE_BASE}/chat/completions`, {
@@ -70,18 +72,19 @@ async function callQwen(dataUrl: string, system: string, user: string): Promise<
   const text = data?.choices?.[0]?.message?.content
   const flat = Array.isArray(text) ? text.map((p: any) => p?.text || '').join('') : String(text || '')
   if (!flat) throw new Error('Risposta AI vuota')
-  return flat
+  const usage: Usage = { input: Number(data?.usage?.prompt_tokens) || 0, output: Number(data?.usage?.completion_tokens) || 0 }
+  return { text, usage }
 }
 
 export async function analyze(tier: Tier, dataUrl: string, ctx: AnalyzeCtx, elements?: PageElement[]): Promise<LlmOutput> {
   const system = systemPrompt()
   const fallbackGoal = ctx.goal || 'conversione'
   if (tier === 'premium') {
-    const text = await callClaude(dataUrl, system, premiumPrompt(ctx, elements))
-    return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'claude', model: CLAUDE_MODEL }
+    const { text, usage } = await callClaude(dataUrl, system, premiumPrompt(ctx, elements))
+    return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'claude', model: CLAUDE_MODEL, usage, costUsd: estimateCost('claude', CLAUDE_MODEL, usage) }
   }
-  const text = await callQwen(dataUrl, system, basePrompt(ctx, elements))
-  return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'qwen', model: QWEN_MODEL }
+  const { text, usage } = await callQwen(dataUrl, system, basePrompt(ctx, elements))
+  return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'qwen', model: QWEN_MODEL, usage, costUsd: estimateCost('qwen', QWEN_MODEL, usage) }
 }
 
 export function providerAvailable(tier: Tier): boolean {

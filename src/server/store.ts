@@ -71,6 +71,7 @@ export async function attachScreenshot(id: string, url: string): Promise<void> {
 
 export async function completeAnalysis(id: string, out: {
   result: AttentionResult; heatmap: unknown; provider: string; model: string
+  inputTokens?: number; outputTokens?: number; costUsd?: number
 }): Promise<void> {
   const s = out.result.scores
   const { error } = await createServiceClient()
@@ -79,7 +80,9 @@ export async function completeAnalysis(id: string, out: {
       status: 'done', page_type: out.result.pageType, provider: out.provider, model: out.model,
       heatmap: out.heatmap, result: out.result,
       score_conversion: s.conversion, score_attention: s.attentionAlignment,
-      score_clarity: s.clarity, score_cta: s.cta, updated_at: new Date().toISOString(),
+      score_clarity: s.clarity, score_cta: s.cta,
+      input_tokens: out.inputTokens ?? null, output_tokens: out.outputTokens ?? null, cost_usd: out.costUsd ?? null,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', id)
   if (error) throw new Error(`DB update: ${error.message}`)
