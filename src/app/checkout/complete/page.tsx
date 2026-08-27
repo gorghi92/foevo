@@ -16,7 +16,7 @@ export default async function CheckoutComplete({ searchParams }: { searchParams:
   const ent = user ? await resolveEntitlement(user.id) : null
   // Considera attivo se l'entitlement è attivo e (nessun piano richiesto o coincide col tier)
   const wantTier = planSlug === 'premium' ? 'premium' : planSlug === 'base' ? 'base' : ''
-  const active = !!ent && ent.status === 'active' && ent.source !== 'trial' && (!wantTier || ent.tier === wantTier)
+  const active = !!ent && ent.status === 'active' && ent.source !== 'none' && (!wantTier || ent.tier === wantTier)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">

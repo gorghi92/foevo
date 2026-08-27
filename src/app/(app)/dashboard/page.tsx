@@ -36,9 +36,10 @@ export default async function DashboardPage() {
         title="Le mie analisi"
         subtitle={
           <>
-            Piano <b className="text-ink">{ent.tier === 'premium' ? 'Premium' : 'Base'}</b>
-            {ent.source === 'trial' ? ' · prova' : ''} · {used}
-            {ent.unlimited ? '' : ` di ${ent.quota}`} analisi questo mese
+            {ent.source === 'none'
+              ? <>Nessun piano attivo</>
+              : <>Piano <b className="text-ink">{ent.tier === 'premium' ? 'Premium' : 'Base'}</b></>}
+            {' · '}{used}{ent.unlimited ? '' : ` di ${ent.quota}`} analisi questo mese
             {avg != null && <> · punteggio medio <b className="text-ink">{avg}</b></>}
           </>
         }

@@ -44,7 +44,7 @@ export default async function BillingPage() {
             <span className="heat-dot h-9 w-9 rounded-xl" aria-hidden />
             <div>
               <div className="font-display text-lg font-extrabold leading-tight">
-                {ent.tier === 'premium' ? 'Premium' : 'Base'}{ent.source === 'trial' ? ' · prova' : ''}
+                {ent.source === 'none' ? 'Nessun piano' : ent.tier === 'premium' ? 'Premium' : 'Base'}
               </div>
               <div className="text-xs text-muted">Piano attuale · pagamenti gestiti da Whop</div>
             </div>
@@ -60,7 +60,7 @@ export default async function BillingPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-line px-2.5 py-1 text-xs font-semibold">{ent.status}</span>
+          <span className="rounded-md border border-line px-2.5 py-1 text-xs font-semibold">{ent.status === 'none' ? 'non attivo' : ent.status}</span>
           {ent.tier === 'premium' && <DowngradeButton isWhop={isWhop} />}
           {isWhop && !canceling && <CancelButton />}
         </div>

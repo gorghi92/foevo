@@ -30,7 +30,7 @@ export default async function UsersPage() {
       id: u.id, email: u.email ?? '—',
       created: u.created_at, lastSignIn: u.last_sign_in_at ?? null,
       banned: !!u.banned_until && new Date(u.banned_until) > now,
-      tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'trial',
+      tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'nessuno',
       source: ent?.source ?? '—',
       analyses: usage.count, monthAnalyses: usage.monthCount, cost: usage.cost,
     }

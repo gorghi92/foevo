@@ -32,7 +32,7 @@ export default async function SystemPage() {
     { label: 'Whop checkout base', ok: cfgOk('WHOP_CHECKOUT_BASE'), warn: true, val: src('WHOP_CHECKOUT_BASE') },
     { label: 'Storage R2', ok: cfgOk('R2_ACCESS_KEY_ID'), warn: true, val: cfgOk('R2_ACCESS_KEY_ID') ? src('R2_ACCESS_KEY_ID') : 'inline data-URL' },
     { label: 'Superadmin', ok: has(process.env.SUPERADMIN_EMAILS), val: process.env.SUPERADMIN_EMAILS },
-    { label: 'Quota trial/mese', ok: true, val: process.env.FOVEO_TRIAL_QUOTA || '3' },
+    { label: 'Prova gratuita', ok: true, val: 'disattivata' },
   ]
 
   const counts = [

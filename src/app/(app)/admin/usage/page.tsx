@@ -43,7 +43,7 @@ export default async function UsagePage() {
     if (!a) {
       const ent = entByUser.get(uid)
       const pkg = ent?.package_id ? pkgById.get(ent.package_id) : null
-      a = { userId: uid, email: emailMap.get(uid) ?? uid, tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'trial', planCents: pkg?.price_monthly ?? 0, mAnalyses: 0, mCost: 0, mTokens: 0, tAnalyses: 0, tCost: 0, tTokens: 0 }
+      a = { userId: uid, email: emailMap.get(uid) ?? uid, tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'nessuno', planCents: pkg?.price_monthly ?? 0, mAnalyses: 0, mCost: 0, mTokens: 0, tAnalyses: 0, tCost: 0, tTokens: 0 }
       byUser.set(uid, a)
     }
     return a
@@ -70,7 +70,7 @@ export default async function UsagePage() {
   }
 
   const list = Array.from(byUser.values()).sort((x, y) => y.mCost - x.mCost)
-  const mrrCents = list.reduce((s, u) => s + (u.tier !== 'trial' ? u.planCents : 0), 0)
+  const mrrCents = list.reduce((s, u) => s + (u.tier !== 'nessuno' ? u.planCents : 0), 0)
   const totalAnalyses = rows.length
   const avgCost = totalAnalyses ? totalCost / totalAnalyses : 0
 

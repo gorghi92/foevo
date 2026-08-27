@@ -117,7 +117,6 @@ Elenco completo nell'**Appendice A**. Le principali:
 | `ANTHROPIC_API_KEY` | una delle due | tier premium (Claude) |
 | `DASHSCOPE_API_KEY` | una delle due | tier base (Qwen) |
 | `SUPERADMIN_EMAILS` | consigliata | email superadmin, separate da virgola |
-| `FOVEO_TRIAL_QUOTA` | no | analisi gratis/mese senza piano (default 3) |
 | `R2_*` | no | storage screenshot (senza, resta inline data-URL) |
 | `WHOP_API_KEY`, `WHOP_WEBHOOK_SECRET`, `WHOP_CHECKOUT_BASE` | no | billing |
 
@@ -195,7 +194,6 @@ ATTENTION_QWEN_MODEL=qwen-vl-max
 DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
 
 # Analisi gratis/mese senza entitlement
-FOVEO_TRIAL_QUOTA=3
 
 # ---- Storage: Cloudflare R2 (opzionale) ----
 R2_ACCOUNT_ID=

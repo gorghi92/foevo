@@ -82,7 +82,7 @@ export function UsersPanel({ users, meId }: { users: U[]; meId: string }) {
               <tr key={u.id} className="border-b border-line/60">
                 <td className="max-w-[220px] truncate p-3 font-medium">{u.email}{u.banned && <span className="ml-1 rounded bg-red-100 px-1 text-[10px] text-red-600">bloccato</span>}</td>
                 <td className="p-3">
-                  <select className="rounded border border-line bg-transparent px-1.5 py-1 text-xs" value={u.tier === 'trial' ? 'base' : u.tier} onChange={(e) => setPlan(u, e.target.value)} disabled={busy === u.id}>
+                  <select className="rounded border border-line bg-transparent px-1.5 py-1 text-xs" value={u.tier === 'nessuno' ? 'base' : u.tier} onChange={(e) => setPlan(u, e.target.value)} disabled={busy === u.id}>
                     <option value="base">base</option><option value="premium">premium</option>
                   </select>
                 </td>

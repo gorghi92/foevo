@@ -2,13 +2,11 @@ import { createServiceClient } from '@/lib/supabase/server'
 import type { Tier } from '@/lib/attention/engine'
 import type { AttentionResult } from '@/lib/attention/types'
 
-const TRIAL_QUOTA = Number(process.env.FOVEO_TRIAL_QUOTA || 3)
-
 export interface Entitlement {
   tier: Tier
   quota: number
   unlimited: boolean
-  source: 'whop' | 'manual' | 'trial'
+  source: 'whop' | 'manual' | 'none'
   status: string
 }
 
@@ -28,7 +26,8 @@ export async function resolveEntitlement(userId: string): Promise<Entitlement> {
       status: data.status as string,
     }
   }
-  return { tier: 'base', quota: TRIAL_QUOTA, unlimited: false, source: 'trial', status: 'active' }
+  // Nessuna prova gratuita: senza un abbonamento attivo non si analizza.
+  return { tier: 'base', quota: 0, unlimited: false, source: 'none', status: 'none' }
 }
 
 export async function monthlyUsage(userId: string): Promise<number> {

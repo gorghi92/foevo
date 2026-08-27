@@ -53,6 +53,12 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     const ent = await resolveEntitlement(userId)
+    if (ent.source === 'none') {
+      return Response.json({
+        error: 'Nessun piano attivo: attiva un abbonamento su foevo.app per analizzare.',
+        code: 'no_plan',
+      }, { status: 402 })
+    }
     if (!ent.unlimited) {
       const used = await monthlyUsage(userId)
       if (used >= ent.quota) {

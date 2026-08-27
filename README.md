@@ -65,7 +65,7 @@ extension/                      MV3 Chrome extension (Foveo-branded)
 - In `/admin`, create packages and set each `whop_plan_id`; set `WHOP_CHECKOUT_BASE`.
 - On `membership.went_valid/invalid/cancelled`, the webhook matches the Whop
   member by **email** to a Foveo user and updates their entitlement (tier + quota).
-- Users without an entitlement get a trial (`FOVEO_TRIAL_QUOTA`, base tier).
+- Users without an active entitlement cannot analyse: there is no free trial.
 
 ## Extension
 
