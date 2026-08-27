@@ -86,6 +86,9 @@ export default function Report({ initial }: { initial: any }) {
   }, [data.status, data.id, supabase])
 
   const r = data.result
+  // Un unico ordinamento condiviso: i numeri sull'immagine devono corrispondere
+  // a quelli della lista "Zone di attenzione".
+  const rankedZones = [...(r?.attention?.zones ?? [])].sort((a: any, b: any) => b.score - a.score).slice(0, 8)
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -152,7 +155,7 @@ export default function Report({ initial }: { initial: any }) {
                 <button onClick={() => setZones((v) => !v)} className={`btn ${zones ? 'btn-primary' : 'btn-ghost'} ml-auto px-3 py-1.5 text-[13px]`}>{zones ? 'Nascondi zone' : 'Mostra zone'}</button>
               </div>
               {data.screenshot_url
-                ? <HeatmapCanvas screenshotUrl={data.screenshot_url} heatmap={data.heatmap} mode={mode} zones={zones ? r.attention?.zones : undefined} />
+                ? <HeatmapCanvas screenshotUrl={data.screenshot_url} heatmap={data.heatmap} mode={mode} zones={zones ? rankedZones : undefined} />
                 : <div className="card p-8 text-center text-muted">Screenshot non disponibile.</div>}
               <p className="mt-2 text-[11px] leading-snug text-muted">
                 La heatmap deriva dai pixel reali (contrasto + colore); i riquadri delle zone sono
@@ -175,9 +178,10 @@ export default function Report({ initial }: { initial: any }) {
               {r.attention?.zones?.length > 0 && (
                 <div className="card p-4">
                   <div className="mb-2 font-semibold">Zone di attenzione <span className="text-xs text-muted">· ordinate per impatto</span></div>
-                  {[...r.attention.zones].sort((a: any, b: any) => b.score - a.score).slice(0, 8).map((z: any, i: number) => (
+                  {rankedZones.map((z: any, i: number) => (
                     <div key={i} className={`py-1.5 ${i ? 'border-t border-line' : ''}`}>
                       <div className="flex items-center gap-2">
+                        <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded bg-ink text-[10px] font-bold text-white">{i + 1}</span>
                         <b className="flex-1 truncate text-[13px]">{z.label}</b>
                         <span className="text-xs font-bold" style={{ color: sc(z.score) }}>{z.score}</span>
                       </div>

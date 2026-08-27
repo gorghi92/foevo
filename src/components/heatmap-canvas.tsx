@@ -28,6 +28,17 @@ export function HeatmapCanvas({
   const wrapRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Dimensioni reali rese a schermo: senza queste non si può decidere se
+  // l'etichetta entra nella cornice o va spostata fuori.
+  const [box, setBox] = useState({ w: 0, h: 0 })
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setBox({ w: el.clientWidth, h: el.clientHeight }))
+    ro.observe(el)
+    setBox({ w: el.clientWidth, h: el.clientHeight })
+    return () => ro.disconnect()
+  }, [])
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -83,21 +94,39 @@ export function HeatmapCanvas({
         style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
       />
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', borderRadius: 12 }} />
-      {mode !== 'clean' && zones?.map((z, i) => (
-        <div key={i} title={`${z.label} · ${z.score}`}
-          style={{
-            position: 'absolute', left: `${z.bbox[0] * 100}%`, top: `${z.bbox[1] * 100}%`,
-            width: `${z.bbox[2] * 100}%`, height: `${z.bbox[3] * 100}%`,
-            border: '1.5px dashed rgba(255,255,255,.5)', borderRadius: 6, pointerEvents: 'none',
-            boxShadow: '0 0 0 1px rgba(0,0,0,.25)', overflow: 'hidden',
-          }}>
-          <span style={{
-            position: 'absolute', top: 2, left: 2, fontSize: 10, fontWeight: 700, lineHeight: 1.3,
-            background: 'rgba(17,17,25,.82)', color: '#fff', padding: '1px 5px', borderRadius: 5,
-            whiteSpace: 'nowrap', maxWidth: 'calc(100% - 4px)', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>{z.label} · {z.score}</span>
-        </div>
-      ))}
+      {mode !== 'clean' && zones?.map((z, i) => {
+        const zoneW = z.bbox[2] * box.w
+        const zoneTop = z.bbox[1] * box.h
+        const text = `${i + 1}. ${z.label} · ${z.score}`
+        // Stima della larghezza del testo: se non ci sta, mostriamo solo il
+        // numero (la lista "Zone di attenzione" riporta la stessa numerazione).
+        const fits = zoneW > text.length * 6.1 + 14
+        // Sopra la cornice se c'è spazio, così non copre il contenuto analizzato.
+        const above = zoneTop > 22
+        return (
+          <div key={i} title={`${i + 1}. ${z.label} · ${z.score}`}
+            style={{
+              position: 'absolute', left: `${z.bbox[0] * 100}%`, top: `${z.bbox[1] * 100}%`,
+              width: `${z.bbox[2] * 100}%`, height: `${z.bbox[3] * 100}%`,
+              border: '2px solid rgba(255,255,255,.92)', borderRadius: 6, pointerEvents: 'none',
+              boxShadow: '0 0 0 1.5px rgba(17,17,25,.55), inset 0 0 0 1px rgba(17,17,25,.35)',
+            }}>
+            <span style={{
+              position: 'absolute',
+              ...(above ? { bottom: '100%', marginBottom: 3 } : { top: 2 }),
+              left: -1,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontSize: 10.5, fontWeight: 700, lineHeight: 1.35,
+              background: 'rgba(17,17,25,.9)', color: '#fff',
+              padding: fits ? '2px 7px' : '2px 0', borderRadius: 5,
+              whiteSpace: 'nowrap',
+              width: fits ? 'auto' : 18, justifyContent: fits ? 'flex-start' : 'center',
+            }}>
+              {fits ? text : i + 1}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }

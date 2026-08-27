@@ -128,15 +128,56 @@ function normBbox(b: unknown): Bbox | null {
   return [n[0], n[1], Math.max(0.01, n[2]), Math.max(0.01, n[3])]
 }
 
+/** Frazione dell'area di `a` coperta da `b` (0..1). */
+function coverage(a: Bbox, b: Bbox): number {
+  const x = Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]))
+  const y = Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]))
+  const inter = x * y
+  const areaA = Math.max(1e-6, a[2] * a[3])
+  return inter / areaA
+}
+
+/**
+ * Aggancia un rettangolo stimato dal modello all'elemento reale del DOM che gli
+ * corrisponde. Senza questo, le bbox inventate ritagliano l'elemento a metà o
+ * lo incorniciano storto: qui scegliamo l'elemento che copre meglio la stima
+ * (e che la stima copre a sua volta), così la cornice contiene l'elemento intero.
+ */
+function snapToElement(box: Bbox, elements?: PageElement[]): Bbox {
+  if (!elements?.length) return box
+  let best: { bbox: Bbox; score: number } | null = null
+  for (const el of elements) {
+    const covOfBox = coverage(box, el.bbox)   // quanto dell'elemento sta nella stima
+    const covOfEl = coverage(el.bbox, box)    // quanto della stima sta nell'elemento
+    const ratio = (box[2] * box[3]) / Math.max(1e-6, el.bbox[2] * el.bbox[3])
+    // Accetta solo se si sovrappongono davvero e le dimensioni sono confrontabili.
+    if (covOfBox < 0.55 && covOfEl < 0.55) continue
+    if (ratio > 4 || ratio < 0.08) continue
+    const score = covOfBox + covOfEl
+    if (!best || score > best.score) best = { bbox: el.bbox, score }
+  }
+  return best ? best.bbox : box
+}
+
+/** Evita cornici troppo sottili per essere leggibili e le tiene dentro l'immagine. */
+function usableBox(b: Bbox): Bbox {
+  const w = Math.max(0.03, Math.min(1, b[2]))
+  const h = Math.max(0.02, Math.min(1, b[3]))
+  return [Math.min(b[0], 1 - w), Math.min(b[1], 1 - h), w, h]
+}
+
 export function normalizeResult(raw: any, fallbackGoal: string, elements?: PageElement[]): AttentionResult {
   const r = raw && typeof raw === 'object' ? raw : {}
   const zones = arr<any>(r?.attention?.zones).map((z) => {
     // Prefer the real DOM element's exact rect when the model referenced one.
     const ref = Number(z?.ref)
     const refBox = elements && Number.isInteger(ref) && ref >= 0 && ref < elements.length ? elements[ref].bbox : null
+    // Con "ref" il rettangolo è già quello reale; altrimenti proviamo ad
+    // agganciare la stima all'elemento che le corrisponde.
+    const guess = normBbox(z?.bbox) ?? [0.4, 0.1, 0.2, 0.1] as Bbox
     return {
       label: str(z?.label, 'Zona'),
-      bbox: refBox ?? normBbox(z?.bbox) ?? [0.4, 0.1, 0.2, 0.1],
+      bbox: usableBox(refBox ?? snapToElement(guess, elements)),
       score: clamp(z?.score), reason: str(z?.reason),
     }
   }).filter((z) => z.label).slice(0, 12)
