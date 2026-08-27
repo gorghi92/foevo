@@ -103,22 +103,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  if (!userId) return NextResponse.json({ ok: true, note: 'no matching user' })
-
+  // Attivazione abbonamento: qui, a pagamento confermato, l'account viene creato
+  // se non esiste ancora (flusso pay-first: nessun account prima del pagamento).
   if (event === 'membership.went_valid' && plan) {
     const { data: pkg } = await sc.from('packages')
       .select('id, tier, monthly_quota, unlimited').eq('whop_plan_id', plan).eq('active', true).maybeSingle()
-    if (pkg) {
-      const renewal = data?.renewal_period_end ?? null
-      await sc.from('entitlements').upsert({
-        user_id: userId, package_id: (pkg as any).id, tier: (pkg as any).tier,
-        monthly_quota: (pkg as any).monthly_quota, unlimited: (pkg as any).unlimited,
-        status: 'active', source: 'whop', whop_membership_id: membershipId,
-        current_period_end: renewal ? new Date(renewal * 1000).toISOString() : null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
+    if (!pkg) return NextResponse.json({ ok: true, note: 'plan not mapped' })
+
+    if (!userId && email) {
+      const nm = data?.user?.name ?? data?.name ?? data?.customer?.name ?? data?.member?.name ?? ''
+      const { data: created } = await sc.auth.admin.createUser({
+        email, email_confirm: true, user_metadata: { full_name: String(nm || '').trim() },
+      })
+      userId = created?.user?.id ?? null
+      if (userId) { try { await sc.from('profiles').upsert({ id: userId, email, full_name: String(nm || '').trim() }, { onConflict: 'id' }) } catch { /* trigger */ } }
     }
-  } else if (event === 'membership.went_invalid') {
+    if (!userId) return NextResponse.json({ ok: true, note: 'no user and no email' })
+
+    const renewal = data?.renewal_period_end ?? null
+    await sc.from('entitlements').upsert({
+      user_id: userId, package_id: (pkg as any).id, tier: (pkg as any).tier,
+      monthly_quota: (pkg as any).monthly_quota, unlimited: (pkg as any).unlimited,
+      status: 'active', source: 'whop', whop_membership_id: membershipId,
+      current_period_end: renewal ? new Date(renewal * 1000).toISOString() : null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    return NextResponse.json({ ok: true })
+  }
+
+  if (!userId) return NextResponse.json({ ok: true, note: 'no matching user' })
+
+  if (event === 'membership.went_invalid') {
     await sc.from('entitlements').update({ status: 'past_due', updated_at: new Date().toISOString() }).eq('user_id', userId).eq('source', 'whop')
   } else if (event === 'membership.cancelled') {
     await sc.from('entitlements').update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('user_id', userId).eq('source', 'whop')

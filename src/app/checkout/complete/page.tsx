@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { getUser } from '@/lib/supabase/server'
 import { resolveEntitlement } from '@/server/store'
-import { ActivationPoller } from './poller'
+import { ActivationPoller, ClaimPoller } from './poller'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,12 +33,7 @@ export default async function CheckoutComplete({ searchParams }: { searchParams:
             <Link href="/billing" className="btn btn-primary mt-6 w-full">Riprova</Link>
           </>
         ) : !user ? (
-          <>
-            <CheckCircle2 size={44} className="mx-auto text-green-600" />
-            <h1 className="mt-4 text-xl font-extrabold">Pagamento confermato</h1>
-            <p className="mt-2 text-sm text-muted">Accedi con la stessa email usata al pagamento: il tuo piano sarà già attivo.</p>
-            <Link href="/login" className="btn btn-primary mt-6 w-full">Accedi a Foveo</Link>
-          </>
+          <ClaimPoller />
         ) : active ? (
           <>
             <CheckCircle2 size={44} className="mx-auto text-green-600" />

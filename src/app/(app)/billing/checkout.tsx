@@ -1,27 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Check, X, Loader2 } from 'lucide-react'
-
-const LOADER = 'https://js.whop.com/static/checkout/loader.js'
+import { useEffect, useState } from 'react'
+import { Check, X } from 'lucide-react'
+import { WhopEmbed } from '@/components/whop-embed'
 
 type Pkg = { id: string; name: string; tier: string; slug: string; price_monthly: number; features: string[]; whop_plan_id: string | null }
 
-function ensureLoader() {
-  if (typeof document === 'undefined') return
-  if (document.querySelector(`script[src="${LOADER}"]`)) return
-  const s = document.createElement('script')
-  s.src = LOADER
-  s.async = true
-  s.defer = true
-  document.head.appendChild(s)
-}
-
 function CheckoutModal({ pkg, email, fullName, onClose }: { pkg: Pkg; email: string; fullName: string; onClose: () => void }) {
-  const mountRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
-    ensureLoader()
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [])
@@ -31,7 +17,7 @@ function CheckoutModal({ pkg, email, fullName, onClose }: { pkg: Pkg; email: str
     : `/checkout/complete?plan=${pkg.slug}`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm sm:items-center" onClick={onClose}>
       <div className="relative w-full max-w-md rounded-2xl bg-panel shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <div>
@@ -40,22 +26,8 @@ function CheckoutModal({ pkg, email, fullName, onClose }: { pkg: Pkg; email: str
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-bg" aria-label="Chiudi"><X size={18} /></button>
         </div>
-        <div className="max-h-[75vh] overflow-y-auto p-2">
-          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted" aria-hidden>
-            <Loader2 size={16} className="animate-spin" /> Carico il checkout…
-          </div>
-          {/* Whop embedded checkout: il loader idrata questo nodo e sovrappone l'iframe */}
-          <div
-            ref={mountRef}
-            key={pkg.whop_plan_id || pkg.id}
-            data-whop-checkout-plan-id={pkg.whop_plan_id || ''}
-            data-whop-checkout-return-url={returnUrl}
-            data-whop-checkout-prefill-email={email}
-            data-whop-checkout-prefill-name={fullName}
-            data-whop-checkout-theme="light"
-            data-whop-checkout-theme-accent-color="#e5502e"
-            style={{ minHeight: 480 }}
-          />
+        <div className="max-h-[78vh] overflow-y-auto p-2">
+          <WhopEmbed planId={pkg.whop_plan_id || ''} email={email} fullName={fullName} returnUrl={returnUrl} />
         </div>
       </div>
     </div>
