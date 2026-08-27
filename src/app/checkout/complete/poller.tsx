@@ -72,7 +72,7 @@ export function ClaimPoller({ paymentId }: { paymentId?: string }) {
         <CheckCircle2 size={44} className="mx-auto text-green-600" />
         <h1 className="mt-4 text-xl font-extrabold">Pagamento confermato</h1>
         <p className="mt-2 text-sm text-muted">Accedi con la stessa email del pagamento per entrare: il piano è già attivo.</p>
-        <Link href="/login" className="btn btn-primary mt-6 w-full">Accedi a Foveo</Link>
+        <Link href="/login" className="btn btn-primary mt-6 w-full">Accedi a Foevo</Link>
       </>
     )
   }

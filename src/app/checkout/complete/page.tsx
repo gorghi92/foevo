@@ -23,7 +23,7 @@ export default async function CheckoutComplete({ searchParams }: { searchParams:
       <div className="card w-full max-w-md p-8 text-center">
         <Link href="/" className="mb-6 inline-flex items-center gap-2">
           <span className="heat-dot h-7 w-7 rounded-lg" aria-hidden />
-          <span className="font-display text-base font-extrabold">Foveo</span>
+          <span className="font-display text-base font-extrabold">Foevo</span>
         </Link>
 
         {failed ? (

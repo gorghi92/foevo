@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 /**
  * Invia il link di accesso. Se Resend è configurato, manda un'email BRANDIZZATA
- * Foveo (mittente foevo.app, nessuna menzione Supabase). Altrimenti ripiega sul
+ * Foevo (mittente foevo.app, nessuna menzione Supabase). Altrimenti ripiega sul
  * magic link standard di Supabase, così il login funziona comunque.
  */
 export async function POST(req: Request) {

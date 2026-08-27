@@ -7,16 +7,16 @@ import {
 import { AttentionDemo } from '@/components/landing/attention-demo'
 
 export const metadata: Metadata = {
-  title: 'Foveo — Scopri dove guardano i tuoi clienti, e perché non comprano',
+  title: 'Foevo — Scopri dove guardano i tuoi clienti, e perché non comprano',
   description:
-    'Foveo analizza una tua pagina e restituisce la mappa dell’attenzione più un piano d’azione su brand, CTA, copy e frizioni. Report in circa un minuto, senza script da installare.',
+    'Foevo analizza una tua pagina e restituisce la mappa dell’attenzione più un piano d’azione su brand, CTA, copy e frizioni. Report in circa un minuto, senza script da installare.',
 }
 
 function Wordmark({ className = '' }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <span className="heat-dot h-8 w-8 rounded-xl" aria-hidden />
-      <span className="font-display text-lg font-extrabold tracking-tight">Foveo</span>
+      <span className="font-display text-lg font-extrabold tracking-tight">Foevo</span>
     </div>
   )
 }
@@ -77,7 +77,7 @@ const BENEFICI = [
 
 const STEPS = [
   { n: 1, icon: Chrome, t: 'Installi l’estensione', b: 'Due minuti, con la guida passo-passo. Poi accedi con la tua email e sei operativo.' },
-  { n: 2, icon: MousePointerClick, t: 'Apri una pagina e premi Analizza', b: 'Foveo cattura l’intera pagina — solo quando lo decidi tu — e la manda ai due motori.' },
+  { n: 2, icon: MousePointerClick, t: 'Apri una pagina e premi Analizza', b: 'Foevo cattura l’intera pagina — solo quando lo decidi tu — e la manda ai due motori.' },
   { n: 3, icon: Gauge, t: 'Leggi il report e intervieni', b: 'Heatmap, zone, punteggio e azioni prioritizzate nella tua dashboard. In circa un minuto.' },
 ]
 
@@ -125,28 +125,28 @@ const PER_CHI = [
 
 const NON_PER_CHI = [
   'Cerchi il tracciamento del comportamento reale degli utenti: per quello servono Hotjar o Clarity, e servono settimane di traffico.',
-  'Vuoi che qualcuno rifaccia la pagina al posto tuo: Foveo ti dice cosa cambiare, le modifiche le fai tu.',
+  'Vuoi che qualcuno rifaccia la pagina al posto tuo: Foevo ti dice cosa cambiare, le modifiche le fai tu.',
 ]
 
 const FAQ = [
   {
     q: 'Quanto è attendibile? È eye-tracking vero?',
-    a: 'No, ed è giusto dirlo chiaramente: Foveo produce una stima predittiva, non un tracciamento di occhi reali. Il motore visivo si basa sui modelli di salienza usati nell’eye-tracking predittivo, quello semantico valuta il messaggio. Serve a dirti cosa guardare e cosa testare per primo, oggi — non a sostituire un test su utenti reali.',
+    a: 'No, ed è giusto dirlo chiaramente: Foevo produce una stima predittiva, non un tracciamento di occhi reali. Il motore visivo si basa sui modelli di salienza usati nell’eye-tracking predittivo, quello semantico valuta il messaggio. Serve a dirti cosa guardare e cosa testare per primo, oggi — non a sostituire un test su utenti reali.',
   },
   {
     q: 'Che differenza c’è con Hotjar o Microsoft Clarity?',
-    a: 'Sono strumenti complementari, non alternativi. Quelli registrano cosa fanno gli utenti veri: per averne dati servono traffico e tempo. Foveo lavora prima, sulla pagina così com’è: la analizza subito, anche a traffico zero, e ti dà le ipotesi da verificare. Molti la usano proprio per decidere cosa mandare in test.',
+    a: 'Sono strumenti complementari, non alternativi. Quelli registrano cosa fanno gli utenti veri: per averne dati servono traffico e tempo. Foevo lavora prima, sulla pagina così com’è: la analizza subito, anche a traffico zero, e ti dà le ipotesi da verificare. Molti la usano proprio per decidere cosa mandare in test.',
   },
   {
     q: 'Devo installare qualcosa sul mio sito?',
-    a: 'No. Foveo vive nell’estensione Chrome: nessuno script da mettere nel sito, nessun tag manager, nessun impatto sulle prestazioni. Funziona anche su pagine in staging o protette da password, perché analizza quello che vedi tu nel browser.',
+    a: 'No. Foevo vive nell’estensione Chrome: nessuno script da mettere nel sito, nessun tag manager, nessun impatto sulle prestazioni. Funziona anche su pagine in staging o protette da password, perché analizza quello che vedi tu nel browser.',
   },
   {
     q: 'Come installo l’estensione?',
     a: 'L’estensione non è ancora sul Chrome Web Store: la scarichi dalla tua dashboard e la carichi in Chrome in modalità sviluppatore, seguendo la guida. Sono due minuti, e la guida è passo-passo.',
   },
   {
-    q: 'Foveo cattura le mie pagine in background?',
+    q: 'Foevo cattura le mie pagine in background?',
     a: 'Mai. Lo screenshot viene fatto solo quando premi tu il pulsante Analizza, sulla scheda che hai aperto. Nessuna raccolta automatica, nessun monitoraggio in sottofondo.',
   },
   {
@@ -201,7 +201,7 @@ export default function Landing() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted md:text-xl">
-              Foveo analizza una tua pagina e ti restituisce la mappa dell’attenzione più un piano
+              Foevo analizza una tua pagina e ti restituisce la mappa dell’attenzione più un piano
               d’azione su brand, CTA, copy e frizioni. Senza aspettare settimane di traffico.
             </p>
 
@@ -317,7 +317,7 @@ export default function Landing() {
               <div className="flex items-start gap-3">
                 <ShieldCheck size={20} className="mt-0.5 shrink-0 text-brand" />
                 <div>
-                  <h3 className="font-bold">Cosa Foveo non è</h3>
+                  <h3 className="font-bold">Cosa Foevo non è</h3>
                   <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                     Non è eye-tracking su utenti reali: è una <b className="text-ink">stima predittiva</b>.
                     E non sostituisce un A/B test — ti dice <b className="text-ink">cosa testare per primo</b>, oggi,
@@ -386,7 +386,7 @@ export default function Landing() {
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
             <Eyebrow>Per chi è</Eyebrow>
-            <h2 className="text-2xl font-extrabold leading-tight md:text-[2rem]">Foveo è per te se…</h2>
+            <h2 className="text-2xl font-extrabold leading-tight md:text-[2rem]">Foevo è per te se…</h2>
             <ul className="mt-6 space-y-3">
               {PER_CHI.map((p) => (
                 <li key={p} className="flex items-start gap-3 text-[15px] leading-relaxed">
@@ -517,10 +517,11 @@ export default function Landing() {
         {/* origine del nome */}
         <div className="mx-auto max-w-6xl px-6 pb-9">
           <p className="max-w-2xl border-t border-line pt-5 text-xs leading-relaxed text-muted">
-            <b className="text-ink">Il nome.</b> La <i>fovea</i> è la piccola cavità al centro della
-            retina dove la vista è più nitida: il punto esatto su cui cade lo sguardo, mentre tutto
-            il resto resta periferia. In latino <i>foveo</i> significa anche «tenere caldo» — da lì
-            le mappe di calore.
+            <b className="text-ink">Il nome.</b> La <i>fovea</i> è la fossetta al centro della
+            retina dove la vista è più nitida: il punto in cui l’occhio mette a fuoco l’attenzione.
+            Sulla retina, però, ogni immagine arriva capovolta — è il cervello a rimetterla dritta.
+            Anche <b className="text-ink">Foevo</b> ha due lettere scambiate di posto: un piccolo
+            promemoria che quello che credi si veda non è mai esattamente quello che si vede.
           </p>
         </div>
       </footer>

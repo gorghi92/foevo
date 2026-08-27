@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line bg-panel px-4 py-5 md:flex">
         <Link href="/dashboard" className="mb-7 flex items-center gap-2.5 px-2">
           <span className="heat-dot h-8 w-8 rounded-xl" aria-hidden />
-          <span className="font-display text-base font-extrabold tracking-tight">Foveo</span>
+          <span className="font-display text-base font-extrabold tracking-tight">Foevo</span>
         </Link>
 
         <SidebarNav admin={admin} />
@@ -58,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-panel/95 px-5 py-3 backdrop-blur md:hidden">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="heat-dot h-7 w-7 rounded-lg" aria-hidden />
-            <span className="font-display text-base font-extrabold">Foveo</span>
+            <span className="font-display text-base font-extrabold">Foevo</span>
           </Link>
           <form action="/auth/signout" method="post">
             <button className="flex items-center gap-1.5 text-sm font-medium text-muted" aria-label="Esci">

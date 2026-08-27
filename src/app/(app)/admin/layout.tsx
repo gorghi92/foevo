@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <h1 className="text-xl font-extrabold">Quartier generale</h1>
         <span className="ml-auto truncate text-xs text-muted">{user?.email}</span>
       </div>
-      <p className="mb-4 text-sm text-muted">Controllo e gestione dell’intera piattaforma Foveo.</p>
+      <p className="mb-4 text-sm text-muted">Controllo e gestione dell’intera piattaforma Foevo.</p>
       <AdminTabs />
       <div className="mt-5">{children}</div>
     </div>

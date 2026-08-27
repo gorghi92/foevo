@@ -1,4 +1,4 @@
--- Foveo initial schema. Apply via Supabase SQL editor or `supabase db push`.
+-- Foevo initial schema. Apply via Supabase SQL editor or `supabase db push`.
 -- Per-user model (no organizations): everything keyed by auth.users.
 
 -- ---------- profiles ----------

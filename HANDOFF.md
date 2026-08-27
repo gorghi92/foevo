@@ -1,13 +1,13 @@
-# Foveo — HANDOFF (continua da qui)
+# Foevo — HANDOFF (continua da qui)
 
-> Documento operativo per completare il setup di **Foveo** in una nuova sessione
-> Claude Code agganciata al repo **`gorghi92/foveo`**. Contiene tutto: contesto,
+> Documento operativo per completare il setup di **Foevo** in una nuova sessione
+> Claude Code agganciata al repo **`gorghi92/foevo`**. Contiene tutto: contesto,
 > mappa del codice, passi di setup, SQL della migrazione e lista delle env.
 > Scritto in italiano; il codice/commenti sono in italiano+inglese.
 
 ## 0. Prompt da incollare alla nuova sessione
 
-> "Leggi `HANDOFF.md` nella root. Il progetto Foveo è già scritto (Next.js 14 +
+> "Leggi `HANDOFF.md` nella root. Il progetto Foevo è già scritto (Next.js 14 +
 > Supabase + Tailwind + estensione Chrome). Aiutami a: (1) verificare che il
 > codice sia nel repo, (2) validare build/typecheck, (3) eseguire la migrazione
 > Supabase, (4) preparare le env per Vercel, (5) guidarmi al deploy. Procedi
@@ -15,7 +15,7 @@
 
 ---
 
-## 1. Cos'è Foveo
+## 1. Cos'è Foevo
 
 Piattaforma **standalone** (auth/DB/billing propri) + **estensione Chrome** che
 cattura lo screenshot full-page di una landing/scheda prodotto e genera una
@@ -59,17 +59,17 @@ src/
   server/{api-key,store}.ts
   components/heatmap-canvas.tsx
 supabase/migrations/0001_init.sql     schema completo (vedi Appendice B)
-extension/                            estensione MV3 Foveo (endpoint configurabile)
+extension/                            estensione MV3 Foevo (endpoint configurabile)
 ```
 
 ## 4. STEP 1 — Assicurati che il codice sia nel repo
 
-Se il repo `gorghi92/foveo` è **vuoto**, porta dentro il contenuto dello zip
-`foveo.zip` (fornito dall'operatore), poi:
+Se il repo `gorghi92/foevo` è **vuoto**, porta dentro il contenuto dello zip
+`foevo.zip` (fornito dall'operatore), poi:
 
 ```bash
 git add -A
-git commit -m "chore: import Foveo"   # se non già committato
+git commit -m "chore: import Foevo"   # se non già committato
 git branch -M main
 git push -u origin main
 ```
@@ -134,7 +134,7 @@ Next 14 + `@supabase/ssr`.
 
 ## 8. STEP 5 — Deploy su Vercel
 
-1. Vercel → **Add New Project** → importa `gorghi92/foveo`.
+1. Vercel → **Add New Project** → importa `gorghi92/foevo`.
 2. Framework: Next.js (auto). Aggiungi tutte le env (STEP 3).
 3. Deploy. Imposta `NEXT_PUBLIC_APP_URL` = dominio Vercel/custom.
 4. Torna su Supabase → Auth → URL Configuration: aggiorna Site/Redirect al dominio prod.
@@ -151,11 +151,11 @@ Next 14 + `@supabase/ssr`.
 
 ## 10. STEP 7 — Estensione Chrome
 
-- `extension/`: MV3 già brandizzata Foveo. In **Impostazioni ⚙** imposta
-  l'endpoint = dominio Foveo e incolla una **API key** da `/settings/api-keys`.
+- `extension/`: MV3 già brandizzata Foevo. In **Impostazioni ⚙** imposta
+  l'endpoint = dominio Foevo e incolla una **API key** da `/settings/api-keys`.
 - Nessun host permission di default: l'endpoint https configurato è concesso a
   runtime. Packaging/submit: vedi `extension/store/listing.md`.
-- Una copia zip è servita da `/extension/foveo-attention.zip`.
+- Una copia zip è servita da `/extension/foevo-attention.zip`.
 
 ## 11. Limitazioni note (MVP) e prossimi step
 
@@ -177,7 +177,7 @@ Non committare mai `.env*` (già in `.gitignore`). Il `SUPABASE_SERVICE_ROLE_KEY
 ## Appendice A — `.env.example` (completo)
 
 ```dotenv
-# ---- Foveo environment ----
+# ---- Foevo environment ----
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # ---- Supabase ----
@@ -199,7 +199,7 @@ DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
-R2_BUCKET=foveo-media
+R2_BUCKET=foevo-media
 R2_ENDPOINT=
 R2_PUBLIC_BASE=
 
@@ -313,5 +313,5 @@ end $$;
 
 ---
 
-Fine handoff. Con questo, una nuova sessione Claude su `gorghi92/foveo` ha tutto
-il necessario per portare Foveo online.
+Fine handoff. Con questo, una nuova sessione Claude su `gorghi92/foevo` ha tutto
+il necessario per portare Foevo online.

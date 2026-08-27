@@ -6,7 +6,7 @@
  * quindi il prompt si genera all'istante, a costo zero e anche per le analisi
  * fatte in passato.
  *
- * Regola di fondo: Foveo vede la pagina renderizzata, NON il codice sorgente.
+ * Regola di fondo: Foevo vede la pagina renderizzata, NON il codice sorgente.
  * Il prompt descrive quindi *cosa* cambiare e *perché*, e lascia all'assistente
  * il compito di trovare i componenti corrispondenti. Non inventiamo mai nomi di
  * file: sarebbero plausibili e sbagliati.
@@ -171,7 +171,7 @@ export function buildImplementationPrompt(result: AttentionResult, meta: PromptM
     'darli per acquisiti._',
   )
   L.push('')
-  L.push('_Generato da Foveo — foevo.app_')
+  L.push('_Generato da Foevo — foevo.app_')
 
   return L.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
 }

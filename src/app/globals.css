@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Foveo — tema chiaro, accento corallo caldo coerente con la heatmap */
+  /* Foevo — tema chiaro, accento corallo caldo coerente con la heatmap */
   --bg: 250 249 247;
   --panel: 255 255 255;
   --ink: 28 25 23;

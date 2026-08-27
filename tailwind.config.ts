@@ -5,7 +5,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Foveo palette — tema chiaro, accento corallo + heatmap (token in src/app/globals.css)
+        // Foevo palette — tema chiaro, accento corallo + heatmap (token in src/app/globals.css)
         bg: 'rgb(var(--bg) / <alpha-value>)',
         panel: 'rgb(var(--panel) / <alpha-value>)',
         ink: 'rgb(var(--ink) / <alpha-value>)',

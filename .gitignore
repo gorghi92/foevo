@@ -12,4 +12,4 @@ yarn-error.log*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
-extension/foveo-attention-*.zip
+extension/foevo-attention-*.zip

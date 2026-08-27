@@ -15,7 +15,7 @@ const WHOP_FIELDS: { key: string; label: string; hint: string; secret?: boolean;
 ]
 const EMAIL_FIELDS: { key: string; label: string; hint?: string; secret?: boolean; placeholder?: string }[] = [
   { key: 'RESEND_API_KEY', label: 'Resend API key', hint: 'Per inviare email brandizzate da foevo.app (login).', secret: true },
-  { key: 'MAIL_FROM', label: 'Mittente', placeholder: 'Foveo <noreply@foevo.app>' },
+  { key: 'MAIL_FROM', label: 'Mittente', placeholder: 'Foevo <noreply@foevo.app>' },
 ]
 const R2_FIELDS: { key: string; label: string; secret?: boolean; placeholder?: string }[] = [
   { key: 'R2_ACCOUNT_ID', label: 'Account ID', placeholder: 'Cloudflare account id' },

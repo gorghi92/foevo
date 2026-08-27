@@ -1,4 +1,4 @@
-# Installare l'estensione Foveo su Chrome (non ufficiale)
+# Installare l'estensione Foevo su Chrome (non ufficiale)
 
 L'estensione **non è ancora sul Chrome Web Store**, quindi si installa in
 "modalità sviluppatore" caricando la cartella. Bastano 5 minuti, una volta sola.
@@ -10,7 +10,7 @@ Funziona su Chrome, Edge, Brave e altri browser basati su Chromium.
 
 Hai due modi:
 
-- **A) Dallo zip:** scarica `https://foevo.app/extension/foveo-attention.zip`
+- **A) Dallo zip:** scarica `https://foevo.app/extension/foevo-attention.zip`
   e **estrailo** (tasto destro → *Estrai tutto*). Ottieni una cartella con dentro
   `manifest.json`, `src/`, `icons/`.
 - **B) Dal repo:** usa la cartella `extension/` del progetto.
@@ -35,14 +35,14 @@ In alto a destra, attiva l'interruttore **"Modalità sviluppatore"**.
 Clicca **"Carica estensione non pacchettizzata"** (*Load unpacked*) e seleziona
 la **cartella** estratta al punto 1 (quella che contiene `manifest.json`).
 
-Comparirà la scheda "Foveo" con la sua icona. Fissala alla barra col simbolo del
+Comparirà la scheda "Foevo" con la sua icona. Fissala alla barra col simbolo del
 puzzle 🧩 → pin.
 
 ## 5. Collega il tuo account (API key)
 
 1. Accedi a **https://foevo.app** con il tuo account.
 2. Apri il popup dell'estensione → icona **⚙ (Impostazioni)**.
-3. Inserisci la tua **email Foveo** e premi **Invia codice**.
+3. Inserisci la tua **email Foevo** e premi **Invia codice**.
 4. Ti arriva un'email con un **codice a 6 cifre**: incollalo e premi **Accedi**.
    Nessuna password e nessuna chiave da gestire.
 
@@ -50,7 +50,7 @@ puzzle 🧩 → pin.
 
 1. Apri una qualsiasi landing / scheda prodotto (una pagina `http`/`https`
    normale — non funziona su `chrome://` o sullo store).
-2. Clicca l'icona Foveo → (opzionale) scegli obiettivo e contesto →
+2. Clicca l'icona Foevo → (opzionale) scegli obiettivo e contesto →
    **"Analizza questa pagina"**.
 3. L'estensione cattura lo screenshot full-page e apre il **report** con heatmap
    e analisi AI sulla piattaforma.
@@ -61,7 +61,7 @@ puzzle 🧩 → pin.
 
 - L'**estensione** vive nel browser perché è l'unico posto da cui si può
   catturare davvero lo screenshot dell'intera pagina (scroll + ricomposizione).
-- Il **cervello** (heatmap CV + analisi AI) gira sul **server** di Foveo, non nel
+- Il **cervello** (heatmap CV + analisi AI) gira sul **server** di Foevo, non nel
   browser: lì stanno le chiavi dei modelli, il tuo piano e lo storico analisi.
 - La **API key** è il ponte tra i due: dice al server "questa cattura è del tuo
   account", senza doverti far rifare il login dentro l'estensione. Così il report
@@ -85,4 +85,4 @@ non ci pensi più.
 ## Aggiornare l'estensione
 
 Sostituisci la cartella con la versione nuova e, in `chrome://extensions`, premi
-l'icona **↻ (ricarica)** sulla scheda Foveo.
+l'icona **↻ (ricarica)** sulla scheda Foevo.

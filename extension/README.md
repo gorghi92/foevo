@@ -1,7 +1,7 @@
-# Foveo — Chrome Extension
+# Foevo — Chrome Extension
 
 MV3 extension that captures a full-page screenshot of the active tab and sends it
-to the Foveo platform, which returns an **attention heatmap** + an **AI
+to the Foevo platform, which returns an **attention heatmap** + an **AI
 conversion analysis** (brand, colors, CTAs, copy, frictions, recommendations).
 
 ## Install (dev / unpacked)
@@ -52,11 +52,11 @@ files `scripts/` and `store/`):
 
 ```sh
 cd apps/extension
-zip -r -q foveo-attention-$(node -p "require('./manifest.json').version").zip \
+zip -r -q foevo-attention-$(node -p "require('./manifest.json').version").zip \
   manifest.json src icons PRIVACY.md
 ```
 
 Then follow `store/listing.md` for the Developer Dashboard fields, privacy URL,
 permission justifications, data disclosures, and screenshot spec. Bump
 `manifest.json` `version` before every upload (the store rejects duplicates).
-A convenience copy is served at `/extension/foveo-attention.zip`.
+A convenience copy is served at `/extension/foevo-attention.zip`.

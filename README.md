@@ -1,4 +1,4 @@
-# Foveo
+# Foevo
 
 Attention heatmaps + AI conversion analysis for landing pages and product pages.
 A **standalone platform** (its own auth, database, billing) plus a **Chrome extension**.
@@ -41,7 +41,7 @@ src/
   server/{api-key,store}.ts
   components/heatmap-canvas.tsx
 supabase/migrations/0001_init.sql
-extension/                      MV3 Chrome extension (Foveo-branded)
+extension/                      MV3 Chrome extension (Foevo-branded)
 ```
 
 ## Setup
@@ -64,15 +64,15 @@ extension/                      MV3 Chrome extension (Foveo-branded)
 
 - In `/admin`, create packages and set each `whop_plan_id`; set `WHOP_CHECKOUT_BASE`.
 - On `membership.went_valid/invalid/cancelled`, the webhook matches the Whop
-  member by **email** to a Foveo user and updates their entitlement (tier + quota).
+  member by **email** to a Foevo user and updates their entitlement (tier + quota).
 - Users without an active entitlement cannot analyse: there is no free trial.
 
 ## Extension
 
-`extension/` is a Foveo-branded MV3 extension. Set its endpoint (Settings ⚙) to your
-Foveo domain and paste an API key from `/settings/api-keys`. It ships with no default
+`extension/` is a Foevo-branded MV3 extension. Set its endpoint (Settings ⚙) to your
+Foevo domain and paste an API key from `/settings/api-keys`. It ships with no default
 host permission — the configured https endpoint is granted at runtime. Package per
-`extension/store/listing.md`. A build copy is served at `/extension/foveo-attention.zip`.
+`extension/store/listing.md`. A build copy is served at `/extension/foevo-attention.zip`.
 
 ## Known limitations (MVP)
 

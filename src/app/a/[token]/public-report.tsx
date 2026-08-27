@@ -38,7 +38,7 @@ function Gauge({ label, value }: { label: string; value: number }) {
   )
 }
 
-/** Read-only, publicly shareable, Foveo-branded analysis report. */
+/** Read-only, publicly shareable, Foevo-branded analysis report. */
 export function PublicReport({ data }: { data: any }) {
   const [mode, setMode] = useState<ViewMode>('heat')
   const [zones, setZones] = useState(true)
@@ -54,7 +54,7 @@ export function PublicReport({ data }: { data: any }) {
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <span className="inline-block h-6 w-6 rounded-lg" style={{ background: 'linear-gradient(135deg,#7c5cff,#f0a020)' }} />
-            <span className="text-lg font-extrabold tracking-tight">Foveo</span>
+            <span className="text-lg font-extrabold tracking-tight">Foevo</span>
           </Link>
           <span className="hidden text-xs text-muted sm:inline">· Heatmap di attenzione &amp; analisi AI di conversione</span>
           <Link href="/signup" className="btn btn-primary ml-auto px-3 py-1.5 text-[13px]">Analizza la tua pagina →</Link>
@@ -202,10 +202,10 @@ export function PublicReport({ data }: { data: any }) {
         {/* Branded footer / CTA */}
         <div className="mt-8 rounded-2xl border border-line bg-panel p-6 text-center">
           <div className="text-lg font-extrabold">Vuoi la stessa analisi sulle tue pagine?</div>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted">Foveo genera una heatmap di attenzione ibrida (computer-vision + AI) e un&apos;analisi orientata alla conversione, direttamente dal browser.</p>
-          <Link href="/signup" className="btn btn-primary mt-4 px-5 py-2">Inizia gratis con Foveo</Link>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted">Foevo genera una heatmap di attenzione ibrida (computer-vision + AI) e un&apos;analisi orientata alla conversione, direttamente dal browser.</p>
+          <Link href="/signup" className="btn btn-primary mt-4 px-5 py-2">Inizia gratis con Foevo</Link>
         </div>
-        <p className="mt-6 text-center text-xs text-muted">Report generato con <Link href="/" className="font-semibold text-brand">Foveo</Link></p>
+        <p className="mt-6 text-center text-xs text-muted">Report generato con <Link href="/" className="font-semibold text-brand">Foevo</Link></p>
       </main>
     </div>
   )

@@ -104,7 +104,7 @@ export async function POST(req: Request): Promise<Response> {
           if (await r2Put(key, Buffer.from(m[2], 'base64'), m[1])) screenshotUrl = r2PublicUrl(key)
         }
       }
-    } catch (e) { console.error('[foveo] R2 upload failed', e) }
+    } catch (e) { console.error('[foevo] R2 upload failed', e) }
     await attachScreenshot(id, screenshotUrl)
 
     try {

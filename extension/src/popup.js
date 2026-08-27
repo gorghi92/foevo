@@ -1,4 +1,4 @@
-/* Foveo — popup controller */
+/* Foevo — popup controller */
 const DEFAULT_BASE = 'https://foevo.app'
 const $ = (id) => document.getElementById(id)
 
@@ -45,8 +45,8 @@ async function refreshLinks() {
   els.dashLink.href = `${apiBase}/dashboard`
   if (els.signup) els.signup.href = `${apiBase}/signup`
   els.tierHint.textContent = apiKey
-    ? 'La profondità dell\'analisi dipende dal tuo piano Foveo.'
-    : '⚠ Accedi con il tuo account Foveo dalle impostazioni (⚙).'
+    ? 'La profondità dell\'analisi dipende dal tuo piano Foevo.'
+    : '⚠ Accedi con il tuo account Foevo dalle impostazioni (⚙).'
   els.acct.textContent = apiKey ? (email || 'connesso') : 'non connesso'
 }
 
@@ -62,7 +62,7 @@ async function openSettings() {
 els.settingsBtn.addEventListener('click', openSettings)
 els.backBtn.addEventListener('click', () => { show('main'); refreshLinks() })
 
-/* L'host di Foveo è dichiarato in "host_permissions" nel manifest, quindi il
+/* L'host di Foevo è dichiarato in "host_permissions" nel manifest, quindi il
  * permesso c'è già: non chiediamo nulla a runtime. Concedere un permesso, in
  * MV3, riavvia il contesto del popup e interrompe l'operazione in corso — era
  * il motivo per cui il primo tentativo di login sembrava non fare nulla. */
@@ -171,7 +171,7 @@ if (els.code) {
 els.analyzeBtn.addEventListener('click', async () => {
   setError('')
   const { apiBase, apiKey } = await getSettings()
-  if (!apiKey) { setError('Accedi prima con il tuo account Foveo (⚙).'); await openSettings(); return }
+  if (!apiKey) { setError('Accedi prima con il tuo account Foevo (⚙).'); await openSettings(); return }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab || !/^https?:/.test(tab.url || '')) {

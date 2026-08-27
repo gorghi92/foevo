@@ -19,10 +19,10 @@ async function load(token: string) {
 
 export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
   const data = await load(params.token)
-  const title = data ? `Foveo · analisi di ${data.title || data.url || 'una pagina'}` : 'Foveo'
+  const title = data ? `Foevo · analisi di ${data.title || data.url || 'una pagina'}` : 'Foevo'
   return {
     title,
-    description: data?.result?.summary || 'Heatmap di attenzione e analisi AI di conversione — Foveo.',
+    description: data?.result?.summary || 'Heatmap di attenzione e analisi AI di conversione — Foevo.',
     robots: { index: false },
   }
 }

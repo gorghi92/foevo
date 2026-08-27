@@ -44,7 +44,7 @@ export default async function DashboardPage() {
           </>
         }
         actions={
-          <a href="/extension/foveo-attention.zip" download className="btn btn-primary">
+          <a href="/extension/foevo-attention.zip" download className="btn btn-primary">
             <Chrome size={15} /> Scarica estensione
           </a>
         }

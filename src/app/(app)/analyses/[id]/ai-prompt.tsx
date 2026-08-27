@@ -33,12 +33,12 @@ export function AiPrompt({
   }
 
   function download() {
-    const slug = (title || url || 'foveo').toString().toLowerCase()
+    const slug = (title || url || 'foevo').toString().toLowerCase()
       .replace(/https?:\/\//, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48)
     const blob = new Blob([prompt], { type: 'text/markdown;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `prompt-${slug || 'foveo'}.md`
+    a.download = `prompt-${slug || 'foevo'}.md`
     document.body.appendChild(a)
     a.click()
     a.remove()

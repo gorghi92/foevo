@@ -1,4 +1,4 @@
-/* Foveo — background service worker
+/* Foevo — background service worker
  * Captures a full-page screenshot (scroll + stitch), builds a downscaled
  * display image + a tiny RGB sample for server-side saliency, and POSTs it. */
 
@@ -92,9 +92,9 @@ function pageCollectElements(vw, pageH) {
 }
 function pagePrepare() {
   const w = window
-  w.__foveo = { x: w.scrollX, y: w.scrollY, htmlOverflow: document.documentElement.style.overflow }
+  w.__foevo = { x: w.scrollX, y: w.scrollY, htmlOverflow: document.documentElement.style.overflow }
   const s = document.createElement('style')
-  s.id = '__foveo_style'
+  s.id = '__foevo_style'
   s.textContent = '::-webkit-scrollbar{display:none!important}html{scroll-behavior:auto!important}'
   document.documentElement.appendChild(s)
 }
@@ -109,14 +109,14 @@ function pageHideSticky() {
       el.style.visibility = 'hidden'
     }
   }
-  window.__foveo = window.__foveo || {}
-  window.__foveo.hidden = hidden
+  window.__foevo = window.__foevo || {}
+  window.__foevo.hidden = hidden
 }
 function pageScrollTo(y) { window.scrollTo(0, y) }
 function pageRestore() {
-  const g = window.__foveo || {}
+  const g = window.__foevo || {}
   ;(g.hidden || []).forEach(([el, v]) => { el.style.visibility = v })
-  const s = document.getElementById('__foveo_style'); if (s) s.remove()
+  const s = document.getElementById('__foevo_style'); if (s) s.remove()
   document.documentElement.style.overflow = g.htmlOverflow || ''
   window.scrollTo(g.x || 0, g.y || 0)
 }

@@ -58,7 +58,7 @@ export default function AnalysesGrid({ initial }: { initial: Row[] }) {
         title="Nessuna analisi, per ora"
         body="Apri una pagina nel browser e premi Analizza dall’estensione: heatmap, punteggio e raccomandazioni compariranno qui."
         action={
-          <a href="/extension/foveo-attention.zip" download className="btn btn-primary">
+          <a href="/extension/foevo-attention.zip" download className="btn btn-primary">
             Scarica l’estensione
           </a>
         }

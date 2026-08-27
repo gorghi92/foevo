@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Foveo — Attention Heatmap & AI Page Analysis",
-  "version": "1.2.0",
+  "name": "Foevo — Attention Heatmap & AI Page Analysis",
+  "version": "1.2.1",
   "description": "Scansiona una landing o scheda prodotto e genera una heatmap di attenzione + analisi AI orientata alla conversione.",
   "homepage_url": "https://foevo.app",
   "minimum_chrome_version": "109",
   "action": {
-    "default_title": "Foveo",
+    "default_title": "Foevo",
     "default_popup": "src/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

@@ -1,9 +1,9 @@
-# Privacy Policy — Foveo (Chrome extension)
+# Privacy Policy — Foevo (Chrome extension)
 
 _Last updated: 2026-08-26_
 
-Foveo captures a screenshot of a web page **you explicitly choose to
-analyze** and sends it to the Foveo platform to generate an attention heatmap
+Foevo captures a screenshot of a web page **you explicitly choose to
+analyze** and sends it to the Foevo platform to generate an attention heatmap
 and a conversion-oriented analysis. This policy explains exactly what is handled.
 
 ## What the extension accesses

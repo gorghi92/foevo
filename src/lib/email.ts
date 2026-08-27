@@ -4,7 +4,7 @@ import { getSettings } from './settings'
 export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<boolean> {
   const s = await getSettings()
   const key = s.RESEND_API_KEY || process.env.RESEND_API_KEY || ''
-  const from = s.MAIL_FROM || process.env.MAIL_FROM || 'Foveo <noreply@foevo.app>'
+  const from = s.MAIL_FROM || process.env.MAIL_FROM || 'Foevo <noreply@foevo.app>'
   if (!key) return false
   try {
     const r = await fetch('https://api.resend.com/emails', {
@@ -50,7 +50,7 @@ function shell(opts: { title: string; preheader?: string; body: string }): strin
           <td style="vertical-align:middle">
             <div style="width:30px;height:30px;border-radius:9px;background-color:#ff5a3c;background-image:radial-gradient(circle at 50% 40%, #ff5a3c 0%, #ffb020 45%, #6d28d9 78%)"></div>
           </td>
-          <td style="vertical-align:middle;padding-left:11px;font-size:18px;font-weight:800;letter-spacing:-.3px;color:#1c1917">Foveo</td>
+          <td style="vertical-align:middle;padding-left:11px;font-size:18px;font-weight:800;letter-spacing:-.3px;color:#1c1917">Foevo</td>
         </tr></table>
       </td></tr>
       <!-- body -->
@@ -61,13 +61,13 @@ function shell(opts: { title: string; preheader?: string; body: string }): strin
       <!-- footer -->
       <tr><td style="padding:0 30px 26px">
         <div style="border-top:1px solid #f2eee9;padding-top:18px;font-size:12px;line-height:1.6;color:#a8a29e">
-          <strong style="color:#78716c">Foveo</strong> — Attention heatmaps &amp; AI conversion analysis<br>
+          <strong style="color:#78716c">Foevo</strong> — Attention heatmaps &amp; AI conversion analysis<br>
           <a href="${appUrl()}" style="color:${CORAL};text-decoration:none">foevo.app</a>
         </div>
       </td></tr>
     </table>
     <div style="width:480px;max-width:480px;margin-top:14px;font-size:11px;line-height:1.5;color:#b8b2ab;text-align:center">
-      Ricevi questa email perché hai un account Foveo.
+      Ricevi questa email perché hai un account Foevo.
     </div>
   </td></tr>
 </table>
@@ -98,15 +98,15 @@ export function orderConfirmationEmail(d: { planName: string; amount: string; da
     </table>
     ${ctaButton(`${appUrl()}/dashboard`, 'Vai alla dashboard')}
     <p style="${SMALL}">Trovi lo storico pagamenti e le fatture nella sezione <a href="${appUrl()}/billing" style="color:${CORAL};text-decoration:none">Piano</a> del tuo account.</p>`
-  return { subject: 'Il tuo piano Foveo è attivo 🎉', html: shell({ title: 'Grazie per l’acquisto', preheader: 'Pagamento confermato: il tuo piano Foveo è attivo.', body }) }
+  return { subject: 'Il tuo piano Foevo è attivo 🎉', html: shell({ title: 'Grazie per l’acquisto', preheader: 'Pagamento confermato: il tuo piano Foevo è attivo.', body }) }
 }
 
 export function cancellationEmail(d: { until?: string | null }): { subject: string; html: string } {
   const body = `
     <p style="${P}">Abbiamo registrato la richiesta di annullamento del tuo abbonamento.${d.until ? ` Resterà <strong style="color:#1c1917">attivo fino al ${d.until}</strong>, poi non verrà più rinnovato.` : ' Non verrà più rinnovato.'}</p>
-    <p style="${P}">Puoi continuare a usare Foveo fino alla scadenza. Se cambi idea, puoi riattivarlo quando vuoi dalla sezione Piano.</p>
+    <p style="${P}">Puoi continuare a usare Foevo fino alla scadenza. Se cambi idea, puoi riattivarlo quando vuoi dalla sezione Piano.</p>
     ${ctaButton(`${appUrl()}/billing`, 'Gestisci il piano')}`
-  return { subject: 'Abbonamento annullato — Foveo', html: shell({ title: 'Abbonamento annullato', preheader: d.until ? `Attivo fino al ${d.until}.` : 'Non verrà più rinnovato.', body }) }
+  return { subject: 'Abbonamento annullato — Foevo', html: shell({ title: 'Abbonamento annullato', preheader: d.until ? `Attivo fino al ${d.until}.` : 'Non verrà più rinnovato.', body }) }
 }
 
 /**
@@ -129,7 +129,7 @@ export async function sendReceiptOnce(
 
 export function extensionOtpEmail(code: string): { subject: string; html: string } {
   const body = `
-    <p style="${P}">Ecco il codice per collegare l’estensione Foveo al tuo account. Scade tra <b style="color:#1c1917">10 minuti</b>.</p>
+    <p style="${P}">Ecco il codice per collegare l’estensione Foevo al tuo account. Scade tra <b style="color:#1c1917">10 minuti</b>.</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;background:#fdfcfb;margin:0 0 20px">
       <tr><td align="center" style="padding:22px 16px">
         <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:10px;text-indent:10px;color:${CORAL}">${code}</div>
@@ -137,12 +137,12 @@ export function extensionOtpEmail(code: string): { subject: string; html: string
     </table>
     <p style="${SMALL}">Inseriscilo nella finestra dell’estensione per completare l’accesso. Il codice funziona una sola volta.</p>
     <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a8a29e">Se non hai richiesto tu l’accesso, ignora questa email: senza il codice nessuno può entrare.</p>`
-  return { subject: `${code} è il tuo codice Foveo`, html: shell({ title: 'Il tuo codice di accesso', preheader: `Codice ${code} — scade tra 10 minuti.`, body }) }
+  return { subject: `${code} è il tuo codice Foevo`, html: shell({ title: 'Il tuo codice di accesso', preheader: `Codice ${code} — scade tra 10 minuti.`, body }) }
 }
 
 export function emailChangeOtpEmail(code: string, newEmail: string): { subject: string; html: string } {
   const body = `
-    <p style="${P}">Hai chiesto di usare <b style="color:#1c1917">${newEmail}</b> come nuova email di accesso a Foveo. Conferma con questo codice, valido <b style="color:#1c1917">10 minuti</b>.</p>
+    <p style="${P}">Hai chiesto di usare <b style="color:#1c1917">${newEmail}</b> come nuova email di accesso a Foevo. Conferma con questo codice, valido <b style="color:#1c1917">10 minuti</b>.</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;background:#fdfcfb;margin:0 0 20px">
       <tr><td align="center" style="padding:22px 16px">
         <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:10px;text-indent:10px;color:${CORAL}">${code}</div>
@@ -150,14 +150,14 @@ export function emailChangeOtpEmail(code: string, newEmail: string): { subject: 
     </table>
     <p style="${SMALL}">Il cambio diventa effettivo solo dopo aver inserito il codice nella pagina Profilo.</p>
     <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a8a29e">Se non hai richiesto tu questa modifica, ignora l&rsquo;email: senza il codice l&rsquo;indirizzo non viene cambiato.</p>`
-  return { subject: `${code} — conferma la nuova email Foveo`, html: shell({ title: 'Conferma la nuova email', preheader: `Codice ${code} per confermare ${newEmail}.`, body }) }
+  return { subject: `${code} — conferma la nuova email Foevo`, html: shell({ title: 'Conferma la nuova email', preheader: `Codice ${code} per confermare ${newEmail}.`, body }) }
 }
 
 export function magicLinkEmail(link: string): { subject: string; html: string } {
   const body = `
-    <p style="${P}">Usa il pulsante qui sotto per accedere al tuo account Foveo. Il link scade a breve e può essere usato una sola volta.</p>
-    ${ctaButton(link, 'Accedi a Foveo')}
+    <p style="${P}">Usa il pulsante qui sotto per accedere al tuo account Foevo. Il link scade a breve e può essere usato una sola volta.</p>
+    ${ctaButton(link, 'Accedi a Foevo')}
     <p style="${SMALL}">Se il pulsante non funziona, copia e incolla questo indirizzo nel browser:<br><span style="color:#78716c;word-break:break-all">${link}</span></p>
     <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a8a29e">Se non hai richiesto tu l'accesso, ignora questa email.</p>`
-  return { subject: 'Il tuo link di accesso a Foveo', html: shell({ title: 'Il tuo link di accesso', preheader: 'Accedi al tuo account Foveo con un click.', body }) }
+  return { subject: 'Il tuo link di accesso a Foevo', html: shell({ title: 'Il tuo link di accesso', preheader: 'Accedi al tuo account Foevo con un click.', body }) }
 }

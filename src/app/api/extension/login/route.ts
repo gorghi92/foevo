@@ -6,7 +6,7 @@ import { generateKey } from '@/server/api-key'
 export const runtime = 'nodejs'
 
 /**
- * Login dell'estensione con le credenziali Foveo: valida email/password su
+ * Login dell'estensione con le credenziali Foevo: valida email/password su
  * Supabase e restituisce una API key per il device. L'utente non deve più
  * creare/incollare chiavi a mano — l'estensione la ottiene con il login.
  */
