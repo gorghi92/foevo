@@ -38,4 +38,58 @@
   .card { @apply rounded-2xl border border-line bg-panel; }
   .label { @apply text-xs font-semibold uppercase tracking-wide text-muted; }
   .heat-dot { background: radial-gradient(circle at 50% 42%, rgb(var(--hot)) 0%, rgb(var(--warm)) 42%, rgb(var(--dot)) 66%); }
+
+  /* --- spettro del logo (corallo → ambra → viola) come linguaggio grafico --- */
+
+  /* Testo con riempimento a gradiente: solo corallo→viola, l'ambra pura
+     non ha contrasto sufficiente sul chiaro. */
+  .heat-text {
+    background-image: linear-gradient(100deg, rgb(var(--hot)) 0%, rgb(var(--brand)) 38%, rgb(var(--dot)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Bordo/filo a gradiente pieno spettro */
+  .heat-rule {
+    background-image: linear-gradient(90deg, rgb(var(--hot)), rgb(var(--warm)) 42%, rgb(var(--dot)));
+  }
+
+  /* Cornice a gradiente (usa una maschera per lasciare vuoto l'interno) */
+  .heat-frame {
+    position: relative;
+    isolation: isolate;
+  }
+  .heat-frame::before {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(135deg, rgb(var(--hot)), rgb(var(--warm)) 45%, rgb(var(--dot)));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    z-index: -1;
+  }
+
+  /* Alone morbido multi-colore per gli sfondi delle sezioni */
+  .heat-aurora {
+    background:
+      radial-gradient(42% 55% at 18% 28%, rgb(var(--dot) / .16), transparent 68%),
+      radial-gradient(48% 60% at 78% 22%, rgb(var(--warm) / .20), transparent 68%),
+      radial-gradient(58% 70% at 50% 96%, rgb(var(--hot) / .22), transparent 66%);
+  }
+}
+
+@layer utilities {
+  @keyframes heat-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(0, -14px, 0) scale(1.06); }
+  }
+  .animate-heat-drift { animation: heat-drift 11s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-heat-drift { animation: none; }
+  }
 }

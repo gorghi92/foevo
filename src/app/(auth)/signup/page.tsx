@@ -14,13 +14,13 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Il pacchetto scelto dalla landing arriva come ?plan=premium|base|test
+  // Il pacchetto scelto dalla landing arriva come ?plan=premium|base
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get('plan')
-    if (p === 'premium' || p === 'base' || p === 'test') setPlan(p)
+    if (p === 'premium' || p === 'base') setPlan(p)
   }, [])
 
-  const planLabel = plan === 'premium' ? 'Premium' : plan === 'test' ? 'Test 1€' : 'Base'
+  const planLabel = plan === 'premium' ? 'Premium' : 'Base'
 
   async function send(e: React.FormEvent) {
     e.preventDefault()
