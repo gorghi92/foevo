@@ -95,33 +95,45 @@ export function HeatmapCanvas({
       />
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', borderRadius: 12 }} />
       {mode !== 'clean' && zones?.map((z, i) => {
-        const zoneW = z.bbox[2] * box.w
-        const zoneTop = z.bbox[1] * box.h
         const text = `${i + 1}. ${z.label} · ${z.score}`
-        // Stima della larghezza del testo: se non ci sta, mostriamo solo il
-        // numero (la lista "Zone di attenzione" riporta la stessa numerazione).
-        const fits = zoneW > text.length * 6.1 + 14
+        const textW = text.length * 6.1 + 14 // stima a 10.5px bold
+        const zoneTop = z.bbox[1] * box.h
         // Sopra la cornice se c'è spazio, così non copre il contenuto analizzato.
         const above = zoneTop > 22
+        // Fuori dal riquadro l'etichetta può sporgere a destra senza coprire
+        // nulla: lo spazio utile è fino al bordo dell'immagine, non la
+        // larghezza della zona. Dentro al riquadro, invece, deve starci.
+        const room = above
+          ? (1 - z.bbox[0]) * box.w - 4
+          : z.bbox[2] * box.w
+        // Se non ci sta mostriamo solo il numero, col testo completo nel
+        // tooltip (la lista "Zone di attenzione" usa la stessa numerazione).
+        const fits = box.w > 0 && room > textW
         return (
-          <div key={i} title={`${i + 1}. ${z.label} · ${z.score}`}
+          <div key={i}
             style={{
               position: 'absolute', left: `${z.bbox[0] * 100}%`, top: `${z.bbox[1] * 100}%`,
               width: `${z.bbox[2] * 100}%`, height: `${z.bbox[3] * 100}%`,
               border: '2px solid rgba(255,255,255,.92)', borderRadius: 6, pointerEvents: 'none',
               boxShadow: '0 0 0 1.5px rgba(17,17,25,.55), inset 0 0 0 1px rgba(17,17,25,.35)',
             }}>
-            <span style={{
-              position: 'absolute',
-              ...(above ? { bottom: '100%', marginBottom: 3 } : { top: 2 }),
-              left: -1,
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 10.5, fontWeight: 700, lineHeight: 1.35,
-              background: 'rgba(17,17,25,.9)', color: '#fff',
-              padding: fits ? '2px 7px' : '2px 0', borderRadius: 5,
-              whiteSpace: 'nowrap',
-              width: fits ? 'auto' : 18, justifyContent: fits ? 'flex-start' : 'center',
-            }}>
+            {/* pointerEvents riattivato solo sull'etichetta: il riquadro resta
+                trasparente ai click, ma il tooltip nativo ha bisogno dell'hover. */}
+            <span
+              title={text}
+              aria-label={text}
+              style={{
+                position: 'absolute',
+                ...(above ? { bottom: '100%', marginBottom: 3 } : { top: 2 }),
+                left: -1,
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 10.5, fontWeight: 700, lineHeight: 1.35,
+                background: 'rgba(17,17,25,.9)', color: '#fff',
+                padding: fits ? '2px 7px' : '2px 0', borderRadius: 5,
+                whiteSpace: 'nowrap',
+                width: fits ? 'auto' : 18, justifyContent: fits ? 'flex-start' : 'center',
+                pointerEvents: 'auto', cursor: fits ? 'default' : 'help',
+              }}>
               {fits ? text : i + 1}
             </span>
           </div>
