@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { WhopEmbed } from '@/components/whop-embed'
 
 export default function SignupPage() {
-  const supabase = createClient()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -50,11 +48,15 @@ export default function SignupPage() {
     const j = await res.json().catch(() => ({} as any))
     if (res.ok && j.ok) { window.location.assign('/dashboard'); return }
     if (j.exists) {
-      const { error } = await supabase.auth.signInWithOtp({
-        email, options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      // Email già registrata → link di accesso brandizzato (poi al checkout se c'è un piano).
+      const next = plan ? `/billing?checkout=${plan}` : '/dashboard'
+      const lr = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, next }),
       })
+      const lj = await lr.json().catch(() => ({} as any))
       setLoading(false)
-      if (error) return setError(error.message)
+      if (!lr.ok || !lj.ok) return setError(lj.error || 'Errore')
       setSent(true)
       return
     }

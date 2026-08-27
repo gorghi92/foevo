@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, Copy, RotateCcw, ExternalLink, ShieldCheck, Database, CreditCard } from 'lucide-react'
+import { Check, Copy, RotateCcw, ShieldCheck, Database, CreditCard, Mail } from 'lucide-react'
 
 type Status = Record<string, 'db' | 'env' | 'none'>
 type Pkg = { name: string; slug: string; tier: string; planId: string | null; active: boolean }
@@ -12,6 +12,10 @@ const WHOP_FIELDS: { key: string; label: string; hint: string; secret?: boolean;
   { key: 'WHOP_CHECKOUT_BASE', label: 'URL base checkout', hint: 'Es. https://whop.com/checkout — a questo aggiungiamo il Plan ID del pacchetto.', placeholder: 'https://whop.com/checkout' },
   { key: 'WHOP_API_KEY', label: 'API key', hint: 'Whop → Developer → API keys. Serve per le chiamate server-to-server.', secret: true },
   { key: 'WHOP_WEBHOOK_SECRET', label: 'Webhook secret', hint: 'Whop → Developer → Webhooks: la firma con cui verifichiamo gli eventi.', secret: true },
+]
+const EMAIL_FIELDS: { key: string; label: string; hint?: string; secret?: boolean; placeholder?: string }[] = [
+  { key: 'RESEND_API_KEY', label: 'Resend API key', hint: 'Per inviare email brandizzate da foevo.app (login).', secret: true },
+  { key: 'MAIL_FROM', label: 'Mittente', placeholder: 'Foveo <noreply@foevo.app>' },
 ]
 const R2_FIELDS: { key: string; label: string; secret?: boolean; placeholder?: string }[] = [
   { key: 'R2_ACCOUNT_ID', label: 'Account ID', placeholder: 'Cloudflare account id' },
@@ -137,6 +141,15 @@ export function SettingsForm({ status, webhookUrl, packages }: { status: Status;
         <p className="mt-1 text-sm text-muted">I segreti sono salvati solo lato server e non vengono mai mostrati. Lascia un campo vuoto per non modificarlo.</p>
         <div className="mt-4 grid gap-4">
           {WHOP_FIELDS.map((f) => <Field key={f.key} {...fieldProps(f)} />)}
+        </div>
+      </div>
+
+      {/* email */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 font-semibold"><Mail size={18} className="text-brand" /> Email (Resend) <span className="text-xs font-normal text-muted">— login brandizzato</span></div>
+        <p className="mt-1 text-sm text-muted">Con Resend le email di accesso arrivano da foevo.app. Serve il dominio verificato su Resend.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {EMAIL_FIELDS.map((f) => <Field key={f.key} {...fieldProps(f)} />)}
         </div>
       </div>
 
