@@ -245,7 +245,7 @@ export default function Landing() {
                     <li key={x} className="flex items-start gap-2 text-sm"><Check size={16} className="mt-0.5 shrink-0 text-brand" /> {x}</li>
                   ))}
                 </ul>
-                <Link href="/signup" className={`btn mt-6 w-full ${t.featured ? 'btn-primary' : 'btn-ghost'}`}>Inizia</Link>
+                <Link href={`/signup?plan=${t.name.toLowerCase()}`} className={`btn mt-6 w-full ${t.featured ? 'btn-primary' : 'btn-ghost'}`}>Inizia</Link>
               </div>
             ))}
           </div>

@@ -1,8 +1,8 @@
 import { createClient, getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
-import { getWhopConfig } from '@/lib/settings'
-import { Check, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { DowngradeButton } from './billing-actions'
+import { Checkout } from './checkout'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,16 +11,18 @@ const money = (cents: number, cur = 'EUR') => `${cur === 'EUR' ? '€' : cur + '
 export default async function BillingPage() {
   const user = await getUser()
   const supabase = createClient()
-  const [{ data: packages }, ent, used, { data: payments }] = await Promise.all([
+  const [{ data: packages }, ent, used, { data: payments }, { data: profile }] = await Promise.all([
     supabase.from('packages').select('*').eq('active', true).order('order_index'),
     resolveEntitlement(user!.id),
     monthlyUsage(user!.id),
     supabase.from('payments').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(50),
+    supabase.from('profiles').select('full_name').eq('id', user!.id).maybeSingle(),
   ])
 
-  const { checkoutBase } = await getWhopConfig()
-  const checkoutUrl = (planId: string | null) =>
-    planId && checkoutBase ? `${checkoutBase}/${planId}?email=${encodeURIComponent(user!.email || '')}` : null
+  const pkgs = (packages ?? []).map((p: any) => ({
+    id: p.id, name: p.name, tier: p.tier, slug: p.slug,
+    price_monthly: p.price_monthly, features: p.features ?? [], whop_plan_id: p.whop_plan_id,
+  }))
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -37,29 +39,13 @@ export default async function BillingPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        {(packages ?? []).map((p: any) => {
-          const url = checkoutUrl(p.whop_plan_id)
-          return (
-            <div key={p.id} className={`card p-6 ${p.tier === 'premium' ? 'ring-1 ring-brand' : ''}`}>
-              <div className="flex items-baseline justify-between">
-                <h3 className="text-lg font-bold">{p.name}</h3>
-                <span className="label">{p.tier === 'premium' ? 'Avanzato' : 'Standard'}</span>
-              </div>
-              <p className="mt-2">
-                <span className="font-display text-3xl font-extrabold">€{(p.price_monthly / 100).toFixed(0)}</span>
-                <span className="text-muted"> + IVA/mese</span>
-              </p>
-              <ul className="mt-4 space-y-2">
-                {(p.features ?? []).map((f: string) => <li key={f} className="flex items-start gap-2 text-sm"><Check size={15} className="mt-0.5 text-brand" /> {f}</li>)}
-              </ul>
-              {url
-                ? <a href={url} target="_blank" rel="noreferrer" className="btn btn-primary mt-5 w-full">Attiva su Whop</a>
-                : <button disabled className="btn btn-ghost mt-5 w-full opacity-60">Checkout non configurato</button>}
-            </div>
-          )
-        })}
-      </div>
+      <Checkout
+        packages={pkgs}
+        email={user!.email || ''}
+        fullName={profile?.full_name || ''}
+        currentTier={ent.tier}
+        currentStatus={ent.status}
+      />
       <p className="mt-2 text-xs text-muted">I prezzi sono <b>IVA esclusa</b>: l’IVA/imposta viene calcolata da Whop in base al tuo paese al momento del pagamento.</p>
 
       <h2 className="mt-8 text-lg font-bold">Storico pagamenti</h2>
