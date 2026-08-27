@@ -32,6 +32,13 @@ export default async function CheckoutComplete({ searchParams }: { searchParams:
             <p className="mt-2 text-sm text-muted">Il pagamento è stato annullato o non è andato a buon fine. Puoi riprovare quando vuoi.</p>
             <Link href="/billing" className="btn btn-primary mt-6 w-full">Riprova</Link>
           </>
+        ) : !user ? (
+          <>
+            <CheckCircle2 size={44} className="mx-auto text-green-600" />
+            <h1 className="mt-4 text-xl font-extrabold">Pagamento confermato</h1>
+            <p className="mt-2 text-sm text-muted">Accedi con la stessa email usata al pagamento: il tuo piano sarà già attivo.</p>
+            <Link href="/login" className="btn btn-primary mt-6 w-full">Accedi a Foveo</Link>
+          </>
         ) : active ? (
           <>
             <CheckCircle2 size={44} className="mx-auto text-green-600" />
