@@ -9,11 +9,21 @@ export default async function UsersPage() {
   const now = new Date()
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
 
-  const [{ data: list }, { data: ents }, { data: analyses }] = await Promise.all([
+  const [{ data: list }, { data: ents }, { data: analyses }, { data: refs }] = await Promise.all([
     sc.auth.admin.listUsers({ page: 1, perPage: 500 }),
     sc.from('entitlements').select('user_id, tier, status, source').limit(2000),
     sc.from('analyses').select('user_id, cost_usd, created_at, status').limit(10000),
+    sc.from('referrals').select('referred_user_id, affiliate_id').not('referred_user_id', 'is', null).limit(5000),
   ])
+
+  // Mappa utente → affiliato che l'ha portato.
+  const affIds = Array.from(new Set((refs ?? []).map((r: any) => r.affiliate_id)))
+  const { data: affRows } = affIds.length
+    ? await sc.from('affiliates').select('id, username').in('id', affIds)
+    : { data: [] as any[] }
+  const affById = new Map<string, string>((affRows ?? []).map((a: any) => [a.id, a.username]))
+  const refByUser = new Map<string, string>()
+  for (const r of refs ?? []) if (r.referred_user_id) refByUser.set(r.referred_user_id, affById.get(r.affiliate_id) || '')
 
   const entByUser = new Map<string, any>((ents ?? []).map((e: any) => [e.user_id, e]))
   const usageByUser = new Map<string, { count: number; monthCount: number; cost: number }>()
@@ -33,6 +43,7 @@ export default async function UsersPage() {
       tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'nessuno',
       source: ent?.source ?? '—',
       analyses: usage.count, monthAnalyses: usage.monthCount, cost: usage.cost,
+      referredBy: refByUser.get(u.id) || null,
     }
   }).sort((a, b) => (b.created || '').localeCompare(a.created || ''))
 

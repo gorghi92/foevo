@@ -24,10 +24,10 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export function AffiliateDashboard({
-  name, link, overview, commissions, payouts, bank,
+  name, link, overview, commissions, payouts, bank, embedded = false,
 }: {
   name: string; link: string; overview: Overview
-  commissions: Commission[]; payouts: Payout[]; bank: Bank
+  commissions: Commission[]; payouts: Payout[]; bank: Bank; embedded?: boolean
 }) {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
@@ -49,7 +49,7 @@ export function AffiliateDashboard({
           <h1 className="font-display text-2xl font-extrabold">Ciao{name ? `, ${name.split(' ')[0]}` : ''} 👋</h1>
           <p className="text-sm text-muted">Il tuo pannello affiliato Foevo.</p>
         </div>
-        <button onClick={logout} className="btn btn-ghost px-3 py-2 text-sm"><LogOut size={15} /> Esci</button>
+        {!embedded && <button onClick={logout} className="btn btn-ghost px-3 py-2 text-sm"><LogOut size={15} /> Esci</button>}
       </div>
 
       {/* link personale */}

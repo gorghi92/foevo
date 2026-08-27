@@ -6,7 +6,7 @@ import { UserPlus, LogIn, Trash2, Search } from 'lucide-react'
 
 type U = {
   id: string; email: string; created: string; lastSignIn: string | null; banned: boolean
-  tier: string; source: string; analyses: number; monthAnalyses: number; cost: number
+  tier: string; source: string; analyses: number; monthAnalyses: number; cost: number; referredBy?: string | null
 }
 const d = (s?: string | null) => (s ? new Date(s).toLocaleDateString('it-IT') : '—')
 
@@ -74,7 +74,7 @@ export function UsersPanel({ users, meId }: { users: U[]; meId: string }) {
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="p-3">Utente</th><th className="p-3">Piano</th><th className="p-3 text-right">Analisi (mese/tot)</th><th className="p-3 text-right">Costo</th><th className="p-3">Registrato</th><th className="p-3">Ultimo accesso</th><th className="p-3 text-right">Azioni</th>
+              <th className="p-3">Utente</th><th className="p-3">Piano</th><th className="p-3">Da affiliato</th><th className="p-3 text-right">Analisi (mese/tot)</th><th className="p-3 text-right">Costo</th><th className="p-3">Registrato</th><th className="p-3">Ultimo accesso</th><th className="p-3 text-right">Azioni</th>
             </tr>
           </thead>
           <tbody>
@@ -86,6 +86,7 @@ export function UsersPanel({ users, meId }: { users: U[]; meId: string }) {
                     <option value="base">base</option><option value="premium">premium</option>
                   </select>
                 </td>
+                <td className="p-3">{u.referredBy ? <span className="rounded bg-brand-soft px-1.5 py-0.5 text-xs font-semibold text-brand">{u.referredBy}</span> : <span className="text-xs text-muted">—</span>}</td>
                 <td className="p-3 text-right">{u.monthAnalyses} / {u.analyses}</td>
                 <td className="p-3 text-right text-muted">${u.cost.toFixed(4)}</td>
                 <td className="p-3">{d(u.created)}</td>
@@ -98,7 +99,7 @@ export function UsersPanel({ users, meId }: { users: U[]; meId: string }) {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted">Nessun utente.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted">Nessun utente.</td></tr>}
           </tbody>
         </table>
       </div>
