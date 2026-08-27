@@ -5,7 +5,8 @@ const $ = (id) => document.getElementById(id)
 const els = {
   viewMain: $('view-main'), viewSettings: $('view-settings'),
   settingsBtn: $('settings-btn'), backBtn: $('back-btn'),
-  apiBase: $('api-base'), email: $('email'), password: $('password'),
+  apiBase: $('api-base'), email: $('email'),
+  code: $('code'), codeStep: $('code-step'), changeEmail: $('change-email'),
   saveBtn: $('save-settings'), saved: $('settings-saved'), signup: $('signup-link'),
   goal: $('goal'), note: $('note'), analyzeBtn: $('analyze-btn'),
   status: $('status'), statusText: $('status-text'), error: $('error'),
@@ -46,15 +47,16 @@ async function refreshLinks() {
 }
 
 /* ---- settings / login view ---- */
-els.settingsBtn.addEventListener('click', async () => {
+async function openSettings() {
   const { apiBase, email } = await getSettings()
   els.apiBase.value = apiBase
   els.email.value = email
-  els.password.value = ''
+  resetOtp()
   if (els.signup) els.signup.href = `${apiBase}/signup`
   els.saved.hidden = true
   show('settings')
-})
+}
+els.settingsBtn.addEventListener('click', openSettings)
 els.backBtn.addEventListener('click', () => { show('main'); refreshLinks() })
 
 // No default host permission: the configured endpoint is granted at runtime.
@@ -74,33 +76,80 @@ function saveMsg(text, error) {
   els.saved.hidden = false
 }
 
-/* Login: manda le credenziali all'app, che le valida su Supabase e restituisce
- * una API key per il device (l'utente non gestisce chiavi a mano). */
+/* Login in due passi, senza password: chiediamo un codice via email e lo
+ * verifichiamo. L'app risponde con la API key del device. */
+let otpStep = 'email'
+
+function resetOtp() {
+  otpStep = 'email'
+  if (els.code) els.code.value = ''
+  if (els.codeStep) els.codeStep.hidden = true
+  els.saveBtn.textContent = 'Invia codice'
+  els.email.disabled = false
+}
+
+function goToCodeStep() {
+  otpStep = 'code'
+  els.codeStep.hidden = false
+  els.saveBtn.textContent = 'Accedi'
+  els.email.disabled = true
+  els.code.focus()
+}
+
+if (els.changeEmail) {
+  els.changeEmail.addEventListener('click', (e) => { e.preventDefault(); resetOtp(); saveMsg('', false); els.email.focus() })
+}
+
+async function requestCode(apiBase, email) {
+  const resp = await fetch(`${apiBase}/api/extension/otp/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) throw new Error(data.error || `Errore ${resp.status}`)
+  return data
+}
+
+async function verifyCode(apiBase, email, code) {
+  const resp = await fetch(`${apiBase}/api/extension/otp/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  })
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok || !data.key) throw new Error(data.error || `Errore ${resp.status}`)
+  return data
+}
+
 els.saveBtn.addEventListener('click', async () => {
   const apiBase = (els.apiBase.value || DEFAULT_BASE).trim().replace(/\/+$/, '')
   const email = els.email.value.trim()
-  const password = els.password.value
-  if (!email || !password) { saveMsg('Inserisci email e password.', true); return }
+  if (!email) { saveMsg('Inserisci la tua email.', true); return }
 
-  // Persist the endpoint first — granting a host permission can restart the
-  // extension context and abort what runs after the prompt.
+  // Salva l'endpoint prima del permesso: concederlo può riavviare il contesto
+  // dell'estensione e interrompere quello che viene dopo.
   await chrome.storage.sync.set({ apiBase })
   const granted = await ensureHostPermission(apiBase)
-  if (!granted) { saveMsg('Concedi il permesso per il sito e premi di nuovo Accedi.', true); return }
+  if (!granted) { saveMsg('Concedi il permesso per il sito e premi di nuovo.', true); return }
 
-  saveMsg('Accesso in corso…', false)
   els.saveBtn.disabled = true
   try {
-    const resp = await fetch(`${apiBase}/api/extension/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    const data = await resp.json().catch(() => ({}))
-    if (!resp.ok || !data.key) throw new Error(data.error || `Errore ${resp.status}`)
-    await chrome.storage.sync.set({ apiBase, apiKey: data.key, email: data.email || email })
-    saveMsg('Connesso ✓', false)
-    setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
+    if (otpStep === 'email') {
+      saveMsg('Invio del codice…', false)
+      await requestCode(apiBase, email)
+      goToCodeStep()
+      saveMsg('Ti abbiamo inviato un codice a 6 cifre. Controlla la posta.', false)
+    } else {
+      const code = (els.code.value || '').replace(/\D/g, '')
+      if (code.length !== 6) { saveMsg('Inserisci il codice a 6 cifre.', true); return }
+      saveMsg('Verifica in corso…', false)
+      const data = await verifyCode(apiBase, email, code)
+      await chrome.storage.sync.set({ apiBase, apiKey: data.key, email: data.email || email })
+      resetOtp()
+      saveMsg('Connesso \u2713', false)
+      setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
+    }
   } catch (e) {
     saveMsg(String(e.message || e), true)
   } finally {
@@ -108,11 +157,16 @@ els.saveBtn.addEventListener('click', async () => {
   }
 })
 
+// Invio con Enter dal campo del codice
+if (els.code) {
+  els.code.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.saveBtn.click() })
+}
+
 /* ---- analyze ---- */
 els.analyzeBtn.addEventListener('click', async () => {
   setError('')
   const { apiBase, apiKey } = await getSettings()
-  if (!apiKey) { setError('Accedi prima con il tuo account Foveo (⚙).'); show('settings'); return }
+  if (!apiKey) { setError('Accedi prima con il tuo account Foveo (⚙).'); await openSettings(); return }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab || !/^https?:/.test(tab.url || '')) {

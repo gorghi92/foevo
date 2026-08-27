@@ -43,11 +43,17 @@
   <!-- SETTINGS / LOGIN -->
   <section id="view-settings" class="view" hidden>
     <label class="lbl" for="email">Email Foveo</label>
-    <input id="email" class="input" type="email" placeholder="tu@esempio.com" autocomplete="username" />
+    <input id="email" class="input" type="email" placeholder="tu@esempio.com" autocomplete="email" />
 
-    <label class="lbl" for="password">Password</label>
-    <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
-    <a id="signup-link" class="link" target="_blank">Non hai un account? Registrati →</a>
+    <!-- passo 2: codice ricevuto via email -->
+    <div id="code-step" hidden>
+      <label class="lbl" for="code">Codice ricevuto via email</label>
+      <input id="code" class="input code-input" type="text" inputmode="numeric" autocomplete="one-time-code"
+             maxlength="6" placeholder="000000" />
+      <a href="#" id="change-email" class="link">Usa un&rsquo;altra email</a>
+    </div>
+
+    <a id="signup-link" class="link" target="_blank">Non hai un account? Registrati &rarr;</a>
 
     <details class="adv">
       <summary>Impostazioni avanzate</summary>
@@ -56,10 +62,10 @@
     </details>
 
     <div class="row">
-      <button id="save-settings" class="btn btn-primary">Accedi</button>
+      <button id="save-settings" class="btn btn-primary">Invia codice</button>
       <button id="back-btn" class="btn btn-ghost">Indietro</button>
     </div>
-    <p id="settings-saved" class="ok" hidden>Connesso ✓</p>
+    <p id="settings-saved" class="ok" hidden>Connesso &#10003;</p>
   </section>
 
   <footer class="ftr">

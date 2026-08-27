@@ -127,6 +127,34 @@ export async function sendReceiptOnce(
   await sendEmail({ to: d.to, subject, html })
 }
 
+export function extensionOtpEmail(code: string): { subject: string; html: string } {
+  const spaced = code.split('').join('&nbsp;&nbsp;')
+  const body = `
+    <p style="${P}">Ecco il codice per collegare l’estensione Foveo al tuo account. Scade tra <b style="color:#1c1917">10 minuti</b>.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;background:#fdfcfb;margin:0 0 20px">
+      <tr><td align="center" style="padding:22px 16px">
+        <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:6px;color:${CORAL}">${spaced}</div>
+      </td></tr>
+    </table>
+    <p style="${SMALL}">Inseriscilo nella finestra dell’estensione per completare l’accesso. Il codice funziona una sola volta.</p>
+    <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a8a29e">Se non hai richiesto tu l’accesso, ignora questa email: senza il codice nessuno può entrare.</p>`
+  return { subject: `${code} è il tuo codice Foveo`, html: shell({ title: 'Il tuo codice di accesso', preheader: `Codice ${code} — scade tra 10 minuti.`, body }) }
+}
+
+export function emailChangeOtpEmail(code: string, newEmail: string): { subject: string; html: string } {
+  const spaced = code.split('').join('&nbsp;&nbsp;')
+  const body = `
+    <p style="${P}">Hai chiesto di usare <b style="color:#1c1917">${newEmail}</b> come nuova email di accesso a Foveo. Conferma con questo codice, valido <b style="color:#1c1917">10 minuti</b>.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ece8e3;border-radius:14px;background:#fdfcfb;margin:0 0 20px">
+      <tr><td align="center" style="padding:22px 16px">
+        <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:32px;font-weight:800;letter-spacing:6px;color:${CORAL}">${spaced}</div>
+      </td></tr>
+    </table>
+    <p style="${SMALL}">Il cambio diventa effettivo solo dopo aver inserito il codice nella pagina Profilo.</p>
+    <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a8a29e">Se non hai richiesto tu questa modifica, ignora l&rsquo;email: senza il codice l&rsquo;indirizzo non viene cambiato.</p>`
+  return { subject: `${code} — conferma la nuova email Foveo`, html: shell({ title: 'Conferma la nuova email', preheader: `Codice ${code} per confermare ${newEmail}.`, body }) }
+}
+
 export function magicLinkEmail(link: string): { subject: string; html: string } {
   const body = `
     <p style="${P}">Usa il pulsante qui sotto per accedere al tuo account Foveo. Il link scade a breve e può essere usato una sola volta.</p>

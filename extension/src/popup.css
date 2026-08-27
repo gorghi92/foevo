@@ -77,3 +77,12 @@ body {
 .adv { margin: 6px 0 2px; }
 .adv > summary { cursor: pointer; font-size: 12px; color: var(--muted); list-style: revert; padding: 4px 0; }
 .adv[open] > summary { margin-bottom: 4px; }
+
+/* Campo del codice OTP: cifre grandi e spaziate */
+.code-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-align: center;
+}

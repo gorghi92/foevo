@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { User, Mail, Lock, ReceiptText } from 'lucide-react'
+import { User, Mail, ReceiptText } from 'lucide-react'
 
 type Billing = {
   firstName: string; lastName: string
@@ -17,17 +16,16 @@ function Note({ msg }: { msg: { t: 'ok' | 'err'; m: string } | null }) {
 }
 
 export function ProfileForm({ email, initial }: { email: string; initial: Billing }) {
-  const supabase = createClient()
   const router = useRouter()
   const [f, setF] = useState<Billing>(initial)
   const set = (k: keyof Billing, v: string) => setF((s) => ({ ...s, [k]: v }))
 
   const [newEmail, setNewEmail] = useState(email)
-  const [pw, setPw] = useState('')
+  const [emailStep, setEmailStep] = useState<'idle' | 'code'>('idle')
+  const [code, setCode] = useState('')
   const [busy, setBusy] = useState('')
   const [m1, setM1] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
   const [m2, setM2] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
-  const [m3, setM3] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
   const [m4, setM4] = useState<{ t: 'ok' | 'err'; m: string } | null>(null)
 
   async function saveName(e: React.FormEvent) {
@@ -47,22 +45,31 @@ export function ProfileForm({ email, initial }: { email: string; initial: Billin
     setM4({ t: 'ok', m: 'Dati di fatturazione salvati.' }); router.refresh()
   }
 
-  async function changeEmail(e: React.FormEvent) {
+  async function requestEmailCode(e: React.FormEvent) {
     e.preventDefault(); setBusy('email'); setM2(null)
-    if (!newEmail || newEmail === email) { setBusy(''); return setM2({ t: 'err', m: 'Inserisci una nuova email.' }) }
-    const { error } = await supabase.auth.updateUser({ email: newEmail })
+    const r = await fetch('/api/profile/email/request', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: newEmail }),
+    })
+    const j = await r.json().catch(() => ({} as any))
     setBusy('')
-    if (error) return setM2({ t: 'err', m: error.message })
-    setM2({ t: 'ok', m: 'Ti abbiamo inviato un link di conferma alla nuova email. Il cambio è attivo dopo la conferma.' })
+    if (!r.ok) return setM2({ t: 'err', m: j.error || 'Errore' })
+    setEmailStep('code'); setCode('')
+    setM2({ t: 'ok', m: `Ti abbiamo inviato un codice a ${newEmail}. Inseriscilo qui sotto per confermare.` })
   }
 
-  async function changePassword(e: React.FormEvent) {
-    e.preventDefault(); setBusy('pw'); setM3(null)
-    if (pw.length < 8) { setBusy(''); return setM3({ t: 'err', m: 'La password deve avere almeno 8 caratteri.' }) }
-    const { error } = await supabase.auth.updateUser({ password: pw })
+  async function confirmEmailCode(e: React.FormEvent) {
+    e.preventDefault(); setBusy('email'); setM2(null)
+    const r = await fetch('/api/profile/email/verify', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+    const j = await r.json().catch(() => ({} as any))
     setBusy('')
-    if (error) return setM3({ t: 'err', m: error.message })
-    setPw(''); setM3({ t: 'ok', m: 'Password impostata. Potrai accedere con email e password.' })
+    if (!r.ok) return setM2({ t: 'err', m: j.error || 'Errore' })
+    setEmailStep('idle'); setCode('')
+    setM2({ t: 'ok', m: 'Email aggiornata. Da ora accedi con il nuovo indirizzo.' })
+    router.refresh()
   }
 
   const card = 'card p-5'
@@ -80,21 +87,54 @@ export function ProfileForm({ email, initial }: { email: string; initial: Billin
         <button className="btn btn-primary mt-4" disabled={busy === 'name'}>{busy === 'name' ? 'Salvo…' : 'Salva'}</button>
       </form>
 
-      <form onSubmit={changeEmail} className={card}>
+      <form onSubmit={emailStep === 'idle' ? requestEmailCode : confirmEmailCode} className={card}>
         <div className={head}><Mail size={18} className="text-brand" /> Email di accesso</div>
-        <label className="label mt-4 block">Email</label>
-        <input className="input mt-1" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} autoComplete="email" />
-        <Note msg={m2} />
-        <button className="btn btn-primary mt-4" disabled={busy === 'email'}>{busy === 'email' ? 'Invio…' : 'Cambia email'}</button>
-      </form>
+        <p className="mt-1 text-xs text-muted">
+          Per cambiarla ti mandiamo un codice al nuovo indirizzo: il cambio è effettivo solo dopo la conferma.
+        </p>
 
-      <form onSubmit={changePassword} className={card}>
-        <div className={head}><Lock size={18} className="text-brand" /> Password</div>
-        <p className="mt-1 text-xs text-muted">Opzionale: imposta una password per accedere anche senza link email.</p>
-        <label className="label mt-3 block">Nuova password</label>
-        <input className="input mt-1" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="min. 8 caratteri" autoComplete="new-password" />
-        <Note msg={m3} />
-        <button className="btn btn-primary mt-4" disabled={busy === 'pw'}>{busy === 'pw' ? 'Salvo…' : 'Imposta password'}</button>
+        <label className="label mt-4 block">Email</label>
+        <input
+          className="input mt-1"
+          type="email"
+          value={newEmail}
+          onChange={(e) => setNewEmail(e.target.value)}
+          disabled={emailStep === 'code'}
+          autoComplete="email"
+        />
+
+        {emailStep === 'code' && (
+          <>
+            <label className="label mt-4 block">Codice ricevuto via email</label>
+            <input
+              className="input mt-1 text-center text-xl font-bold tracking-[0.5em]"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="000000"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              autoFocus
+            />
+          </>
+        )}
+
+        <Note msg={m2} />
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button className="btn btn-primary" disabled={busy === 'email'}>
+            {busy === 'email' ? 'Attendi…' : emailStep === 'idle' ? 'Invia codice' : 'Conferma cambio'}
+          </button>
+          {emailStep === 'code' && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => { setEmailStep('idle'); setCode(''); setM2(null); setNewEmail(email) }}
+            >
+              Annulla
+            </button>
+          )}
+        </div>
       </form>
 
       <form onSubmit={saveBilling} className={card}>
