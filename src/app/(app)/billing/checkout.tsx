@@ -96,7 +96,7 @@ export function Checkout({ packages, email, fullName, currentTier, currentStatus
             {isCurrent(p)
               ? <button disabled className="btn btn-ghost mt-5 w-full opacity-70">Piano attuale</button>
               : p.whop_plan_id
-                ? <button onClick={() => setActive(p)} className="btn btn-primary mt-5 w-full">{p.tier === 'premium' ? 'Passa a Premium' : 'Attiva Base'}</button>
+                ? <button onClick={() => setActive(p)} className="btn btn-primary mt-5 w-full">Attiva {p.name}</button>
                 : <button disabled className="btn btn-ghost mt-5 w-full opacity-60">Checkout non configurato</button>}
           </div>
         ))}
