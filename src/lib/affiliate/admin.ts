@@ -81,3 +81,14 @@ export async function openPayouts() {
   const byId = new Map((affs ?? []).map((a) => [a.id, a]))
   return rows.map((r) => ({ ...r, affiliate: byId.get(r.affiliate_id) ?? null }))
 }
+
+/** Avvisi non letti per il superadmin (più il conteggio). */
+export async function unreadAlerts(limit = 50) {
+  const sc = createServiceClient()
+  const [{ data }, { count }] = await Promise.all([
+    sc.from('admin_alerts').select('id, kind, severity, title, body, commission_id, whop_payment_id, amount_cents, created_at')
+      .eq('read', false).order('created_at', { ascending: false }).limit(limit),
+    sc.from('admin_alerts').select('id', { count: 'exact', head: true }).eq('read', false),
+  ])
+  return { alerts: data ?? [], count: count ?? 0 }
+}

@@ -16,16 +16,22 @@ const TABS = [
   { href: '/admin/system', label: 'Sistema', icon: ServerCog },
 ]
 
-export function AdminTabs() {
+export function AdminTabs({ alertCount = 0 }: { alertCount?: number }) {
   const path = usePathname()
   return (
     <div className="flex flex-wrap gap-1.5 border-b border-line pb-2">
       {TABS.map((t) => {
         const active = t.href === '/admin' ? path === '/admin' : path.startsWith(t.href)
+        const badge = t.href === '/admin/affiliates' && alertCount > 0
         return (
           <Link key={t.href} href={t.href}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium ${active ? 'bg-brand text-brand-fg' : 'text-muted hover:bg-bg hover:text-ink'}`}>
             <t.icon size={15} /> {t.label}
+            {badge && (
+              <span className="ml-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-4 text-white">
+                {alertCount}
+              </span>
+            )}
           </Link>
         )
       })}

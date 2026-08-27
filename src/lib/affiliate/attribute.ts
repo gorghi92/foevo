@@ -114,3 +114,67 @@ export async function attributePayment(sc: SC, args: {
     plan_slug: slug, month_index: mIdx, status: 'available',
   })
 }
+
+/**
+ * Rimborso/dispute Whop su un pagamento. NON storna in automatico: crea un
+ * avviso per il superadmin (e gli invia una email) così può decidere. Se al
+ * pagamento era legata una commissione, l'avviso ne riporta lo stato.
+ */
+export async function handleRefund(sc: SC, args: {
+  whopPaymentId: string | null
+  email: string | null
+  amountCents: number
+  kind?: string
+}): Promise<void> {
+  if (!args.whopPaymentId) return
+  const kind = args.kind || 'refund'
+
+  // Commissione collegata (se esiste).
+  const { data: comm } = await sc.from('commissions')
+    .select('id, affiliate_id, amount_cents, status, payout_request_id')
+    .eq('whop_payment_id', args.whopPaymentId).maybeSingle()
+
+  let affiliate: any = null
+  if (comm) {
+    const { data } = await sc.from('affiliates').select('username, email').eq('id', comm.affiliate_id).maybeSingle()
+    affiliate = data
+  }
+
+  const eur = (c: number) => `€${((c || 0) / 100).toFixed(2)}`
+  const stateLabel = !comm ? 'nessuna commissione collegata'
+    : comm.status === 'paid' ? 'commissione GIÀ LIQUIDATA — recupero manuale'
+    : comm.payout_request_id ? 'commissione in una richiesta di pagamento aperta'
+    : 'commissione ancora disponibile — puoi stornarla'
+
+  const title = comm
+    ? `Rimborso su una vendita da affiliato (${affiliate?.username || '—'})`
+    : 'Rimborso su un pagamento'
+  const body = [
+    `Pagamento Whop ${args.whopPaymentId} rimborsato/contestato${args.email ? ` (${args.email})` : ''}.`,
+    args.amountCents ? `Importo: ${eur(args.amountCents)}.` : '',
+    comm ? `Commissione collegata: ${eur(comm.amount_cents)} — ${stateLabel}.` : 'Nessuna commissione collegata.',
+  ].filter(Boolean).join(' ')
+
+  const severity = comm && comm.status === 'paid' ? 'critical' : comm ? 'warning' : 'info'
+
+  // Idempotente sull'indice (kind, whop_payment_id).
+  await sc.from('admin_alerts').insert({
+    kind, severity, title, body,
+    affiliate_id: comm?.affiliate_id ?? null, commission_id: comm?.id ?? null,
+    whop_payment_id: args.whopPaymentId, amount_cents: args.amountCents || null,
+  })
+
+  // Email al superadmin (best-effort): così l'avviso arriva anche senza login.
+  try {
+    const { sendEmail } = await import('@/lib/email')
+    const admins = (process.env.SUPERADMIN_EMAILS || '').split(',').map((s) => s.trim()).filter(Boolean)
+    for (const to of admins) {
+      await sendEmail({
+        to, subject: `[Foevo] ${title}`,
+        html: `<div style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#1c1917">
+          <p><b>${title}</b></p><p>${body}</p>
+          <p><a href="https://foevo.app/admin/affiliates">Apri il pannello affiliati →</a></p></div>`,
+      })
+    }
+  } catch (e) { console.error('[foevo] email avviso rimborso', e) }
+}

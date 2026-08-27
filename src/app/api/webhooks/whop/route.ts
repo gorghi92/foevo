@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
 import { sendReceiptOnce } from '@/lib/email'
-import { attributePayment, linkReferralUser } from '@/lib/affiliate/attribute'
+import { attributePayment, linkReferralUser, handleRefund } from '@/lib/affiliate/attribute'
 import { createHmac, timingSafeEqual } from 'crypto'
 
 export const runtime = 'nodejs'
@@ -148,6 +148,20 @@ export async function POST(req: Request) {
       current_period_end: renewal ? new Date(renewal * 1000).toISOString() : null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
+    return NextResponse.json({ ok: true })
+  }
+
+  // Rimborso / contestazione: non serve un utente collegato. Non storniamo in
+  // automatico: creiamo un avviso per il superadmin (con email).
+  if (/refund|dispute|chargeback/i.test(event)) {
+    const rawAmt = Number(data?.final_amount ?? data?.amount ?? data?.subtotal ?? 0)
+    const cents = Math.round(rawAmt * (Number.isInteger(rawAmt) ? 1 : 100))
+    try {
+      await handleRefund(sc, {
+        whopPaymentId: data?.payment_id ?? data?.id ?? null,
+        email, amountCents: cents, kind: event.split('.').pop() || 'refund',
+      })
+    } catch (e) { console.error('[foevo] handleRefund', e) }
     return NextResponse.json({ ok: true })
   }
 

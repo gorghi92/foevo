@@ -3,9 +3,84 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AlertTriangle, Bell, Check, RotateCcw } from 'lucide-react'
 
 const money = (c: number) => `€${((c || 0) / 100).toFixed(2)}`
 const pct = (bps: number) => `${(bps / 100).toFixed(bps % 100 ? 1 : 0)}%`
+
+// ---- avvisi (rimborsi/dispute) ----
+type Alert = {
+  id: string; kind: string; severity: string; title: string; body: string
+  commission_id: string | null; whop_payment_id: string | null; amount_cents: number | null; created_at: string
+}
+export function AlertsPanel({ alerts }: { alerts: Alert[] }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState<Record<string, string>>({})
+
+  if (!alerts.length) return null
+
+  async function markRead(id: string) {
+    setBusy(id)
+    await fetch('/api/admin/affiliate/alert', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) })
+    setBusy(''); router.refresh()
+  }
+  async function markAll() {
+    setBusy('all')
+    await fetch('/api/admin/affiliate/alert', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ all: true }) })
+    setBusy(''); router.refresh()
+  }
+  async function reverse(alertId: string, commissionId: string) {
+    if (!confirm('Stornare la commissione collegata? Verrà marcata come stornata e liberata da eventuali richieste di pagamento.')) return
+    setBusy(alertId)
+    const r = await fetch('/api/admin/affiliate/reverse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ commissionId }) })
+    const j = await r.json().catch(() => ({} as any))
+    setBusy('')
+    if (!r.ok) { setMsg((m) => ({ ...m, [alertId]: j.error || 'Storno non riuscito.' })); return }
+    // stornata: segna anche l'avviso come letto
+    await fetch('/api/admin/affiliate/alert', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: alertId }) })
+    router.refresh()
+  }
+
+  return (
+    <div className="card border-amber-300/70 bg-amber-50/50 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-semibold text-amber-800">
+          <Bell size={16} /> Avvisi da gestire ({alerts.length})
+        </div>
+        <button onClick={markAll} disabled={busy === 'all'} className="btn btn-ghost px-2.5 py-1 text-xs">Segna tutti letti</button>
+      </div>
+      <div className="mt-3 space-y-2.5">
+        {alerts.map((a) => {
+          const critical = a.severity === 'critical'
+          return (
+            <div key={a.id} className={`rounded-lg border p-3 ${critical ? 'border-red-300 bg-red-50' : 'border-line bg-panel'}`}>
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={15} className={`mt-0.5 shrink-0 ${critical ? 'text-red-600' : 'text-amber-600'}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-ink">{a.title}</div>
+                  <p className="mt-0.5 text-xs text-muted">{a.body}</p>
+                  {msg[a.id] && <p className="mt-1 text-xs text-red-600">{msg[a.id]}</p>}
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {a.commission_id && (
+                      <button onClick={() => reverse(a.id, a.commission_id!)} disabled={!!busy} className="btn btn-ghost border border-red-300 px-2.5 py-1 text-xs text-red-700">
+                        <RotateCcw size={13} /> Storna commissione
+                      </button>
+                    )}
+                    <button onClick={() => markRead(a.id)} disabled={!!busy} className="btn btn-ghost px-2.5 py-1 text-xs">
+                      <Check size={13} /> Segna letto
+                    </button>
+                    <span className="ml-1 text-[11px] text-muted">{new Date(a.created_at).toLocaleString('it-IT')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 // ---- configurazione percentuali ----
 export function RatesPanel({ init }: { init: { basePct: number; premiumPct: number; minEur: number; months: number } }) {

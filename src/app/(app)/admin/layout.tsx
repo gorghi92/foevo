@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getUser } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { unreadAlerts } from '@/lib/affiliate/admin'
 import { AdminTabs } from './tabs'
 
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic'
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser()
   if (!isSuperadmin(user?.email)) redirect('/dashboard')
+
+  const { count: alertCount } = await unreadAlerts(1).catch(() => ({ count: 0 }))
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -18,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <span className="ml-auto truncate text-xs text-muted">{user?.email}</span>
       </div>
       <p className="mb-4 text-sm text-muted">Controllo e gestione dell’intera piattaforma Foevo.</p>
-      <AdminTabs />
+      <AdminTabs alertCount={alertCount} />
       <div className="mt-5">{children}</div>
     </div>
   )

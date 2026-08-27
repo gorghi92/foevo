@@ -1,11 +1,13 @@
 import { getAffiliateRules } from '@/lib/affiliate/commission'
-import { listAffiliates, openPayouts } from '@/lib/affiliate/admin'
-import { RatesPanel, PayoutsPanel, AffiliatesTable } from './panels'
+import { listAffiliates, openPayouts, unreadAlerts } from '@/lib/affiliate/admin'
+import { RatesPanel, PayoutsPanel, AffiliatesTable, AlertsPanel } from './panels'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminAffiliatesPage() {
-  const [rules, rows, payouts] = await Promise.all([getAffiliateRules(), listAffiliates(), openPayouts()])
+  const [rules, rows, payouts, alerts] = await Promise.all([
+    getAffiliateRules(), listAffiliates(), openPayouts(), unreadAlerts(),
+  ])
 
   const totals = rows.reduce((a, r) => ({
     affiliates: a.affiliates + 1,
@@ -22,6 +24,8 @@ export default async function AdminAffiliatesPage() {
         <KPI label="Commissioni maturate" value={`€${(totals.earned / 100).toFixed(2)}`} />
         <KPI label="Da liquidare" value={`€${(totals.available / 100).toFixed(2)}`} />
       </div>
+
+      <AlertsPanel alerts={alerts.alerts as any} />
 
       <RatesPanel init={{
         basePct: rules.baseBps / 100, premiumPct: rules.premiumBps / 100,

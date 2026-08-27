@@ -509,7 +509,7 @@ export default function Landing() {
             <Link href="#come" className="hover:text-ink">Come funziona</Link>
             <Link href="#prezzi" className="hover:text-ink">Prezzi</Link>
             <Link href="#faq" className="hover:text-ink">Domande</Link>
-            <Link href="/affiliati" className="hover:text-ink">Affiliati</Link>
+            <Link href="/affiliati/diventa" className="hover:text-ink">Diventa un affiliato</Link>
             <Link href="/supporto" className="hover:text-ink">Assistenza</Link>
             <Link href="/privacy" className="hover:text-ink">Privacy</Link>
             <Link href="/login" className="hover:text-ink">Accedi</Link>
