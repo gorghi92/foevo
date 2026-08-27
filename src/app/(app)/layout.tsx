@@ -4,9 +4,9 @@ import { cookies } from 'next/headers'
 import { getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
 import { isSuperadmin } from '@/lib/superadmin'
-import { LayoutGrid, CreditCard, User, Shield, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { ImpersonationBanner } from './impersonation-banner'
-import { SidebarNav, MobileNav, type NavItem } from '@/components/app/nav'
+import { SidebarNav, MobileNav } from '@/components/app/nav'
 import { UsageMeter } from '@/components/app/ui'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,14 +15,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const admin = isSuperadmin(user.email)
   const impersonating = cookies().get('imp_active')?.value || null
   const [ent, used] = await Promise.all([resolveEntitlement(user.id), monthlyUsage(user.id)])
-
-  const main: NavItem[] = [
-    { href: '/dashboard', label: 'Analisi', icon: LayoutGrid },
-    { href: '/billing', label: 'Piano', icon: CreditCard },
-    { href: '/profile', label: 'Profilo', icon: User },
-  ]
-  const adminNav: NavItem[] = [{ href: '/admin', label: 'Superadmin', icon: Shield }]
-  const mobile = admin ? [...main, ...adminNav] : main
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -33,14 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="font-display text-base font-extrabold tracking-tight">Foveo</span>
         </Link>
 
-        <SidebarNav items={main} />
-
-        {admin && (
-          <>
-            <div className="label mt-6 px-3 text-muted">Amministrazione</div>
-            <div className="mt-2"><SidebarNav items={adminNav} /></div>
-          </>
-        )}
+        <SidebarNav admin={admin} />
 
         <div className="mt-auto space-y-3 pt-6">
           <UsageMeter used={used} quota={ent.quota} unlimited={ent.unlimited} />
@@ -85,7 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="px-5 py-7 pb-24 md:px-9 md:py-9 md:pb-9">{children}</div>
       </main>
 
-      <MobileNav items={mobile} />
+      <MobileNav admin={admin} />
     </div>
   )
 }

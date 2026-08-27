@@ -2,9 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { LucideIcon } from 'lucide-react'
+import { LayoutGrid, CreditCard, User, Shield, type LucideIcon } from 'lucide-react'
 
-export type NavItem = { href: string; label: string; icon: LucideIcon }
+type NavItem = { href: string; label: string; icon: LucideIcon }
+
+/* Le voci vivono qui, nel componente client: le icone sono componenti React e
+ * non possono essere passate come prop da un Server Component. */
+const MAIN: NavItem[] = [
+  { href: '/dashboard', label: 'Analisi', icon: LayoutGrid },
+  { href: '/billing', label: 'Piano', icon: CreditCard },
+  { href: '/profile', label: 'Profilo', icon: User },
+]
+const ADMIN: NavItem[] = [{ href: '/admin', label: 'Superadmin', icon: Shield }]
 
 function isActive(path: string, href: string) {
   return href === '/dashboard'
@@ -12,9 +21,7 @@ function isActive(path: string, href: string) {
     : path === href || path.startsWith(`${href}/`)
 }
 
-/** Voci della sidebar con stato attivo. */
-export function SidebarNav({ items }: { items: NavItem[] }) {
-  const path = usePathname()
+function Items({ items, path }: { items: NavItem[]; path: string }) {
   return (
     <nav className="flex flex-col gap-1">
       {items.map((n) => {
@@ -38,9 +45,26 @@ export function SidebarNav({ items }: { items: NavItem[] }) {
   )
 }
 
-/** Barra di navigazione fissa in basso, solo su mobile. */
-export function MobileNav({ items }: { items: NavItem[] }) {
+/** Voci della sidebar, con sezione amministrazione opzionale. */
+export function SidebarNav({ admin = false }: { admin?: boolean }) {
   const path = usePathname()
+  return (
+    <>
+      <Items items={MAIN} path={path} />
+      {admin && (
+        <>
+          <div className="label mt-6 px-3 text-muted">Amministrazione</div>
+          <div className="mt-2"><Items items={ADMIN} path={path} /></div>
+        </>
+      )}
+    </>
+  )
+}
+
+/** Barra di navigazione fissa in basso, solo su mobile. */
+export function MobileNav({ admin = false }: { admin?: boolean }) {
+  const path = usePathname()
+  const items = admin ? [...MAIN, ...ADMIN] : MAIN
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 backdrop-blur md:hidden">
       <div className="mx-auto flex max-w-lg">
