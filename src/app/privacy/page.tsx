@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       <h2 className="mt-8 text-xl font-bold">Dove vanno i dati</h2>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-muted">
         <li>Screenshot e metadati sono inviati in HTTPS al tuo account Foveo.</li>
-        <li>Per produrre l’analisi, lo screenshot è elaborato da un <b>provider AI</b> (Anthropic Claude per il tier premium, Alibaba Qwen per il base). Screenshot e risultato restano nel tuo account.</li>
+        <li>Per produrre l’analisi, lo screenshot è elaborato da un <b>provider AI di terze parti</b>. Screenshot e risultato restano nel tuo account.</li>
       </ul>
 
       <h2 className="mt-8 text-xl font-bold">Cosa NON facciamo</h2>

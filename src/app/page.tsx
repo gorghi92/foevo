@@ -23,8 +23,8 @@ const STEPS = [
 ]
 
 const TIERS = [
-  { name: 'Base', price: '19', tier: 'Qwen', feats: ['Heatmap ibrida', 'Analisi AI (base)', '30 analisi / mese'] },
-  { name: 'Premium', price: '49', tier: 'Claude', feats: ['Tutto di Base', 'Brand, CTA, copy e frizioni', 'Analisi AI premium', '150 analisi / mese'], featured: true },
+  { name: 'Base', price: '19', tier: 'Standard', feats: ['Heatmap ibrida', 'Analisi AI (base)', '30 analisi / mese'] },
+  { name: 'Premium', price: '49', tier: 'Avanzato', feats: ['Tutto di Base', 'Brand, CTA, copy e frizioni', 'Analisi AI premium', '150 analisi / mese'], featured: true },
 ]
 
 export default function Landing() {

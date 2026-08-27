@@ -24,7 +24,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Le mie analisi</h1>
           <p className="mt-1 text-sm text-muted">
-            Piano {ent.tier === 'premium' ? 'Premium (Claude)' : 'Base (Qwen)'}{ent.source === 'trial' ? ' · prova' : ''} · questo mese <b className="text-ink">{used}</b>/{quota}
+            Piano {ent.tier === 'premium' ? 'Premium' : 'Base'}{ent.source === 'trial' ? ' · prova' : ''} · questo mese <b className="text-ink">{used}</b>/{quota}
           </p>
         </div>
         <div className="flex gap-2.5">

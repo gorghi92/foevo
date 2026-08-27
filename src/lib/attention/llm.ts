@@ -22,7 +22,7 @@ function splitDataUrl(dataUrl: string): { media: string; b64: string } {
 
 async function callClaude(dataUrl: string, system: string, user: string): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY
-  if (!key) throw new Error('ANTHROPIC_API_KEY non configurata')
+  if (!key) throw new Error('Provider AI non configurato')
   const { media, b64 } = splitDataUrl(dataUrl)
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -38,17 +38,17 @@ async function callClaude(dataUrl: string, system: string, user: string): Promis
       ] }],
     }),
   })
-  if (!resp.ok) throw new Error(`Claude HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`)
+  if (!resp.ok) throw new Error(`Errore AI (${resp.status}): ${(await resp.text()).slice(0, 200)}`)
   const data: any = await resp.json()
-  if (data?.stop_reason === 'refusal') throw new Error('Claude ha rifiutato la richiesta')
+  if (data?.stop_reason === 'refusal') throw new Error('Il servizio AI ha rifiutato la richiesta')
   const text = (data?.content || []).filter((b: any) => b?.type === 'text').map((b: any) => b.text).join('\n')
-  if (!text) throw new Error('Claude: risposta vuota')
+  if (!text) throw new Error('Risposta AI vuota')
   return text
 }
 
 async function callQwen(dataUrl: string, system: string, user: string): Promise<string> {
   const key = process.env.DASHSCOPE_API_KEY
-  if (!key) throw new Error('DASHSCOPE_API_KEY non configurata')
+  if (!key) throw new Error('Provider AI non configurato')
   const resp = await fetch(`${DASHSCOPE_BASE}/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', Authorization: `Bearer ${key}` },
@@ -65,11 +65,11 @@ async function callQwen(dataUrl: string, system: string, user: string): Promise<
       ],
     }),
   })
-  if (!resp.ok) throw new Error(`Qwen HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`)
+  if (!resp.ok) throw new Error(`Errore AI (${resp.status}): ${(await resp.text()).slice(0, 200)}`)
   const data: any = await resp.json()
   const text = data?.choices?.[0]?.message?.content
   const flat = Array.isArray(text) ? text.map((p: any) => p?.text || '').join('') : String(text || '')
-  if (!flat) throw new Error('Qwen: risposta vuota')
+  if (!flat) throw new Error('Risposta AI vuota')
   return flat
 }
 

@@ -40,7 +40,7 @@ async function refreshLinks() {
   els.getKey.href = `${apiBase}/settings/api-keys`
   els.dashLink.href = `${apiBase}/dashboard`
   els.tierHint.textContent = apiKey
-    ? 'Il tier (base Qwen / premium Claude) dipende dal tuo piano Foveo.'
+    ? 'La profondità dell\'analisi dipende dal tuo piano Foveo.'
     : '⚠ Nessuna API key: apri le impostazioni (⚙) per configurarla.'
   els.acct.textContent = apiKey ? apiKey.slice(0, 10) + '…' : 'non connesso'
 }
@@ -70,17 +70,19 @@ async function ensureHostPermission(apiBase) {
 els.saveBtn.addEventListener('click', async () => {
   const apiBase = (els.apiBase.value || DEFAULT_BASE).trim().replace(/\/+$/, '')
   const apiKey = els.apiKey.value.trim()
-  const granted = await ensureHostPermission(apiBase)
+  // Persist FIRST: granting a host permission can restart the extension context
+  // and abort anything running after the prompt — that used to drop the key,
+  // forcing the user to re-enter and re-save. Saving first makes it stick.
   await chrome.storage.sync.set({ apiBase, apiKey })
-  if (!granted) {
-    els.saved.textContent = '⚠ Endpoint salvato, ma senza permesso host l\'analisi fallirà. Ri-salva per concederlo.'
-    els.saved.style.color = 'var(--danger)'
-    els.saved.hidden = false
-    return
-  }
   els.saved.textContent = 'Salvato ✓'
   els.saved.style.color = ''
   els.saved.hidden = false
+  const granted = await ensureHostPermission(apiBase)
+  if (!granted) {
+    els.saved.textContent = '⚠ Salvato. Manca però il permesso per il sito: premi di nuovo Salva e conferma.'
+    els.saved.style.color = 'var(--danger)'
+    return
+  }
   setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
 })
 

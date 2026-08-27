@@ -75,8 +75,8 @@ do $$ begin
   end if;
 end $$;
 insert into public.packages (name, slug, tier, monthly_quota, price_monthly, features, order_index) values
-  ('Base', 'base', 'base', 30, 1900, '["Heatmap ibrida","Analisi AI (Qwen)","30 analisi/mese"]'::jsonb, 1),
-  ('Premium', 'premium', 'premium', 150, 4900, '["Heatmap ibrida","Analisi AI premium (Claude)","Brand, CTA, copy e frizioni","150 analisi/mese"]'::jsonb, 2)
+  ('Base', 'base', 'base', 30, 1900, '["Heatmap ibrida","Analisi AI","30 analisi/mese"]'::jsonb, 1),
+  ('Premium', 'premium', 'premium', 150, 4900, '["Heatmap ibrida","Analisi AI premium","Brand, CTA, copy e frizioni","150 analisi/mese"]'::jsonb, 2)
 on conflict (slug) do nothing;
 
 -- ---------- entitlements (per user) ----------

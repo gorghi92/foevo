@@ -39,8 +39,21 @@ function pageCollectElements(vw, pageH) {
     const s = getComputedStyle(el)
     return !(s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity || '1') < 0.05)
   }
+  // Fixed/sticky elements (cookie banners, sticky bars) are hidden after the
+  // first slice in the stitched screenshot, so their captured rect would land a
+  // box in the wrong place. Skip the element and any fixed/sticky ancestor.
+  const inFixed = (el) => {
+    let n = el, depth = 0
+    while (n && n !== document.body && depth < 10) {
+      const p = getComputedStyle(n).position
+      if (p === 'fixed' || p === 'sticky') return true
+      n = n.parentElement; depth++
+    }
+    return false
+  }
   const push = (el, type) => {
     if (out.length >= 40) return
+    if (inFixed(el)) return
     let r
     try { r = el.getBoundingClientRect() } catch { return }
     if (!r || r.width < 24 || r.height < 12) return

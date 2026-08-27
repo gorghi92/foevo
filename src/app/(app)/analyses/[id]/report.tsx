@@ -90,7 +90,7 @@ export default function Report({ initial }: { initial: any }) {
           <div className="truncate text-lg font-bold">{data.title || data.url}</div>
           {data.url && <a href={data.url} target="_blank" rel="noreferrer" className="text-xs text-muted">{String(data.url).replace(/^https?:\/\//, '')} <ExternalLink size={11} className="inline" /></a>}
         </div>
-        <span className="rounded-md border border-line px-2.5 py-1 text-xs font-bold">{data.tier === 'premium' ? 'Premium · Claude' : 'Base · Qwen'}</span>
+        <span className="rounded-md border border-line px-2.5 py-1 text-xs font-bold">{data.tier === 'premium' ? 'Premium' : 'Base'}</span>
         {data.status === 'done' && (
           sharePath
             ? <button onClick={copyShare} className="btn btn-ghost px-3 py-1.5 text-[13px]" title={shareUrl}>{copied ? <><Check size={14} /> Copiato</> : <><Copy size={14} /> Link pubblico</>}</button>

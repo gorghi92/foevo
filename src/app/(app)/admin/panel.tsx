@@ -58,7 +58,7 @@ export default function AdminPanel({ packages, entitlements, stats }: { packages
           <div className="font-semibold">{form.id ? 'Modifica' : 'Nuovo'} pacchetto</div>
           <input className="input" placeholder="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: form.id ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') })} required />
           <input className="input" placeholder="slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} required />
-          <select className="input" value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value })}><option value="base">base (Qwen)</option><option value="premium">premium (Claude)</option></select>
+          <select className="input" value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value })}><option value="base">base</option><option value="premium">premium</option></select>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.unlimited} onChange={(e) => setForm({ ...form, unlimited: e.target.checked })} /> Illimitato</label>
           {!form.unlimited && <input className="input" type="number" placeholder="Quota mensile" value={form.monthly_quota} onChange={(e) => setForm({ ...form, monthly_quota: +e.target.value })} />}
           <input className="input" type="number" placeholder="Prezzo (centesimi)" value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: +e.target.value })} />
