@@ -107,7 +107,7 @@ export default function Landing() {
                 <h3 className="text-xl font-bold">{t.name}</h3>
                 <span className="label">{t.tier}</span>
               </div>
-              <p className="mt-3"><span className="font-display text-4xl font-extrabold">€{t.price}</span><span className="text-muted">/mese</span></p>
+              <p className="mt-3"><span className="font-display text-4xl font-extrabold">€{t.price}</span><span className="text-muted"> + IVA/mese</span></p>
               <ul className="mt-5 space-y-2.5">
                 {t.feats.map((x) => (
                   <li key={x} className="flex items-start gap-2 text-sm"><Check size={16} className="mt-0.5 text-brand" /> {x}</li>

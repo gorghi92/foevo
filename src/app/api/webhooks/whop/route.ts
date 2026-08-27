@@ -32,6 +32,23 @@ export async function POST(req: Request) {
     const { data: prof } = await sc.from('profiles').select('id').eq('email', email).maybeSingle()
     userId = (prof?.id as string) ?? null
   }
+
+  // Pagamenti: registrati anche senza utente collegato (per i ricavi/le fatture).
+  if (event === 'payment.succeeded' || event === 'payment_succeeded') {
+    const rawAmt = Number(data?.final_amount ?? data?.amount ?? data?.subtotal ?? 0)
+    // Whop può inviare importi in centesimi (interi) o in unità maggiori (decimali).
+    const cents = Math.round(rawAmt * (Number.isInteger(rawAmt) ? 1 : 100))
+    await sc.from('payments').upsert({
+      user_id: userId, email,
+      amount_cents: cents, currency: String(data?.currency || 'EUR').toUpperCase(), status: 'paid',
+      whop_payment_id: data?.id ?? null,
+      whop_membership_id: data?.membership_id ?? data?.membership ?? null,
+      plan, description: data?.plan_name ?? data?.product ?? 'Abbonamento Foevo',
+      created_at: data?.created_at ? new Date(Number(data.created_at) * 1000).toISOString() : new Date().toISOString(),
+    }, { onConflict: 'whop_payment_id' })
+    return NextResponse.json({ ok: true })
+  }
+
   if (!userId) return NextResponse.json({ ok: true, note: 'no matching user' })
 
   if (event === 'membership.went_valid' && plan) {

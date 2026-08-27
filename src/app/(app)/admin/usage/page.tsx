@@ -76,6 +76,17 @@ export default async function UsagePage() {
   const totalAnalyses = rows.length
   const avgCost = totalAnalyses ? totalCost / totalAnalyses : 0
 
+  // serie giornaliera (ultimi 30 giorni)
+  const DAYS = 30
+  const dayMap = new Map<string, { cost: number; count: number }>()
+  for (let i = 0; i < DAYS; i++) dayMap.set(new Date(now.getTime() - i * 86400000).toISOString().slice(0, 10), { cost: 0, count: 0 })
+  for (const r of rows) {
+    const e = dayMap.get(String(r.created_at).slice(0, 10))
+    if (e) { e.cost += Number(r.cost_usd) || 0; e.count++ }
+  }
+  const series = Array.from(dayMap.entries()).map(([date, v]) => ({ date, ...v })).reverse()
+  const maxCost = Math.max(1e-6, ...series.map((s) => s.cost))
+
   const Card = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
     <div className="card p-4">
       <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
@@ -105,7 +116,28 @@ export default async function UsagePage() {
         <Card label="Analisi Premium" value={num(tierCount.premium)} sub={usd(tierCost.premium)} />
       </div>
 
-      <div className="card mt-5 overflow-x-auto">
+      <div className="card mt-4 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="font-semibold">Consumo giornaliero <span className="text-xs text-muted">· ultimi 30 giorni</span></div>
+          <div className="text-xs text-muted">barre = costo AI ($) · picco {usd(maxCost)}</div>
+        </div>
+        <svg viewBox={`0 0 ${series.length * 18} 130`} preserveAspectRatio="none" style={{ width: '100%', height: 150 }}>
+          <line x1={0} y1={110} x2={series.length * 18} y2={110} style={{ stroke: 'rgb(var(--line))' }} strokeWidth={1} />
+          {series.map((s, i) => {
+            const h = Math.round((s.cost / maxCost) * 100)
+            return (
+              <rect key={i} x={i * 18 + 3} y={110 - Math.max(1, h)} width={12} height={Math.max(1, h)} rx={2} style={{ fill: 'rgb(var(--brand))' }}>
+                <title>{`${s.date}: ${usd(s.cost)} · ${num(s.count)} analisi`}</title>
+              </rect>
+            )
+          })}
+        </svg>
+        <div className="mt-1 flex justify-between text-[10px] text-muted">
+          <span>{series[0]?.date}</span><span>oggi</span>
+        </div>
+      </div>
+
+      <div className="card mt-4 overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
