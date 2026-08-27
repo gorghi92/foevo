@@ -15,9 +15,15 @@ const VIOLET = '0.427 0.157 0.851'
 const WARM = '1 0.690 0.125'
 const HOT = '1 0.353 0.235'
 
-// Solo caratteri Latin-1: sostituisci quelli fuori range e fai l'escape PDF.
+// Solo caratteri Latin-1: normalizza la punteggiatura Unicode comune, poi
+// sostituisci gli eventuali residui fuori range e fai l'escape PDF.
 const esc = (s: string) =>
   String(s ?? '')
+    .replace(/[—–‒]/g, '-')      // — – ‒  → -
+    .replace(/[‘’‛]/g, "'")      // ' ' ‛ → '
+    .replace(/[“”„]/g, '"')      // " " „ → "
+    .replace(/…/g, '...')                    // … → ...
+    .replace(/ /g, ' ')                      // nbsp → spazio
     .replace(/[€]/g, 'EUR')
     .split('').map((ch) => (ch.charCodeAt(0) <= 0xff ? ch : '?')).join('')
     .replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)')
