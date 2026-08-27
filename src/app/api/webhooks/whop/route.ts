@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
 import { sendReceiptOnce } from '@/lib/email'
+import { attributePayment, linkReferralUser } from '@/lib/affiliate/attribute'
 import { createHmac, timingSafeEqual } from 'crypto'
 
 export const runtime = 'nodejs'
@@ -107,6 +108,16 @@ export async function POST(req: Request) {
       amount: `${String(data?.currency || 'EUR').toUpperCase()} ${(cents / 100).toFixed(2)}`,
       date: new Date(data?.created_at ? Number(data.created_at) * 1000 : Date.now()).toLocaleDateString('it-IT'),
     })
+
+    // Commissione affiliazione: matura su ogni pagamento (primo + rinnovi),
+    // idempotente sul whop_payment_id e limitata alla finestra di N mesi.
+    try {
+      await attributePayment(sc, {
+        email, whopPaymentId: data?.id ?? null, planWhopId: plan,
+        amountCents: cents,
+        paymentAtMs: data?.created_at ? Number(data.created_at) * 1000 : Date.now(),
+      })
+    } catch (e) { console.error('[foevo] attribuzione commissione fallita', e) }
     return NextResponse.json({ ok: true })
   }
 
@@ -125,6 +136,8 @@ export async function POST(req: Request) {
       userId = created?.user?.id ?? null
       if (userId) { try { await sc.from('profiles').upsert({ id: userId, email, full_name: String(nm || '').trim() }, { onConflict: 'id' }) } catch { /* trigger */ } }
     }
+    // Collega la referral all'utente (per la vista "chi ha portato chi").
+    if (userId && email) { try { await linkReferralUser(sc, email, userId) } catch (e) { console.error('[foevo] link referral fallito', e) } }
     if (!userId) return NextResponse.json({ ok: true, note: 'no user and no email' })
 
     const renewal = data?.renewal_period_end ?? null

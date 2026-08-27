@@ -5,7 +5,7 @@ type CookiesToSet = { name: string; value: string; options: CookieOptions }[]
 
 // NB: '/a/' keeps the trailing slash so it matches public shared reports only,
 // not '/admin' or '/analyses' (which must stay behind auth).
-const PUBLIC_PREFIXES = ['/', '/login', '/signup', '/auth', '/api', '/extension', '/privacy', '/supporto', '/review', '/legal', '/a/', '/checkout']
+const PUBLIC_PREFIXES = ['/', '/login', '/signup', '/auth', '/api', '/extension', '/privacy', '/supporto', '/review', '/legal', '/a/', '/checkout', '/affiliati', '/r/']
 const isPublic = (p: string) =>
   p === '/' || PUBLIC_PREFIXES.some((prefix) => prefix !== '/' && p.startsWith(prefix))
 
