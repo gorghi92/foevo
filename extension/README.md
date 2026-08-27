@@ -38,12 +38,12 @@ conversion analysis** (brand, colors, CTAs, copy, frictions, recommendations).
 ## Permissions (minimized for Web Store review)
 
 - `activeTab` + `scripting` — capture/scroll only the tab the user clicks on.
-- `storage` — store endpoint + API key locally.
-- No default `host_permissions`: the extension ships with none.
-- `optional_host_permissions: https://*/*` — the configured https endpoint is
-  granted **at runtime** when you press **Salva** in Settings (Chrome shows a
-  one-time permission prompt for that origin). A local `http://` dev endpoint
-  isn't requestable at runtime — use the unpacked build for that.
+- `storage` — store the device key locally.
+- `host_permissions: https://foevo.app/*` — the single host the extension talks
+  to, declared statically. Granting a host permission at runtime restarts the
+  MV3 popup context and aborts whatever it was doing, which broke the login on
+  the first attempt; declaring it up front removes the prompt entirely.
+  The endpoint is fixed and not user-configurable.
 
 ## Packaging / publishing to the Chrome Web Store
 

@@ -41,13 +41,10 @@ puzzle 🧩 → pin.
 ## 5. Collega il tuo account (API key)
 
 1. Accedi a **https://foevo.app** con il tuo account.
-2. Vai su **Impostazioni → API keys** (`/settings/api-keys`) e crea una chiave:
-   copiala subito (viene mostrata **una sola volta**). Inizia con `fv_`.
-3. Apri il popup dell'estensione → icona **⚙ (Impostazioni)** e imposta:
-   - **Endpoint piattaforma**: `https://foevo.app`
-   - **API key**: incolla la chiave `fv_…`
-4. Premi **Salva**. Chrome chiederà **una volta** il permesso per il sito
-   `foevo.app`: accetta (serve a inviare lo screenshot al motore di analisi).
+2. Apri il popup dell'estensione → icona **⚙ (Impostazioni)**.
+3. Inserisci la tua **email Foveo** e premi **Invia codice**.
+4. Ti arriva un'email con un **codice a 6 cifre**: incollalo e premi **Accedi**.
+   Nessuna password e nessuna chiave da gestire.
 
 ## 6. Analizza una pagina
 
@@ -80,8 +77,8 @@ non ci pensi più.
 | Sintomo | Causa / Soluzione |
 |---|---|
 | *"Il manifest non è leggibile"* o non carica | Hai selezionato lo **zip** o la cartella sbagliata. Estrai lo zip e seleziona la cartella che contiene `manifest.json`. |
-| Il pulsante Analizza dà errore 401 | API key mancante/errata: dev'essere quella `fv_…` creata in `/settings/api-keys`. |
-| Errore di rete / host | Riapri ⚙ Impostazioni e premi di nuovo **Salva** per riconcedere il permesso al sito. |
+| Il pulsante Analizza dà errore 401 | Sessione scaduta: riapri ⚙ Impostazioni e rifai l'accesso con il codice via email. |
+| Non arriva il codice via email | Controlla spam. Puoi richiederne uno nuovo dopo ~30 secondi; ogni codice vale 10 minuti. |
 | "Apri una pagina web" | Sei su `chrome://…`, PDF o Web Store: apri una normale pagina http/https. |
 | Pagina molto lunga tagliata | Limite di sicurezza: oltre ~20.000px la cattura viene troncata. |
 

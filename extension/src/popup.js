@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id)
 const els = {
   viewMain: $('view-main'), viewSettings: $('view-settings'),
   settingsBtn: $('settings-btn'), backBtn: $('back-btn'),
-  apiBase: $('api-base'), email: $('email'),
+  email: $('email'),
   code: $('code'), codeStep: $('code-step'), changeEmail: $('change-email'),
   saveBtn: $('save-settings'), saved: $('settings-saved'), signup: $('signup-link'),
   goal: $('goal'), note: $('note'), analyzeBtn: $('analyze-btn'),
@@ -14,9 +14,13 @@ const els = {
 }
 
 async function getSettings() {
-  const s = await chrome.storage.sync.get(['apiBase', 'apiKey', 'email'])
-  return { apiBase: (s.apiBase || DEFAULT_BASE).replace(/\/+$/, ''), apiKey: s.apiKey || '', email: s.email || '' }
+  const s = await chrome.storage.sync.get(['apiKey', 'email'])
+  // Endpoint fisso: è l'unico host dichiarato nel manifest.
+  return { apiBase: DEFAULT_BASE, apiKey: s.apiKey || '', email: s.email || '' }
 }
+
+// Ripulisce l'endpoint personalizzato salvato dalle versioni precedenti.
+chrome.storage.sync.remove('apiBase').catch(() => {})
 
 function show(view) {
   els.viewMain.hidden = view !== 'main'
@@ -49,7 +53,6 @@ async function refreshLinks() {
 /* ---- settings / login view ---- */
 async function openSettings() {
   const { apiBase, email } = await getSettings()
-  els.apiBase.value = apiBase
   els.email.value = email
   resetOtp()
   if (els.signup) els.signup.href = `${apiBase}/signup`
@@ -59,15 +62,15 @@ async function openSettings() {
 els.settingsBtn.addEventListener('click', openSettings)
 els.backBtn.addEventListener('click', () => { show('main'); refreshLinks() })
 
-// No default host permission: the configured endpoint is granted at runtime.
+/* L'host di Foveo è dichiarato in "host_permissions" nel manifest, quindi il
+ * permesso c'è già: non chiediamo nulla a runtime. Concedere un permesso, in
+ * MV3, riavvia il contesto del popup e interrompe l'operazione in corso — era
+ * il motivo per cui il primo tentativo di login sembrava non fare nulla. */
 async function ensureHostPermission(apiBase) {
-  let origin
-  try { origin = new URL(apiBase).origin + '/*' } catch { return true }
-  if (!/^https:\/\//.test(origin)) return true // http (dev) can't be requested; use the unpacked build
   try {
-    if (await chrome.permissions.contains({ origins: [origin] })) return true
-    return await chrome.permissions.request({ origins: [origin] })
-  } catch { return false }
+    const origin = new URL(apiBase).origin + '/*'
+    return await chrome.permissions.contains({ origins: [origin] })
+  } catch { return true }
 }
 
 function saveMsg(text, error) {
@@ -124,15 +127,12 @@ async function verifyCode(apiBase, email, code) {
 }
 
 els.saveBtn.addEventListener('click', async () => {
-  const apiBase = (els.apiBase.value || DEFAULT_BASE).trim().replace(/\/+$/, '')
+  const { apiBase } = await getSettings()
   const email = els.email.value.trim()
   if (!email) { saveMsg('Inserisci la tua email.', true); return }
 
-  // Salva l'endpoint prima del permesso: concederlo può riavviare il contesto
-  // dell'estensione e interrompere quello che viene dopo.
-  await chrome.storage.sync.set({ apiBase })
   const granted = await ensureHostPermission(apiBase)
-  if (!granted) { saveMsg('Concedi il permesso per il sito e premi di nuovo.', true); return }
+  if (!granted) { saveMsg('Permesso mancante per foevo.app: reinstalla l\u2019estensione.', true); return }
 
   els.saveBtn.disabled = true
   try {
@@ -146,7 +146,7 @@ els.saveBtn.addEventListener('click', async () => {
       if (code.length !== 6) { saveMsg('Inserisci il codice a 6 cifre.', true); return }
       saveMsg('Verifica in corso…', false)
       const data = await verifyCode(apiBase, email, code)
-      await chrome.storage.sync.set({ apiBase, apiKey: data.key, email: data.email || email })
+      await chrome.storage.sync.set({ apiKey: data.key, email: data.email || email })
       resetOtp()
       saveMsg('Connesso \u2713', false)
       setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
