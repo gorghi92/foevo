@@ -12,7 +12,9 @@ export interface AnalyzeCtx { url: string; title: string; goal: string | null; n
 export interface LlmOutput { result: AttentionResult; provider: 'claude' | 'qwen'; model: string; usage: Usage; costUsd: number }
 
 const CLAUDE_MODEL = process.env.ATTENTION_CLAUDE_MODEL || 'claude-opus-5'
-const QWEN_MODEL = process.env.ATTENTION_QWEN_MODEL || 'qwen-vl-max'
+const QWEN_MODEL = process.env.ATTENTION_QWEN_MODEL || 'qwen-vl-max-latest'
+// Modello base sempre disponibile: fallback se il primario (più recente) non risponde.
+const QWEN_FALLBACK = 'qwen-vl-max'
 const DASHSCOPE_BASE = (process.env.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1').replace(/\/+$/, '')
 
 function splitDataUrl(dataUrl: string): { media: string; b64: string } {
@@ -30,9 +32,11 @@ async function callClaude(dataUrl: string, system: string, user: string): Promis
     headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 5000,
+      max_tokens: 8000,
       system,
-      output_config: { effort: 'low' },
+      // Effort alto: il giudizio semantico (CTA, copy, gerarchia) è la parte che
+      // beneficia di più del ragionamento. Su Opus 5 il thinking è adattivo.
+      output_config: { effort: 'high' },
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: media, data: b64 } },
         { type: 'text', text: user },
@@ -48,14 +52,12 @@ async function callClaude(dataUrl: string, system: string, user: string): Promis
   return { text, usage }
 }
 
-async function callQwen(dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
-  const key = process.env.DASHSCOPE_API_KEY
-  if (!key) throw new Error('Provider AI non configurato')
+async function callQwenModel(key: string, model: string, dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
   const resp = await fetch(`${DASHSCOPE_BASE}/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: QWEN_MODEL,
+      model,
       max_tokens: 2400,
       response_format: { type: 'json_object' },
       messages: [
@@ -73,7 +75,20 @@ async function callQwen(dataUrl: string, system: string, user: string): Promise<
   const flat = Array.isArray(text) ? text.map((p: any) => p?.text || '').join('') : String(text || '')
   if (!flat) throw new Error('Risposta AI vuota')
   const usage: Usage = { input: Number(data?.usage?.prompt_tokens) || 0, output: Number(data?.usage?.completion_tokens) || 0 }
-  return { text, usage }
+  return { text: flat, usage }
+}
+
+async function callQwen(dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
+  const key = process.env.DASHSCOPE_API_KEY
+  if (!key) throw new Error('Provider AI non configurato')
+  try {
+    return await callQwenModel(key, QWEN_MODEL, dataUrl, system, user)
+  } catch (e) {
+    // Se il modello primario (più recente) non è disponibile, ripiega sul base stabile.
+    if (QWEN_MODEL === QWEN_FALLBACK) throw e
+    console.warn(`[foevo] modello base "${QWEN_MODEL}" non disponibile, fallback a "${QWEN_FALLBACK}"`, e)
+    return await callQwenModel(key, QWEN_FALLBACK, dataUrl, system, user)
+  }
 }
 
 export async function analyze(tier: Tier, dataUrl: string, ctx: AnalyzeCtx, elements?: PageElement[]): Promise<LlmOutput> {

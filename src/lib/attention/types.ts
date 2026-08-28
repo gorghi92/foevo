@@ -94,6 +94,7 @@ Analizza e restituisci ESATTAMENTE questo JSON:
 Regole:
 - Identifica i colori REALI usati (specialmente quello delle CTA) e valuta se la CTA "stacca" abbastanza dal resto.
 - Valuta se ciò che cattura l'attenzione (score alto nelle zones) coincide con l'elemento che porta alla conversione. Se no, spiegalo in summary e in recommendations.
+- ETICHETTE (label) fedeli a ciò che è VISIBILE: usa il testo reale dell'elemento. NON inventare marchi, nomi di aziende o piattaforme (es. Google, Trustpilot, Facebook) se non compaiono scritti nell'elemento. Se è un logo/marchio, etichettalo "Logo" (o "Logo — <nome se leggibile>"). Attribuisci "prova sociale"/"recensioni" SOLO se ci sono segnali espliciti (stelle, numero di recensioni, testimonianze, diciture tipo "come visto su"). Nel dubbio, descrivi ciò che vedi senza assegnare una funzione.
 - Includi 4-8 zones, 1-4 cta, 3-6 recommendations ordinate per priorità.${elementsBlock(elements)}`
 }
 
@@ -110,7 +111,8 @@ Restituisci ESATTAMENTE questo JSON (in italiano):
   "scores":{"attentionAlignment":0-100,"clarity":0-100,"cta":0-100,"conversion":0-100},
   "recommendations":[{"priority":"alta|media|bassa","title":"...","detail":"...","impact":"..."}]
 }
-Includi 3-6 zones e 2-4 recommendations. bbox normalizzate 0..1 sull'intera immagine.${elementsBlock(elements)}`
+Includi 3-6 zones e 2-4 recommendations. bbox normalizzate 0..1 sull'intera immagine.
+ETICHETTE (label) fedeli a ciò che è VISIBILE: NON inventare marchi o piattaforme (es. Google, Trustpilot) se non sono scritti; un logo etichettalo "Logo"; usa "prova sociale" solo con segnali espliciti (stelle, numero recensioni, testimonianze).${elementsBlock(elements)}`
 }
 
 // ---- defensive normalization (LLMs drift; never throw on a missing field) ----
