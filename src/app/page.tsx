@@ -76,7 +76,7 @@ const BENEFICI = [
 ]
 
 const STEPS = [
-  { n: 1, icon: Chrome, t: 'Installi l’estensione', b: 'Due minuti, con la guida passo-passo. Poi accedi con la tua email e sei operativo.' },
+  { n: 1, icon: Chrome, t: 'Installi l’estensione', b: 'Un click dal Chrome Web Store. Poi accedi con la tua email e sei operativo.' },
   { n: 2, icon: MousePointerClick, t: 'Apri una pagina e premi Analizza', b: 'Foevo cattura l’intera pagina — solo quando lo decidi tu — e la manda ai due motori.' },
   { n: 3, icon: Gauge, t: 'Leggi il report e intervieni', b: 'Heatmap, zone, punteggio e azioni prioritizzate nella tua dashboard. In circa un minuto.' },
 ]
@@ -143,7 +143,7 @@ const FAQ = [
   },
   {
     q: 'Come installo l’estensione?',
-    a: 'L’estensione non è ancora sul Chrome Web Store: la scarichi dalla tua dashboard e la carichi in Chrome in modalità sviluppatore, seguendo la guida. Sono due minuti, e la guida è passo-passo.',
+    a: 'La aggiungi dal Chrome Web Store con un click, poi accedi con la tua email dalle impostazioni dell’estensione. Nessuna modalità sviluppatore, nessuno zip da caricare: sei operativo in un minuto.',
   },
   {
     q: 'Foevo cattura le mie pagine in background?',

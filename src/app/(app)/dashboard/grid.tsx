@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Flame, Trash2, Search, ImageOff, RefreshCw, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { EmptyState, ScoreRing } from '@/components/app/ui'
+import { CHROME_STORE_URL } from '@/lib/links'
 
 type Row = {
   id: string; url: string | null; title: string | null; status: string
@@ -58,8 +59,8 @@ export default function AnalysesGrid({ initial }: { initial: Row[] }) {
         title="Nessuna analisi, per ora"
         body="Apri una pagina nel browser e premi Analizza dall’estensione: heatmap, punteggio e raccomandazioni compariranno qui."
         action={
-          <a href="/extension/foevo-attention.zip" download className="btn btn-primary">
-            Scarica l’estensione
+          <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            Aggiungi a Chrome
           </a>
         }
       />

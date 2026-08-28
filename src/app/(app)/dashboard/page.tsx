@@ -3,12 +3,13 @@ import { createClient, getUser } from '@/lib/supabase/server'
 import { resolveEntitlement, monthlyUsage } from '@/server/store'
 import { Chrome, MousePointerClick, Gauge } from 'lucide-react'
 import { PageHeader } from '@/components/app/ui'
+import { CHROME_STORE_URL } from '@/lib/links'
 import AnalysesGrid from './grid'
 
 export const dynamic = 'force-dynamic'
 
 const ONBOARDING = [
-  { icon: Chrome, t: 'Installa l’estensione', b: 'Scaricala qui sotto e caricala in Chrome seguendo la guida. Poi accedi con la tua email dalle impostazioni (⚙).' },
+  { icon: Chrome, t: 'Installa l’estensione', b: 'Aggiungila da Chrome Web Store con un click. Poi accedi con la tua email dalle impostazioni (⚙).' },
   { icon: MousePointerClick, t: 'Apri una pagina e premi Analizza', b: 'Landing, home o scheda prodotto: la cattura parte solo quando lo decidi tu.' },
   { icon: Gauge, t: 'Leggi il report', b: 'Heatmap, zone e azioni prioritizzate compaiono qui, pronte da mettere in pratica.' },
 ]
@@ -44,8 +45,8 @@ export default async function DashboardPage() {
           </>
         }
         actions={
-          <a href="/extension/foevo-attention.zip" download className="btn btn-primary">
-            <Chrome size={15} /> Scarica estensione
+          <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            <Chrome size={15} /> Aggiungi a Chrome
           </a>
         }
       />

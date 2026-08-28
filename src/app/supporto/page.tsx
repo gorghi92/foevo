@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SupportForm } from './support-form'
 import { issueFormToken } from '@/lib/form-token'
+import { CHROME_STORE_URL } from '@/lib/links'
 
 // Il token è legato al momento del render, quindi la pagina non va messa in cache.
 export const dynamic = 'force-dynamic'
@@ -16,8 +17,10 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: 'L’estensione chiede un permesso o non completa l’accesso',
     a: <>Assicurati di avere la <b>versione 1.2.2 o successiva</b>: la trovi in basso nella card dell’estensione
        su <code>chrome://extensions</code>. Le versioni precedenti chiedevano un permesso a runtime che
-       interrompeva l’accesso al primo tentativo. Per aggiornare, scarica di nuovo lo zip dalla dashboard,
-       estrailo <b>sopra la cartella che stai già usando</b> e premi Ricarica.</>,
+       interrompeva l’accesso al primo tentativo. L’estensione è sul{' '}
+       <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand">Chrome Web Store</a>{' '}
+       e si aggiorna da sola; per forzare l’aggiornamento vai su <code>chrome://extensions</code>, attiva la
+       modalità sviluppatore e premi <b>Aggiorna</b>.</>,
   },
   {
     q: 'Non arriva il codice di accesso via email',
