@@ -3,19 +3,44 @@
  * pattern) so a single code path serves two providers:
  *  - premium tier → Anthropic Claude (Messages API, vision)
  *  - base tier    → Qwen-VL via DashScope (OpenAI-compatible, vision)
+ *
+ * Modelli, effort e chiavi sono configurabili dal pannello superadmin (salvati
+ * in app_settings); le variabili d'ambiente restano come fallback.
  */
 import { systemPrompt, premiumPrompt, basePrompt, extractJson, normalizeResult, type AttentionResult, type PageElement } from './types'
 import { estimateCost, type Usage } from './pricing'
+import { getSettings } from '@/lib/settings'
 
 export type Tier = 'base' | 'premium'
 export interface AnalyzeCtx { url: string; title: string; goal: string | null; note: string | null }
 export interface LlmOutput { result: AttentionResult; provider: 'claude' | 'qwen'; model: string; usage: Usage; costUsd: number }
 
-const CLAUDE_MODEL = process.env.ATTENTION_CLAUDE_MODEL || 'claude-opus-5'
-const QWEN_MODEL = process.env.ATTENTION_QWEN_MODEL || 'qwen-vl-max-latest'
+export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
+export type Effort = (typeof EFFORTS)[number]
+const normEffort = (e: string): Effort => (EFFORTS as readonly string[]).includes(e) ? (e as Effort) : 'medium'
+
 // Modello base sempre disponibile: fallback se il primario (più recente) non risponde.
 const QWEN_FALLBACK = 'qwen-vl-max'
-const DASHSCOPE_BASE = (process.env.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1').replace(/\/+$/, '')
+
+export interface AiConfig {
+  claudeModel: string; qwenModel: string
+  claudeEffort: Effort
+  anthropicKey: string; dashscopeKey: string; dashscopeBase: string
+}
+
+/** Config AI: prima il DB (pannello superadmin), poi l'env come fallback. */
+export async function getAiConfig(): Promise<AiConfig> {
+  const s = await getSettings()
+  const pick = (k: string) => s[k] || process.env[k] || ''
+  return {
+    claudeModel: pick('ATTENTION_CLAUDE_MODEL') || 'claude-opus-5',
+    qwenModel: pick('ATTENTION_QWEN_MODEL') || 'qwen-vl-max-latest',
+    claudeEffort: normEffort(pick('ATTENTION_CLAUDE_EFFORT') || 'medium'),
+    anthropicKey: pick('ANTHROPIC_API_KEY'),
+    dashscopeKey: pick('DASHSCOPE_API_KEY'),
+    dashscopeBase: (pick('DASHSCOPE_BASE_URL') || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1').replace(/\/+$/, ''),
+  }
+}
 
 function splitDataUrl(dataUrl: string): { media: string; b64: string } {
   const m = dataUrl.match(/^data:(image\/[a-z0-9.+-]+);base64,(.*)$/i)
@@ -23,21 +48,19 @@ function splitDataUrl(dataUrl: string): { media: string; b64: string } {
   return { media: m[1].toLowerCase(), b64: m[2] }
 }
 
-async function callClaude(dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
-  const key = process.env.ANTHROPIC_API_KEY
-  if (!key) throw new Error('Provider AI non configurato')
+async function callClaude(cfg: AiConfig, dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
+  if (!cfg.anthropicKey) throw new Error('Provider AI non configurato')
   const { media, b64 } = splitDataUrl(dataUrl)
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    headers: { 'content-type': 'application/json', 'x-api-key': cfg.anthropicKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model: CLAUDE_MODEL,
+      model: cfg.claudeModel,
       max_tokens: 8000,
       system,
-      // Effort medium: buon salto di qualità sul giudizio semantico (CTA, copy,
-      // gerarchia) restando entro il timeout della funzione. Su Opus 5 il
-      // thinking è adattivo. 'high' era troppo lento (FUNCTION_INVOCATION_TIMEOUT).
-      output_config: { effort: 'medium' },
+      // L'effort è configurabile: più alto = giudizio semantico migliore ma più
+      // lento (attenzione al timeout della funzione). Su Opus 5 il thinking è adattivo.
+      output_config: { effort: cfg.claudeEffort },
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: media, data: b64 } },
         { type: 'text', text: user },
@@ -53,10 +76,10 @@ async function callClaude(dataUrl: string, system: string, user: string): Promis
   return { text, usage }
 }
 
-async function callQwenModel(key: string, model: string, dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
-  const resp = await fetch(`${DASHSCOPE_BASE}/chat/completions`, {
+async function callQwenModel(cfg: AiConfig, model: string, dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
+  const resp = await fetch(`${cfg.dashscopeBase}/chat/completions`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', Authorization: `Bearer ${key}` },
+    headers: { 'content-type': 'application/json', Authorization: `Bearer ${cfg.dashscopeKey}` },
     body: JSON.stringify({
       model,
       max_tokens: 2400,
@@ -79,30 +102,33 @@ async function callQwenModel(key: string, model: string, dataUrl: string, system
   return { text: flat, usage }
 }
 
-async function callQwen(dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage }> {
-  const key = process.env.DASHSCOPE_API_KEY
-  if (!key) throw new Error('Provider AI non configurato')
+async function callQwen(cfg: AiConfig, dataUrl: string, system: string, user: string): Promise<{ text: string; usage: Usage; model: string }> {
+  if (!cfg.dashscopeKey) throw new Error('Provider AI non configurato')
   try {
-    return await callQwenModel(key, QWEN_MODEL, dataUrl, system, user)
+    const r = await callQwenModel(cfg, cfg.qwenModel, dataUrl, system, user)
+    return { ...r, model: cfg.qwenModel }
   } catch (e) {
     // Se il modello primario (più recente) non è disponibile, ripiega sul base stabile.
-    if (QWEN_MODEL === QWEN_FALLBACK) throw e
-    console.warn(`[foevo] modello base "${QWEN_MODEL}" non disponibile, fallback a "${QWEN_FALLBACK}"`, e)
-    return await callQwenModel(key, QWEN_FALLBACK, dataUrl, system, user)
+    if (cfg.qwenModel === QWEN_FALLBACK) throw e
+    console.warn(`[foevo] modello base "${cfg.qwenModel}" non disponibile, fallback a "${QWEN_FALLBACK}"`, e)
+    const r = await callQwenModel(cfg, QWEN_FALLBACK, dataUrl, system, user)
+    return { ...r, model: QWEN_FALLBACK }
   }
 }
 
 export async function analyze(tier: Tier, dataUrl: string, ctx: AnalyzeCtx, elements?: PageElement[]): Promise<LlmOutput> {
+  const cfg = await getAiConfig()
   const system = systemPrompt()
   const fallbackGoal = ctx.goal || 'conversione'
   if (tier === 'premium') {
-    const { text, usage } = await callClaude(dataUrl, system, premiumPrompt(ctx, elements))
-    return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'claude', model: CLAUDE_MODEL, usage, costUsd: estimateCost('claude', CLAUDE_MODEL, usage) }
+    const { text, usage } = await callClaude(cfg, dataUrl, system, premiumPrompt(ctx, elements))
+    return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'claude', model: cfg.claudeModel, usage, costUsd: estimateCost('claude', cfg.claudeModel, usage) }
   }
-  const { text, usage } = await callQwen(dataUrl, system, basePrompt(ctx, elements))
-  return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'qwen', model: QWEN_MODEL, usage, costUsd: estimateCost('qwen', QWEN_MODEL, usage) }
+  const { text, usage, model } = await callQwen(cfg, dataUrl, system, basePrompt(ctx, elements))
+  return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'qwen', model, usage, costUsd: estimateCost('qwen', model, usage) }
 }
 
-export function providerAvailable(tier: Tier): boolean {
-  return tier === 'premium' ? !!process.env.ANTHROPIC_API_KEY : !!process.env.DASHSCOPE_API_KEY
+export async function providerAvailable(tier: Tier): Promise<boolean> {
+  const cfg = await getAiConfig()
+  return tier === 'premium' ? !!cfg.anthropicKey : !!cfg.dashscopeKey
 }

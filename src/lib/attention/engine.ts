@@ -6,8 +6,13 @@
 import { computeSaliency, decodeSample, downscaleGrid, type Grid } from './saliency'
 import { analyze, providerAvailable, type Tier, type AnalyzeCtx } from './llm'
 import type { AttentionResult, AttentionZone, PageElement } from './types'
+import { getSettings } from '@/lib/settings'
 
 const HEATMAP_W = 100
+// Quota di default del motore semantico (AI) nel mix della heatmap. 44% ≈ il
+// vecchio rapporto salWeight 0.7 / zoneWeight 0.55 (il risultato è comunque
+// normalizzato, quindi conta solo il rapporto tra i due pesi).
+const DEFAULT_SEMANTIC_SHARE = 0.44
 
 export interface HeatmapData { w: number; h: number; cells: number[] }
 export interface EngineOutput {
@@ -35,7 +40,7 @@ export interface EngineInput {
  * box size on each axis (sigmaX from width, sigmaY from height) instead of one
  * huge isotropic sigma that smeared attention across half the page.
  */
-function mergeHeatmap(sal: Grid, zones: AttentionZone[]): HeatmapData {
+function mergeHeatmap(sal: Grid, zones: AttentionZone[], semShare = DEFAULT_SEMANTIC_SHARE): HeatmapData {
   const { w, h } = sal
   const zone = new Float32Array(w * h)
   let zmax = 0
@@ -64,9 +69,11 @@ function mergeHeatmap(sal: Grid, zones: AttentionZone[]): HeatmapData {
 
   const cells = new Float32Array(w * h)
   let max = 1e-6
-  // CV-led: saliency carries the map, zones add semantic emphasis on top.
-  const salWeight = zones.length ? 0.7 : 1.0
-  const zoneWeight = zones.length ? 0.55 : 0
+  // Mix configurabile: semShare (0..1) = peso del motore semantico (AI); il
+  // resto va alla saliency visiva. Senza zone, la mappa è tutta saliency.
+  const sem = Math.min(1, Math.max(0, semShare))
+  const salWeight = zones.length ? 1 - sem : 1.0
+  const zoneWeight = zones.length ? sem : 0
   for (let i = 0; i < cells.length; i++) {
     cells[i] = salWeight * sal.cells[i] + zoneWeight * zone[i]
     if (cells[i] > max) max = cells[i]
@@ -84,8 +91,11 @@ export async function runEngine(input: EngineInput): Promise<EngineOutput> {
   // 2. LLM semantic analysis (tier-dependent provider)
   const { result, provider, model, usage, costUsd } = await analyze(input.tier, input.screenshot, input.ctx, input.elements)
 
-  // 3. merge → heatmap
-  const heatmap = mergeHeatmap(sal, result.attention.zones)
+  // 3. merge → heatmap (quota semantica configurabile dal pannello superadmin)
+  const s = await getSettings()
+  const raw = Number(s.ATTENTION_SEMANTIC_PCT ?? process.env.ATTENTION_SEMANTIC_PCT)
+  const semShare = Number.isFinite(raw) ? Math.min(1, Math.max(0, raw / 100)) : DEFAULT_SEMANTIC_SHARE
+  const heatmap = mergeHeatmap(sal, result.attention.zones, semShare)
   return { result, heatmap, provider, model, usage, costUsd }
 }
 

@@ -40,10 +40,10 @@ function sanitizeElements(raw: unknown): PageElement[] | undefined {
   return out.length ? out : undefined
 }
 
-function pickTier(preferred: Tier): Tier | null {
-  if (providerAvailable(preferred)) return preferred
+async function pickTier(preferred: Tier): Promise<Tier | null> {
+  if (await providerAvailable(preferred)) return preferred
   const other: Tier = preferred === 'premium' ? 'base' : 'premium'
-  return providerAvailable(other) ? other : null
+  return (await providerAvailable(other)) ? other : null
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -82,7 +82,7 @@ export async function POST(req: Request): Promise<Response> {
       }, { status: 400 })
     }
 
-    const tier = pickTier(ent.tier)
+    const tier = await pickTier(ent.tier)
     if (!tier) return Response.json({ error: 'Nessun provider AI configurato.' }, { status: 503 })
 
     const url = String(body.url || ''); const title = String(body.title || '')
