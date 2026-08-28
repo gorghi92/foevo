@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/server'
+import { isBillable } from '@/lib/billing'
 import { Users, Image, BarChart3, Wallet, Package, SlidersHorizontal, ServerCog, ArrowRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -21,18 +22,17 @@ export default async function AdminOverview() {
   const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
 
   const [
-    { count: users }, { count: activeSubs }, { count: total }, { count: month }, { count: today }, { count: errors },
+    { count: users }, { count: total }, { count: month }, { count: today }, { count: errors },
     { data: monthRows }, { data: ents }, { data: packages },
     { data: recentA }, { data: recentU }, { data: recentP },
   ] = await Promise.all([
     sc.from('profiles').select('id', { count: 'exact', head: true }),
-    sc.from('entitlements').select('user_id', { count: 'exact', head: true }).eq('status', 'active'),
     sc.from('analyses').select('id', { count: 'exact', head: true }),
     sc.from('analyses').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
     sc.from('analyses').select('id', { count: 'exact', head: true }).gte('created_at', dayStart),
     sc.from('analyses').select('id', { count: 'exact', head: true }).eq('status', 'error'),
     sc.from('analyses').select('cost_usd, created_at').gte('created_at', monthStart).limit(10000),
-    sc.from('entitlements').select('status, package_id').eq('status', 'active').limit(2000),
+    sc.from('entitlements').select('user_id, status, package_id').eq('status', 'active').limit(2000),
     sc.from('packages').select('id, price_monthly'),
     sc.from('analyses').select('id, url, title, status, tier, user_id, created_at').order('created_at', { ascending: false }).limit(8),
     sc.from('profiles').select('id, email, created_at').order('created_at', { ascending: false }).limit(6),
@@ -41,7 +41,14 @@ export default async function AdminOverview() {
 
   const monthCost = (monthRows ?? []).reduce((s: number, r: any) => s + (Number(r.cost_usd) || 0), 0)
   const pkg = new Map<string, any>((packages ?? []).map((p: any) => [p.id, p]))
-  const mrr = (ents ?? []).reduce((s: number, e: any) => s + (e.package_id ? pkg.get(e.package_id)?.price_monthly ?? 0 : 0), 0)
+
+  // Email degli utenti con abbonamento attivo → per escludere account interni/test/review dal conteggio pagante.
+  const entUids = Array.from(new Set((ents ?? []).map((e: any) => e.user_id).filter(Boolean)))
+  const entEmail = new Map<string, string>()
+  if (entUids.length) { const { data } = await sc.from('profiles').select('id, email').in('id', entUids); for (const p of data ?? []) entEmail.set(p.id, p.email) }
+  const billableEnts = (ents ?? []).filter((e: any) => isBillable(entEmail.get(e.user_id)))
+  const activeSubs = billableEnts.length
+  const mrr = billableEnts.reduce((s: number, e: any) => s + (e.package_id ? pkg.get(e.package_id)?.price_monthly ?? 0 : 0), 0)
 
   // email map per recent analyses
   const aUids = Array.from(new Set((recentA ?? []).map((a: any) => a.user_id)))

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { isBillable } from '@/lib/billing'
 import { RevenueLive } from './revenue-live'
 
 export const dynamic = 'force-dynamic'
@@ -38,8 +39,10 @@ export default async function RevenuePage() {
     plan: e.package_id ? pkgById.get(e.package_id)?.name ?? e.tier : e.tier,
   }))
 
-  const active = rows.filter((r) => r.status === 'active' && r.priceCents > 0)
-  const churned = rows.filter((r) => r.status === 'canceled' || r.status === 'past_due')
+  // Esclude account interni/test/review dal conteggio clienti (restano nel consumo, non qui).
+  const billable = rows.filter((r) => isBillable(r.email))
+  const active = billable.filter((r) => r.status === 'active' && r.priceCents > 0)
+  const churned = billable.filter((r) => r.status === 'canceled' || r.status === 'past_due')
   const mrr = active.reduce((s, r) => s + r.priceCents, 0)
 
   const paid = (payments ?? []).filter((p: any) => p.status === 'paid')

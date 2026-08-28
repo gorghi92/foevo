@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { isBillable } from '@/lib/billing'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,10 @@ export default async function UsagePage() {
     if (!a) {
       const ent = entByUser.get(uid)
       const pkg = ent?.package_id ? pkgById.get(ent.package_id) : null
-      a = { userId: uid, email: emailMap.get(uid) ?? uid, tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'nessuno', planCents: pkg?.price_monthly ?? 0, mAnalyses: 0, mCost: 0, mTokens: 0, tAnalyses: 0, tCost: 0, tTokens: 0 }
+      const email = emailMap.get(uid) ?? uid
+      // Account interni/test/review consumano risorse ma non generano ricavo: piano a 0 per MRR/margine.
+      const planCents = isBillable(email) ? (pkg?.price_monthly ?? 0) : 0
+      a = { userId: uid, email, tier: ent?.status === 'active' ? (ent.tier ?? 'base') : 'nessuno', planCents, mAnalyses: 0, mCost: 0, mTokens: 0, tAnalyses: 0, tCost: 0, tTokens: 0 }
       byUser.set(uid, a)
     }
     return a
