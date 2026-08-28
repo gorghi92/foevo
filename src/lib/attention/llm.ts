@@ -34,9 +34,10 @@ async function callClaude(dataUrl: string, system: string, user: string): Promis
       model: CLAUDE_MODEL,
       max_tokens: 8000,
       system,
-      // Effort alto: il giudizio semantico (CTA, copy, gerarchia) è la parte che
-      // beneficia di più del ragionamento. Su Opus 5 il thinking è adattivo.
-      output_config: { effort: 'high' },
+      // Effort medium: buon salto di qualità sul giudizio semantico (CTA, copy,
+      // gerarchia) restando entro il timeout della funzione. Su Opus 5 il
+      // thinking è adattivo. 'high' era troppo lento (FUNCTION_INVOCATION_TIMEOUT).
+      output_config: { effort: 'medium' },
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: media, data: b64 } },
         { type: 'text', text: user },

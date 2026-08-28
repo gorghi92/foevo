@@ -8,7 +8,8 @@ import { exceedsModelLimit } from '@/lib/attention/image-size'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-export const maxDuration = 60
+// Opus 5 con thinking può superare i 60s: diamo margine alla funzione.
+export const maxDuration = 300
 
 interface Body {
   url?: string; title?: string; goal?: string | null; note?: string | null
