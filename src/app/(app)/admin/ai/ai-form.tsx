@@ -1,8 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { KeyRound, Cpu, Gauge, SlidersHorizontal, RotateCcw, Eye, Brain } from 'lucide-react'
+import { KeyRound, Cpu, Gauge, SlidersHorizontal, RotateCcw, Eye, Brain, RefreshCw } from 'lucide-react'
+
+const CUSTOM = '__custom__'
+
+/** Selettore di modello: elenca i disponibili (dal provider) + i noti + il valore
+ *  corrente, con opzione "Personalizzato" per scrivere un id a mano. */
+function ModelSelect({ value, onChange, fetched, known }: {
+  value: string; onChange: (v: string) => void; fetched: string[]; known: string[]
+}) {
+  const options = Array.from(new Set([...fetched, ...known, value].filter(Boolean)))
+  const [custom, setCustom] = useState(false)
+
+  if (custom) {
+    return (
+      <div className="mt-1 flex gap-2">
+        <input className="input font-mono" value={value} onChange={(e) => onChange(e.target.value)} placeholder="id modello" autoFocus />
+        <button type="button" onClick={() => { setCustom(false); onChange(options[0] || '') }} className="btn btn-ghost px-3 text-sm">Lista</button>
+      </div>
+    )
+  }
+  return (
+    <select
+      className="input mt-1 font-mono"
+      value={options.includes(value) ? value : (options[0] || '')}
+      onChange={(e) => { if (e.target.value === CUSTOM) { setCustom(true) } else onChange(e.target.value) }}
+    >
+      {options.map((m) => <option key={m} value={m}>{m}</option>)}
+      <option value={CUSTOM}>✏️ Personalizzato…</option>
+    </select>
+  )
+}
 
 type KeyStat = 'db' | 'env' | 'none'
 type Init = { claudeModel: string; qwenModel: string; effort: string; semanticPct: number }
@@ -46,6 +76,17 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
   const [pct, setPct] = useState(init.semanticPct)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [avail, setAvail] = useState<{ claude: string[]; qwen: string[] }>({ claude: [], qwen: [] })
+  const [loadingModels, setLoadingModels] = useState(true)
+
+  async function loadModels() {
+    setLoadingModels(true)
+    try {
+      const r = await fetch('/api/admin/ai/models', { cache: 'no-store' })
+      if (r.ok) { const j = await r.json(); setAvail({ claude: j.claude ?? [], qwen: j.qwen ?? [] }) }
+    } catch { /* fallback alla lista statica */ } finally { setLoadingModels(false) }
+  }
+  useEffect(() => { loadModels() }, [])
 
   const setSecret = (k: string, v: string) => {
     setSecrets((s) => ({ ...s, [k]: v }))
@@ -99,19 +140,27 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
 
       {/* modelli */}
       <div className="card p-5">
-        <div className="flex items-center gap-2 font-semibold"><Cpu size={16} className="text-brand" /> Modelli</div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 font-semibold"><Cpu size={16} className="text-brand" /> Modelli</div>
+          <button type="button" onClick={loadModels} disabled={loadingModels} className="btn btn-ghost px-2.5 py-1 text-xs">
+            <RefreshCw size={13} className={loadingModels ? 'animate-spin' : ''} /> {loadingModels ? 'Carico…' : 'Aggiorna elenco'}
+          </button>
+        </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Modello Premium (Claude)</label>
-            <input className="input mt-1 font-mono" list="claude-models" value={claudeModel} onChange={(e) => setClaudeModel(e.target.value)} />
-            <datalist id="claude-models">{CLAUDE_MODELS.map((m) => <option key={m} value={m} />)}</datalist>
-            <p className="mt-1 text-xs text-muted">Scegli dalla lista o scrivi un id. Vuoto = default (claude-opus-5).</p>
+            <ModelSelect value={claudeModel} onChange={setClaudeModel} fetched={avail.claude} known={CLAUDE_MODELS} />
+            <p className="mt-1 text-xs text-muted">
+              {avail.claude.length ? `${avail.claude.length} modelli disponibili per la tua chiave.` : 'Elenco statico (chiave Anthropic non configurata o irraggiungibile).'}
+            </p>
           </div>
           <div>
             <label className="label">Modello Base (Qwen)</label>
-            <input className="input mt-1 font-mono" list="qwen-models" value={qwenModel} onChange={(e) => setQwenModel(e.target.value)} />
-            <datalist id="qwen-models">{QWEN_MODELS.map((m) => <option key={m} value={m} />)}</datalist>
-            <p className="mt-1 text-xs text-muted">Fallback automatico a <code>qwen-vl-max</code> se l'id non è disponibile.</p>
+            <ModelSelect value={qwenModel} onChange={setQwenModel} fetched={avail.qwen} known={QWEN_MODELS} />
+            <p className="mt-1 text-xs text-muted">
+              {avail.qwen.length ? `${avail.qwen.length} modelli vision disponibili. ` : 'Elenco statico (chiave DashScope non configurata). '}
+              Fallback automatico a <code>qwen-vl-max</code>.
+            </p>
           </div>
         </div>
       </div>
