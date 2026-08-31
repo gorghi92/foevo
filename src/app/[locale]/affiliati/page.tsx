@@ -4,12 +4,19 @@ import {
   referralLink, affiliateOverview, recentCommissions, payoutHistory, affiliateBank,
 } from '@/lib/affiliate/data'
 import { AffiliateDashboard } from './dashboard'
+import { getDictionary, isLocale, localePath, DEFAULT_LOCALE, type Locale } from '@/lib/i18n'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AffiliateHome() {
+const pick = (locale: string): Locale => (isLocale(locale) ? locale : DEFAULT_LOCALE)
+
+export default async function AffiliateHome({ params }: { params: { locale: string } }) {
+  const locale = pick(params.locale)
+  const dict = getDictionary(locale)
+  const loginHref = localePath(locale, '/affiliati/accedi')
+
   const aff = await getAffiliate()
-  if (!aff) redirect('/affiliati/accedi')
+  if (!aff) redirect(loginHref)
 
   const [overview, commissions, payouts, bank] = await Promise.all([
     affiliateOverview(aff.id),
@@ -26,6 +33,9 @@ export default async function AffiliateHome() {
       commissions={commissions as any}
       payouts={payouts as any}
       bank={bank as any}
+      t={dict.affiliates.dashboard}
+      dateLocale={dict.common.dateLocale}
+      loginHref={loginHref}
     />
   )
 }

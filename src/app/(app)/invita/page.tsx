@@ -4,10 +4,15 @@ import { getAffiliate, startSession } from '@/lib/affiliate/auth'
 import { referralLink, affiliateOverview, recentCommissions, payoutHistory, affiliateBank } from '@/lib/affiliate/data'
 import { AffiliateDashboard } from '@/app/[locale]/affiliati/dashboard'
 import { ActivateForm } from './activate-form'
+import { getDictionary, localePath } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 
 export const dynamic = 'force-dynamic'
 
 export default async function InvitaPage() {
+  const locale = getServerLocale()
+  const dict = getDictionary(locale)
+
   const user = await getUser()
   const sc = createServiceClient()
 
@@ -36,6 +41,9 @@ export default async function InvitaPage() {
         payouts={payouts as any}
         bank={bank as any}
         embedded
+        t={dict.affiliates.dashboard}
+        dateLocale={dict.common.dateLocale}
+        loginHref={localePath(locale, '/affiliati/accedi')}
       />
     </div>
   )

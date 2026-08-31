@@ -4,17 +4,25 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { HeatmapCanvas, type ViewMode } from '@/components/heatmap-canvas'
+import type { Dictionary } from '@/lib/i18n'
 
-const PRIO: Record<string, string> = { alta: '#dc2626', media: '#d97706', bassa: '#2563eb' }
-const PORD: Record<string, number> = { alta: 0, media: 1, bassa: 2 }
+type Copy = Dictionary['report']
+
+// Le priorità arrivano dal modello, che risponde nella lingua dell'utente:
+// accettiamo entrambe le etichette.
+const PRIO: Record<string, string> = {
+  alta: '#dc2626', media: '#d97706', bassa: '#2563eb',
+  high: '#dc2626', medium: '#d97706', low: '#2563eb',
+}
+const PORD: Record<string, number> = { alta: 0, media: 1, bassa: 2, high: 0, medium: 1, low: 2 }
 const sc = (v: number) => (v >= 70 ? '#16a34a' : v >= 45 ? '#d97706' : '#dc2626')
 
-function PriorityCallout({ recs }: { recs: any[] }) {
+function PriorityCallout({ recs, t }: { recs: any[]; t: Copy }) {
   if (!recs?.length) return null
   const top = recs.map((rec, i) => ({ rec, i })).sort((a, b) => (PORD[a.rec.priority] ?? 1) - (PORD[b.rec.priority] ?? 1)).slice(0, 3)
   return (
     <div className="card mt-4 flex flex-wrap items-center gap-2 border-l-4 border-brand p-3">
-      <span className="text-sm font-semibold">⚡ Azioni prioritarie</span>
+      <span className="text-sm font-semibold">{t.priorityCallout}</span>
       <div className="flex flex-wrap gap-1.5">
         {top.map(({ rec, i }) => (
           <a key={i} href={`#rec-${i}`} className="inline-flex items-center gap-1 rounded-full border border-line bg-bg px-2 py-0.5 text-xs hover:border-brand">
@@ -23,7 +31,7 @@ function PriorityCallout({ recs }: { recs: any[] }) {
           </a>
         ))}
       </div>
-      <a href="#raccomandazioni" className="btn btn-primary ml-auto px-3 py-1.5 text-[13px]">Tutte le raccomandazioni ↓</a>
+      <a href="#raccomandazioni" className="btn btn-primary ml-auto px-3 py-1.5 text-[13px]">{t.allRecommendations}</a>
     </div>
   )
 }
@@ -39,7 +47,7 @@ function Gauge({ label, value }: { label: string; value: number }) {
 }
 
 /** Read-only, publicly shareable, Foevo-branded analysis report. */
-export function PublicReport({ data }: { data: any }) {
+export function PublicReport({ data, t, home }: { data: any; t: Copy; home: string }) {
   const [mode, setMode] = useState<ViewMode>('heat')
   const [zones, setZones] = useState(true)
   const r = data.result
@@ -52,19 +60,19 @@ export function PublicReport({ data }: { data: any }) {
       {/* Branded header */}
       <header className="sticky top-0 z-10 border-b border-line bg-panel/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={home} className="flex items-center gap-2">
             <span className="inline-block h-6 w-6 rounded-lg" style={{ background: 'linear-gradient(135deg,#7c5cff,#f0a020)' }} />
             <span className="text-lg font-extrabold tracking-tight">Foevo</span>
           </Link>
-          <span className="hidden text-xs text-muted sm:inline">· Heatmap di attenzione &amp; analisi AI di conversione</span>
-          <Link href="/signup" className="btn btn-primary ml-auto px-3 py-1.5 text-[13px]">Analizza la tua pagina →</Link>
+          <span className="hidden text-xs text-muted sm:inline">{t.tagline}</span>
+          <Link href="/signup" className="btn btn-primary ml-auto px-3 py-1.5 text-[13px]">{t.ctaHeader}</Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
-            <div className="truncate text-lg font-bold">{data.title || data.url || 'Analisi'}</div>
+            <div className="truncate text-lg font-bold">{data.title || data.url || t.untitled}</div>
             {data.url && <a href={data.url} target="_blank" rel="noreferrer" className="text-xs text-muted">{String(data.url).replace(/^https?:\/\//, '')} <ExternalLink size={11} className="inline" /></a>}
           </div>
           <span className="rounded-md border border-line px-2.5 py-1 text-xs font-bold">{data.tier === 'premium' ? 'Premium' : 'Base'}</span>
@@ -73,38 +81,38 @@ export function PublicReport({ data }: { data: any }) {
         {r && (
           <>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Gauge label="Conversione" value={r.scores?.conversion ?? 0} />
-              <Gauge label="Attenzione" value={r.scores?.attentionAlignment ?? 0} />
-              <Gauge label="Chiarezza" value={r.scores?.clarity ?? 0} />
-              <Gauge label="CTA" value={r.scores?.cta ?? 0} />
+              <Gauge label={t.gaugeConversion} value={r.scores?.conversion ?? 0} />
+              <Gauge label={t.gaugeAttention} value={r.scores?.attentionAlignment ?? 0} />
+              <Gauge label={t.gaugeClarity} value={r.scores?.clarity ?? 0} />
+              <Gauge label={t.gaugeCta} value={r.scores?.cta ?? 0} />
             </div>
 
-            <PriorityCallout recs={r.recommendations} />
+            <PriorityCallout recs={r.recommendations} t={t} />
 
             <div className="mt-5 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
               <div>
                 <div className="mb-2.5 flex flex-wrap gap-2">
                   {(['heat', 'focus', 'clean'] as ViewMode[]).map((m) => (
                     <button key={m} onClick={() => setMode(m)} className={`btn ${mode === m ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-[13px]`}>
-                      {m === 'heat' ? 'Heatmap' : m === 'focus' ? 'Focus' : 'Originale'}
+                      {m === 'heat' ? t.viewHeat : m === 'focus' ? t.viewFocus : t.viewClean}
                     </button>
                   ))}
-                  <button onClick={() => setZones((v) => !v)} className={`btn ${zones ? 'btn-primary' : 'btn-ghost'} ml-auto px-3 py-1.5 text-[13px]`}>{zones ? 'Nascondi zone' : 'Mostra zone'}</button>
+                  <button onClick={() => setZones((v) => !v)} className={`btn ${zones ? 'btn-primary' : 'btn-ghost'} ml-auto px-3 py-1.5 text-[13px]`}>{zones ? t.hideZones : t.showZones}</button>
                 </div>
                 {data.screenshot_url
                   ? <HeatmapCanvas screenshotUrl={data.screenshot_url} heatmap={data.heatmap} mode={mode} zones={zones ? rankedZones : undefined} />
-                  : <div className="card p-8 text-center text-muted">Screenshot non disponibile.</div>}
+                  : <div className="card p-8 text-center text-muted">{t.noScreenshot}</div>}
               </div>
 
               <div className="flex flex-col gap-4">
                 <div className="card p-4">
-                  <div className="mb-1.5 font-semibold">Sintesi</div>
+                  <div className="mb-1.5 font-semibold">{t.summary}</div>
                   <p className="text-sm leading-relaxed">{r.summary || '—'}</p>
                 </div>
 
                 {r.attention?.zones?.length > 0 && (
                   <div className="card p-4">
-                    <div className="mb-2 font-semibold">Zone di attenzione <span className="text-xs text-muted">· ordinate per impatto</span></div>
+                    <div className="mb-2 font-semibold">{t.zonesTitle} <span className="text-xs text-muted">{t.zonesSub}</span></div>
                     {rankedZones.map((z: any, i: number) => (
                       <div key={i} className={`py-1.5 ${i ? 'border-t border-line' : ''}`}>
                         <div className="flex items-center gap-2">
@@ -121,7 +129,7 @@ export function PublicReport({ data }: { data: any }) {
 
                 {(r.brand?.palette?.length > 0 || r.brand?.tone) && (
                   <div className="card p-4">
-                    <div className="mb-2 font-semibold">Brand</div>
+                    <div className="mb-2 font-semibold">{t.brand}</div>
                     {r.brand.palette?.length > 0 && (
                       <div className="mb-2.5 flex flex-wrap gap-2">
                         {r.brand.palette.map((c: any, i: number) => (
@@ -132,21 +140,21 @@ export function PublicReport({ data }: { data: any }) {
                         ))}
                       </div>
                     )}
-                    {r.brand.fonts?.length > 0 && <div className="text-[13px]"><b>Font:</b> {r.brand.fonts.map((f: any) => `${f.family} (${f.usage})`).join(', ')}</div>}
-                    {r.brand.tone && <div className="mt-1 text-[13px]"><b>Tono:</b> {r.brand.tone}</div>}
+                    {r.brand.fonts?.length > 0 && <div className="text-[13px]"><b>{t.fonts}</b> {r.brand.fonts.map((f: any) => `${f.family} (${f.usage})`).join(', ')}</div>}
+                    {r.brand.tone && <div className="mt-1 text-[13px]"><b>{t.tone}</b> {r.brand.tone}</div>}
                   </div>
                 )}
 
                 {r.cta?.length > 0 && (
                   <div className="card p-4">
-                    <div className="mb-2 font-semibold">Call to action</div>
+                    <div className="mb-2 font-semibold">{t.ctaTitle}</div>
                     {r.cta.map((c: any, i: number) => (
                       <div key={i} className={`py-2 ${i ? 'border-t border-line' : ''}`}>
                         <div className="flex items-center gap-2">
                           {c.color && <span className="h-3.5 w-3.5 rounded border border-black/15" style={{ background: c.color.startsWith('#') ? c.color : `#${c.color}` }} />}
                           <b className="text-[13px]">{c.text}</b>
                         </div>
-                        <div className="mt-1 text-xs text-muted">Contrasto {c.contrast} · Visibilità {c.visibility}</div>
+                        <div className="mt-1 text-xs text-muted">{t.contrast} {c.contrast} · {t.visibility} {c.visibility}</div>
                         {c.issues?.length > 0 && <ul className="mt-1 list-disc pl-4 text-xs">{c.issues.map((s: string, j: number) => <li key={j}>{s}</li>)}</ul>}
                       </div>
                     ))}
@@ -155,10 +163,10 @@ export function PublicReport({ data }: { data: any }) {
 
                 {r.copy && (r.copy.headline || r.copy.issues?.length > 0 || r.copy.suggestions?.length > 0) && (
                   <div className="card p-4">
-                    <div className="mb-2 font-semibold">Copy {typeof r.copy.clarity === 'number' && <span className="text-xs text-muted">· chiarezza {r.copy.clarity}</span>}</div>
-                    {r.copy.headline && <div className="mb-1.5 text-[13px]"><b>Headline:</b> “{r.copy.headline}”</div>}
-                    {r.copy.issues?.length > 0 && <><div className="text-xs font-semibold">Problemi</div><ul className="mb-2 mt-0.5 list-disc pl-4 text-xs">{r.copy.issues.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></>}
-                    {r.copy.suggestions?.length > 0 && <><div className="text-xs font-semibold">Riscritture</div><ul className="mt-0.5 list-disc pl-4 text-xs">{r.copy.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></>}
+                    <div className="mb-2 font-semibold">{t.copyTitle} {typeof r.copy.clarity === 'number' && <span className="text-xs text-muted">{t.copyClarity} {r.copy.clarity}</span>}</div>
+                    {r.copy.headline && <div className="mb-1.5 text-[13px]"><b>{t.headline}</b> “{r.copy.headline}”</div>}
+                    {r.copy.issues?.length > 0 && <><div className="text-xs font-semibold">{t.copyIssues}</div><ul className="mb-2 mt-0.5 list-disc pl-4 text-xs">{r.copy.issues.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></>}
+                    {r.copy.suggestions?.length > 0 && <><div className="text-xs font-semibold">{t.copyRewrites}</div><ul className="mt-0.5 list-disc pl-4 text-xs">{r.copy.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></>}
                   </div>
                 )}
               </div>
@@ -167,7 +175,7 @@ export function PublicReport({ data }: { data: any }) {
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               {r.recommendations?.length > 0 && (
                 <div id="raccomandazioni" className="card scroll-mt-20 p-4">
-                  <div className="mb-2.5 font-semibold">Raccomandazioni</div>
+                  <div className="mb-2.5 font-semibold">{t.recommendations}</div>
                   {r.recommendations.map((rec: any, i: number) => (
                     <div key={i} id={`rec-${i}`} className={`scroll-mt-20 py-2.5 ${i ? 'border-t border-line' : ''}`}>
                       <div className="flex items-center gap-2">
@@ -182,7 +190,7 @@ export function PublicReport({ data }: { data: any }) {
               )}
               {r.frictions?.length > 0 && (
                 <div className="card p-4">
-                  <div className="mb-2.5 font-semibold">Frizioni alla conversione</div>
+                  <div className="mb-2.5 font-semibold">{t.frictions}</div>
                   {r.frictions.map((f: any, i: number) => (
                     <div key={i} className={`py-2.5 ${i ? 'border-t border-line' : ''}`}>
                       <div className="flex items-center gap-2">
@@ -201,11 +209,11 @@ export function PublicReport({ data }: { data: any }) {
 
         {/* Branded footer / CTA */}
         <div className="mt-8 rounded-2xl border border-line bg-panel p-6 text-center">
-          <div className="text-lg font-extrabold">Vuoi la stessa analisi sulle tue pagine?</div>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted">Foevo genera una heatmap di attenzione ibrida (computer-vision + AI) e un&apos;analisi orientata alla conversione, direttamente dal browser.</p>
-          <Link href="/signup" className="btn btn-primary mt-4 px-5 py-2">Inizia gratis con Foevo</Link>
+          <div className="text-lg font-extrabold">{t.footerTitle}</div>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted">{t.footerBody}</p>
+          <Link href="/signup" className="btn btn-primary mt-4 px-5 py-2">{t.footerCta}</Link>
         </div>
-        <p className="mt-6 text-center text-xs text-muted">Report generato con <Link href="/" className="font-semibold text-brand">Foevo</Link></p>
+        <p className="mt-6 text-center text-xs text-muted">{t.generatedWith} <Link href={home} className="font-semibold text-brand">Foevo</Link></p>
       </main>
     </div>
   )
