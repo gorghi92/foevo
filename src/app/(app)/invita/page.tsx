@@ -2,7 +2,7 @@ import { getUser } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getAffiliate, startSession } from '@/lib/affiliate/auth'
 import { referralLink, affiliateOverview, recentCommissions, payoutHistory, affiliateBank } from '@/lib/affiliate/data'
-import { AffiliateDashboard } from '@/app/affiliati/dashboard'
+import { AffiliateDashboard } from '@/app/[locale]/affiliati/dashboard'
 import { ActivateForm } from './activate-form'
 
 export const dynamic = 'force-dynamic'

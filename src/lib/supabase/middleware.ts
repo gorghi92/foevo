@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { LOCALE_HEADER, splitLocale, type Locale } from '@/lib/i18n/config'
 
 type CookiesToSet = { name: string; value: string; options: CookieOptions }[]
 
@@ -9,8 +10,25 @@ const PUBLIC_PREFIXES = ['/', '/login', '/signup', '/auth', '/api', '/extension'
 const isPublic = (p: string) =>
   p === '/' || PUBLIC_PREFIXES.some((prefix) => prefix !== '/' && p.startsWith(prefix))
 
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request })
+export type SessionOptions = {
+  /** Lingua risolta dal middleware, passata ai server component via header. */
+  locale: Locale
+  /** Se valorizzato, la risposta riscrive verso questo URL (usato per il prefisso lingua). */
+  rewriteTo?: URL
+}
+
+export async function updateSession(request: NextRequest, opts: SessionOptions) {
+  // La risposta va ricostruita ogni volta che Supabase aggiorna i cookie:
+  // qui teniamo insieme rewrite di lingua e header, così non si perdono.
+  const build = () => {
+    const headers = new Headers(request.headers)
+    headers.set(LOCALE_HEADER, opts.locale)
+    return opts.rewriteTo
+      ? NextResponse.rewrite(opts.rewriteTo, { request: { headers } })
+      : NextResponse.next({ request: { headers } })
+  }
+
+  let response = build()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +40,7 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet: CookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
+          response = build()
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
@@ -31,12 +49,16 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: getUser() revalidates the token — do not trust getSession() for gating.
   const { data: { user } } = await supabase.auth.getUser()
-  const path = request.nextUrl.pathname
+
+  // Il gate va valutato sul percorso SENZA prefisso di lingua, altrimenti
+  // /en/privacy verrebbe scambiata per una rotta privata.
+  const rawPath = request.nextUrl.pathname
+  const { path } = splitLocale(rawPath)
 
   if (!user && !isPublic(path)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    url.searchParams.set('next', path)
+    url.searchParams.set('next', rawPath)
     return NextResponse.redirect(url)
   }
   if (user && (path === '/login' || path === '/signup')) {
