@@ -4,6 +4,7 @@ import { getSettings } from '@/lib/settings'
 import { sendEmail } from '@/lib/email'
 import { createServiceClient } from '@/lib/supabase/server'
 import { verifyFormToken } from '@/lib/form-token'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
   // Il token è emesso dalla pagina: senza, resta il POST diretto all'endpoint.
   if (!verifyFormToken((body as any).token, Date.now())) {
     return NextResponse.json(
-      { error: 'Sessione del modulo scaduta. Ricarica la pagina e riprova.' },
+      { error: m('formExpired') },
       { status: 400 },
     )
   }
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'sconosciuto'
   const ipHash = createHash('sha256').update(`foevo:${ip}`).digest('hex')
   if (memoryLimited(ipHash) || (await dbLimited(ipHash))) {
-    return NextResponse.json({ error: 'Troppi invii ravvicinati. Riprova tra qualche minuto.' }, { status: 429 })
+    return NextResponse.json({ error: m('tooManySubmissions') }, { status: 429 })
   }
 
   const name = String(body.name || '').trim().slice(0, 120)
@@ -82,10 +83,10 @@ export async function POST(req: Request) {
   const message = String(body.message || '').trim().slice(0, 5000)
 
   if (!email.includes('@') || email.length < 5) {
-    return NextResponse.json({ error: 'Inserisci un indirizzo email valido: ci serve per risponderti.' }, { status: 400 })
+    return NextResponse.json({ error: m('enterValidEmailForReply') }, { status: 400 })
   }
   if (message.length < 10) {
-    return NextResponse.json({ error: 'Scrivi qualche riga in più su cosa succede.' }, { status: 400 })
+    return NextResponse.json({ error: m('writeMoreDetail') }, { status: 400 })
   }
 
   const s = await getSettings()
@@ -108,7 +109,7 @@ export async function POST(req: Request) {
   // Registrato comunque: se l'email non parte, il messaggio non va perso.
   await record({ ip_hash: ipHash, email, name: name || null, topic, message, delivered: sent })
   if (!sent) {
-    return NextResponse.json({ error: 'Invio non riuscito. Riprova tra poco.' }, { status: 502 })
+    return NextResponse.json({ error: m('sendFailed') }, { status: 502 })
   }
   return NextResponse.json({ ok: true })
 }

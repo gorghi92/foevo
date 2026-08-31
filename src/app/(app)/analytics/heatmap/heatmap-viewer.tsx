@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Dictionary } from '@/lib/i18n'
 
 type Pt = { x: number; y: number }
+type Copy = Dictionary['app']['analytics']['heatmap']
 
 /** Palette heatmap: blu → ciano → verde → giallo → rosso, indicizzata 0..255. */
 function buildGradient(): Uint8ClampedArray {
@@ -21,7 +23,7 @@ function buildGradient(): Uint8ClampedArray {
   return ctx.getImageData(0, 0, 1, 256).data
 }
 
-export function HeatmapViewer({ path, points, scrollBuckets }: { path: string; points: Pt[]; scrollBuckets: number[] }) {
+export function HeatmapViewer({ path, points, scrollBuckets, t }: { path: string; points: Pt[]; scrollBuckets: number[]; t: Copy }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -103,22 +105,22 @@ export function HeatmapViewer({ path, points, scrollBuckets }: { path: string; p
       <div className="card flex flex-wrap items-center gap-4 p-3 text-[13px]">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={showPage} onChange={(e) => setShowPage(e.target.checked)} />
-          Mostra la pagina
+          {t.showPage}
         </label>
         <label className="flex items-center gap-2">
-          Intensità
+          {t.intensity}
           <input type="range" min={0.2} max={1} step={0.05} value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} />
         </label>
         <label className="flex items-center gap-2">
-          Raggio
+          {t.radius}
           <input type="range" min={14} max={60} step={2} value={radius} onChange={(e) => setRadius(Number(e.target.value))} />
         </label>
-        <span className="ml-auto text-xs text-muted">{points.length} click</span>
+        <span className="ml-auto text-xs text-muted">{t.clicksCount.replace('{n}', String(points.length))}</span>
       </div>
 
       {failed && (
         <div className="card p-3 text-xs text-muted">
-          Anteprima della pagina non caricabile qui: la heatmap è comunque disegnata sulla proporzione della pagina.
+          {t.previewFailed}
         </div>
       )}
 
@@ -128,26 +130,26 @@ export function HeatmapViewer({ path, points, scrollBuckets }: { path: string; p
           <iframe
             ref={iframeRef}
             src={path}
-            title="Anteprima pagina"
+            title={t.previewTitle}
             onLoad={onLoad}
             className="absolute inset-0 h-full w-full"
             style={{ border: 0, background: '#fff' }}
             sandbox="allow-same-origin allow-scripts"
           />
         )}
-        {!showPage && !failed && <iframe ref={iframeRef} src={path} title="misura" onLoad={onLoad} className="absolute h-px w-px opacity-0" aria-hidden />}
+        {!showPage && !failed && <iframe ref={iframeRef} src={path} title={t.measureTitle} onLoad={onLoad} className="absolute h-px w-px opacity-0" aria-hidden />}
         <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" style={{ opacity }} />
         {!points.length && (
           <div className="absolute inset-x-0 top-4 mx-auto w-fit rounded-full bg-black/70 px-3 py-1 text-xs text-white">
-            Nessun click registrato su questa pagina
+            {t.noClicks}
           </div>
         )}
       </div>
 
       {/* profondità di scroll */}
       <div className="card p-5">
-        <div className="mb-1 text-sm font-semibold">Profondità di scroll</div>
-        <p className="mb-3 text-xs text-muted">Percentuale di visite che ha raggiunto ogni fascia di profondità della pagina.</p>
+        <div className="mb-1 text-sm font-semibold">{t.scrollTitle}</div>
+        <p className="mb-3 text-xs text-muted">{t.scrollSub}</p>
         <div className="space-y-1.5">
           {scrollBuckets.map((pct, i) => (
             <div key={i} className="flex items-center gap-3 text-[13px]">
@@ -158,7 +160,7 @@ export function HeatmapViewer({ path, points, scrollBuckets }: { path: string; p
               <span className="w-10 shrink-0 text-right font-semibold">{pct}%</span>
             </div>
           ))}
-          {!scrollBuckets.some((b) => b > 0) && <div className="text-sm text-muted">Ancora nessun dato di scroll per questa pagina.</div>}
+          {!scrollBuckets.some((b) => b > 0) && <div className="text-sm text-muted">{t.scrollEmpty}</div>}
         </div>
       </div>
     </div>

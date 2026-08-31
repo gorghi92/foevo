@@ -25,6 +25,40 @@ Regole pratiche:
 - L'italiano resta la lingua di default; l'inglese è la seconda lingua di prima classe.
 - Anche i nuovi errori/validazioni lato server vanno tradotti.
 
+### Dove stanno i testi
+
+| Ambito | File |
+|---|---|
+| Sito pubblico | `src/lib/i18n/dictionaries/{it,en}.ts` |
+| App autenticata | `src/lib/i18n/dictionaries/app/<area>.ts` (un modulo per area, `it` + `en: typeof it`) |
+| Messaggi delle API | `src/lib/i18n/api.ts` |
+| Email transazionali | `src/lib/email.ts` (`COPY_IT` / `COPY_EN`) |
+| Prompt AI | `src/lib/attention/types.ts` e `implementation-prompt.ts` |
+| Estensione Chrome | `extension/src/i18n.js` (+ `extension/_locales/` per la scheda dello store) |
+
+L'inglese è sempre dichiarato come `typeof it`: **una chiave mancante rompe il
+typecheck**, quindi la regola bilingue è verificata dal compilatore, non a occhio.
+
+### Come si risolve la lingua
+
+- **Sito pubblico**: dal segmento `[locale]` dell'URL. L'italiano vive senza prefisso
+  (`/supporto`), l'inglese sotto `/en` (`/en/supporto`). Nessun redirect automatico
+  per lingua: l'URL è la fonte di verità.
+- **App autenticata**: nessun prefisso. `getServerLocale()` legge l'header impostato
+  dal middleware → cookie `foevo_locale` → `Accept-Language` → italiano.
+- **API**: `requestLocale()` / `m('chiave')` da `@/lib/i18n/api`.
+- **Client component**: non possono leggere la lingua da soli — ricevono i testi come
+  prop dal genitore server, tipizzati con `Dictionary['app'][...]`.
+- **Report AI**: seguono la lingua dell'utente. L'estensione manda `lang` nel corpo di
+  `/api/v1/analyze`; i valori enum (`alta|media|bassa`) restano in italiano perché sono
+  dati salvati in JSONB, non testo — l'interfaccia accetta comunque anche `high|medium|low`.
+
+### Frasi con markup o link
+
+Usa `<Rich text={...} />` (`@/lib/i18n/rich`): rende `**grassetto**`, `*corsivo*`,
+`` `codice` ``, `[etichetta](/percorso)` e `\n`. Serve a tenere le frasi **intere** e
+quindi traducibili, invece di spezzarle in frammenti di JSX attorno al markup.
+
 ---
 
 ## Convenzioni

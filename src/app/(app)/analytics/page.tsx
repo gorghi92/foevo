@@ -1,22 +1,30 @@
 import Link from 'next/link'
 import { Users, MousePointerClick, Eye, Clock, TrendingUp, TrendingDown, Radio, Globe, Monitor } from 'lucide-react'
 import { analyticsOverview } from '@/lib/analytics/admin'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
+import { Rich } from '@/lib/i18n/rich'
 import { RangePicker } from './nav'
 
 export const dynamic = 'force-dynamic'
 
-const nf = (n: number) => (n || 0).toLocaleString('it-IT')
+const nf = (n: number, loc: string) => (n || 0).toLocaleString(loc)
 const pctf = (r: number) => `${(r * 100).toFixed(r >= 0.1 || r === 0 ? 0 : 1)}%`
 const dur = (s: number) => {
   if (!s) return '0s'
   const m = Math.floor(s / 60), sec = s % 60
   return m ? `${m}m ${sec}s` : `${sec}s`
 }
-const agoLabel = (s: number) => (s < 60 ? `${s}s fa` : s < 3600 ? `${Math.floor(s / 60)}m fa` : `${Math.floor(s / 3600)}h fa`)
+const agoLabel = (s: number, tpl: string) =>
+  tpl.replace('{v}', s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h`)
 
 const FLAG: Record<string, string> = { IT: '🇮🇹', US: '🇺🇸', GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷', ES: '🇪🇸', CH: '🇨🇭', NL: '🇳🇱', BE: '🇧🇪', AT: '🇦🇹', PT: '🇵🇹', IE: '🇮🇪', CA: '🇨🇦', BR: '🇧🇷', AU: '🇦🇺' }
 
 export default async function AnalyticsDashboard({ searchParams }: { searchParams: { d?: string } }) {
+  const dict = getDictionary(getServerLocale())
+  const t = dict.app.analytics.overview
+  const loc = dict.common.dateLocale
+
   const days = [7, 30, 90].includes(Number(searchParams.d)) ? Number(searchParams.d) : 30
   const o = await analyticsOverview(days)
 
@@ -31,34 +39,33 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
             <span className={`absolute inline-flex h-full w-full rounded-full ${o.activeNow ? 'animate-ping bg-green-400' : ''} opacity-75`} />
             <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${o.activeNow ? 'bg-green-500' : 'bg-line'}`} />
           </span>
-          <b className="text-ink">{o.activeNow}</b> {o.activeNow === 1 ? 'visitatore' : 'visitatori'} in questo momento
+          <b className="text-ink">{o.activeNow}</b> {o.activeNow === 1 ? t.liveOne : t.liveMany} {t.liveNow}
         </div>
-        <RangePicker days={days} base="/analytics" />
+        <RangePicker days={days} base="/analytics" daysSuffix={dict.app.analytics.daysSuffix} />
       </div>
 
       {empty && (
         <div className="card p-5 text-sm text-muted">
-          Nessun dato ancora in questa finestra. Il tracker raccoglie le visite non appena il sito riceve traffico —
-          apri <code className="rounded bg-bg px-1">foevo.app</code> e ricarica tra qualche minuto.
+          {t.emptyBefore} <code className="rounded bg-bg px-1">foevo.app</code> {t.emptyAfter}
         </div>
       )}
 
       {/* KPI */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KPI label="Visitatori unici" value={nf(o.visitors)} delta={o.deltas.visitors} icon={<Users size={15} />} accent />
-        <KPI label="Sessioni" value={nf(o.sessions)} delta={o.deltas.sessions} icon={<Radio size={15} />} />
-        <KPI label="Pagine viste" value={nf(o.pageviews)} delta={o.deltas.pageviews} icon={<Eye size={15} />} />
-        <KPI label="Durata media" value={dur(o.avgSessionSec)} icon={<Clock size={15} />} sub={`${o.pagesPerSession.toFixed(1)} pagine/sessione`} />
+        <KPI label={t.kpiVisitors} value={nf(o.visitors, loc)} delta={o.deltas.visitors} icon={<Users size={15} />} accent />
+        <KPI label={t.kpiSessions} value={nf(o.sessions, loc)} delta={o.deltas.sessions} icon={<Radio size={15} />} />
+        <KPI label={t.kpiPageviews} value={nf(o.pageviews, loc)} delta={o.deltas.pageviews} icon={<Eye size={15} />} />
+        <KPI label={t.kpiAvgDuration} value={dur(o.avgSessionSec)} icon={<Clock size={15} />} sub={t.kpiAvgDurationSub.replace('{n}', o.pagesPerSession.toFixed(1))} />
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Mini label="Frequenza di rimbalzo" value={pctf(o.bounceRate)} hint="sessioni con una sola pagina" />
-        <Mini label="Pagine per sessione" value={o.pagesPerSession.toFixed(2)} />
-        <Mini label="Pagine viste / visitatore" value={o.visitors ? (o.pageviews / o.visitors).toFixed(2) : '0'} />
+        <Mini label={t.bounceRate} value={pctf(o.bounceRate)} hint={t.bounceHint} />
+        <Mini label={t.pagesPerSession} value={o.pagesPerSession.toFixed(2)} />
+        <Mini label={t.pageviewsPerVisitor} value={o.visitors ? (o.pageviews / o.visitors).toFixed(2) : '0'} />
       </div>
 
       {/* andamento */}
       <div className="card p-5">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold"><TrendingUp size={15} className="text-brand" /> Andamento · ultimi {days} giorni</div>
+        <div className="mb-4 flex items-center gap-2 text-sm font-semibold"><TrendingUp size={15} className="text-brand" /> {t.trendTitle.replace('{n}', String(days))}</div>
         <svg viewBox={`0 0 ${Math.max(o.series.length * 14, 60)} 130`} preserveAspectRatio="none" style={{ width: '100%', height: 160 }}>
           <line x1={0} y1={112} x2={o.series.length * 14} y2={112} style={{ stroke: 'rgb(var(--line))' }} strokeWidth={1} />
           {o.series.map((s, i) => {
@@ -67,10 +74,10 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
             return (
               <g key={s.date}>
                 <rect x={i * 14 + 2} y={112 - Math.max(1, h)} width={10} height={Math.max(1, h)} rx={2} style={{ fill: 'rgb(var(--brand))', opacity: 0.35 }}>
-                  <title>{`${s.date}: ${nf(s.pageviews)} pagine viste`}</title>
+                  <title>{t.trendPageviews.replace('{date}', s.date).replace('{n}', nf(s.pageviews, loc))}</title>
                 </rect>
                 <rect x={i * 14 + 2} y={112 - Math.max(1, hv)} width={10} height={Math.max(1, hv)} rx={2} style={{ fill: 'rgb(var(--brand))' }}>
-                  <title>{`${s.date}: ${nf(s.visitors)} visitatori`}</title>
+                  <title>{t.trendVisitors.replace('{date}', s.date).replace('{n}', nf(s.visitors, loc))}</title>
                 </rect>
               </g>
             )
@@ -79,24 +86,24 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
         <div className="mt-2 flex items-center justify-between text-[10px] text-muted">
           <span>{o.series[0]?.date}</span>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: 'rgb(var(--brand))' }} /> visitatori</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: 'rgb(var(--brand))', opacity: 0.35 }} /> pagine viste</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: 'rgb(var(--brand))' }} /> {t.legendVisitors}</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: 'rgb(var(--brand))', opacity: 0.35 }} /> {t.legendPageviews}</span>
           </div>
-          <span>oggi</span>
+          <span>{t.today}</span>
         </div>
       </div>
 
       {/* pagine top + sorgenti */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Pagine più viste">
+        <Panel title={t.topPagesTitle}>
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-muted"><th className="pb-2">Pagina</th><th className="pb-2 text-right">Viste</th><th className="pb-2 text-right">Visitatori</th><th className="pb-2 text-right">Tempo</th></tr></thead>
+            <thead><tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-muted"><th className="pb-2">{t.colPage}</th><th className="pb-2 text-right">{t.colViews}</th><th className="pb-2 text-right">{t.colVisitors}</th><th className="pb-2 text-right">{t.colTime}</th></tr></thead>
             <tbody>
               {o.topPages.map((p) => (
                 <tr key={p.path} className="border-b border-line/50">
                   <td className="max-w-[220px] truncate py-2 font-medium">{p.path}</td>
-                  <td className="py-2 text-right">{nf(p.views)}</td>
-                  <td className="py-2 text-right text-muted">{nf(p.visitors)}</td>
+                  <td className="py-2 text-right">{nf(p.views, loc)}</td>
+                  <td className="py-2 text-right text-muted">{nf(p.visitors, loc)}</td>
                   <td className="py-2 text-right text-muted">{dur(p.avgSec)}</td>
                 </tr>
               ))}
@@ -105,41 +112,40 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
           </table>
         </Panel>
 
-        <Panel title="Sorgenti di traffico">
-          <BarList items={o.sources.map((s) => ({ label: s.label, value: s.visitors, tag: s.kind === 'campaign' ? 'campagna' : s.kind === 'referral' ? 'referral' : undefined }))} />
+        <Panel title={t.sourcesTitle}>
+          <BarList locale={loc} items={o.sources.map((s) => ({ label: s.label, value: s.visitors, tag: s.kind === 'campaign' ? t.tagCampaign : s.kind === 'referral' ? t.tagReferral : undefined }))} />
         </Panel>
       </div>
 
       {/* device / browser / paesi */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title={<><Monitor size={14} className="text-brand" /> Dispositivi</>}>
-          <BarList items={o.devices.map((d) => ({ label: cap(d.label), value: d.value }))} />
+        <Panel title={<><Monitor size={14} className="text-brand" /> {t.devicesTitle}</>}>
+          <BarList locale={loc} items={o.devices.map((d) => ({ label: cap(d.label), value: d.value }))} />
         </Panel>
-        <Panel title="Browser">
-          <BarList items={o.browsers.map((d) => ({ label: d.label, value: d.value }))} />
+        <Panel title={t.browsersTitle}>
+          <BarList locale={loc} items={o.browsers.map((d) => ({ label: d.label, value: d.value }))} />
         </Panel>
-        <Panel title={<><Globe size={14} className="text-brand" /> Paesi</>}>
-          <BarList items={o.countries.map((d) => ({ label: `${FLAG[d.label] || '🏳️'} ${d.label}`, value: d.value }))} />
+        <Panel title={<><Globe size={14} className="text-brand" /> {t.countriesTitle}</>}>
+          <BarList locale={loc} items={o.countries.map((d) => ({ label: `${FLAG[d.label] || '🏳️'} ${d.label}`, value: d.value }))} />
         </Panel>
       </div>
 
       {/* attività recente */}
-      <Panel title="Attività recente">
+      <Panel title={t.recentTitle}>
         <div className="space-y-1.5">
           {o.recent.map((r, i) => (
             <div key={i} className="flex items-center gap-2 text-[13px]">
               <span className="truncate font-medium">{r.path}</span>
               <span className="text-xs text-muted">· {cap(r.device)}{r.country ? ` · ${FLAG[r.country] || ''}${r.country}` : ''}</span>
-              <span className="ml-auto text-xs text-muted">{agoLabel(r.ago)}</span>
+              <span className="ml-auto text-xs text-muted">{agoLabel(r.ago, t.ago)}</span>
             </div>
           ))}
-          {!o.recent.length && <div className="text-sm text-muted">Nessuna visita recente.</div>}
+          {!o.recent.length && <div className="text-sm text-muted">{t.recentEmpty}</div>}
         </div>
       </Panel>
 
       <p className="text-xs text-muted">
-        Analytics first-party: dati raccolti e conservati solo sui nostri sistemi, nessun servizio terzo, nessun IP salvato.
-        Per la heatmap dei click e la profondità di scroll di una pagina apri la scheda <Link href="/analytics/heatmap" className="text-brand hover:underline">Heatmap</Link>.
+        <Rich text={t.footerNote} />
       </p>
     </div>
   )
@@ -184,7 +190,7 @@ function Panel({ title, children }: { title: React.ReactNode; children: React.Re
   )
 }
 
-function BarList({ items }: { items: { label: string; value: number; tag?: string }[] }) {
+function BarList({ items, locale }: { items: { label: string; value: number; tag?: string }[]; locale: string }) {
   const max = Math.max(1, ...items.map((i) => i.value))
   if (!items.length) return <div className="py-2 text-sm text-muted">—</div>
   return (
@@ -196,7 +202,7 @@ function BarList({ items }: { items: { label: string; value: number; tag?: strin
               {it.label}
               {it.tag && <span className="rounded border border-line px-1 text-[10px] uppercase tracking-wide text-muted">{it.tag}</span>}
             </span>
-            <span className="ml-2 shrink-0 text-muted">{nf(it.value)}</span>
+            <span className="ml-2 shrink-0 text-muted">{nf(it.value, locale)}</span>
           </div>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-bg">
             <div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(3, Math.round((it.value / max) * 100))}%` }} />

@@ -2,17 +2,23 @@ import { redirect } from 'next/navigation'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { isBillable } from '@/lib/billing'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
+import { Rich } from '@/lib/i18n/rich'
 
 export const dynamic = 'force-dynamic'
 
 const usd = (n: number) => `$${(n || 0).toFixed(4)}`
 const usd2 = (n: number) => `$${(n || 0).toFixed(2)}`
 const eur = (cents: number) => `€${((cents || 0) / 100).toFixed(2)}`
-const num = (n: number) => (n || 0).toLocaleString('it-IT')
 
 export default async function UsagePage() {
   const user = await getUser()
   if (!isSuperadmin(user?.email)) redirect('/dashboard')
+
+  const dict = getDictionary(getServerLocale())
+  const t = dict.app.admin.usage
+  const num = (n: number) => (n || 0).toLocaleString(dict.common.dateLocale)
 
   const sc = createServiceClient()
   const now = new Date()
@@ -100,23 +106,23 @@ export default async function UsagePage() {
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card label="Ricavo ricorrente (MRR)" value={eur(mrrCents)} sub="piani attivi" />
-        <Card label="Costo AI questo mese" value={usd2(monthCost)} sub={`${num(monthAnalyses)} analisi`} />
-        <Card label="Margine mese (stima)" value={`€${(mrrCents / 100 - monthCost).toFixed(2)}`} sub="MRR € − costo $ (≈ parità)" />
-        <Card label="Costo medio / analisi" value={usd(avgCost)} sub={`${num(totalAnalyses)} totali`} />
+        <Card label={t.kpi.mrr} value={eur(mrrCents)} sub={t.kpi.mrrSub} />
+        <Card label={t.kpi.costMonth} value={usd2(monthCost)} sub={t.kpi.costMonthSub.replace('{n}', num(monthAnalyses))} />
+        <Card label={t.kpi.margin} value={`€${(mrrCents / 100 - monthCost).toFixed(2)}`} sub={t.kpi.marginSub} />
+        <Card label={t.kpi.avgCost} value={usd(avgCost)} sub={t.kpi.avgCostSub.replace('{n}', num(totalAnalyses))} />
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card label="Costo AI totale" value={usd2(totalCost)} />
-        <Card label="Token totali" value={num(totalTokens)} />
-        <Card label="Analisi Base" value={num(tierCount.base)} sub={usd(tierCost.base)} />
-        <Card label="Analisi Premium" value={num(tierCount.premium)} sub={usd(tierCost.premium)} />
+        <Card label={t.kpi.totalCost} value={usd2(totalCost)} />
+        <Card label={t.kpi.totalTokens} value={num(totalTokens)} />
+        <Card label={t.kpi.baseAnalyses} value={num(tierCount.base)} sub={usd(tierCost.base)} />
+        <Card label={t.kpi.premiumAnalyses} value={num(tierCount.premium)} sub={usd(tierCost.premium)} />
       </div>
 
       <div className="card mt-4 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <div className="font-semibold">Consumo giornaliero <span className="text-xs text-muted">· ultimi 30 giorni</span></div>
-          <div className="text-xs text-muted">barre = costo AI ($) · picco {usd(maxCost)}</div>
+          <div className="font-semibold">{t.chartTitle} <span className="text-xs text-muted">{t.chartRange}</span></div>
+          <div className="text-xs text-muted">{t.chartLegend.replace('{peak}', usd(maxCost))}</div>
         </div>
         <svg viewBox={`0 0 ${series.length * 18} 130`} preserveAspectRatio="none" style={{ width: '100%', height: 150 }}>
           <line x1={0} y1={110} x2={series.length * 18} y2={110} style={{ stroke: 'rgb(var(--line))' }} strokeWidth={1} />
@@ -124,13 +130,13 @@ export default async function UsagePage() {
             const h = Math.round((s.cost / maxCost) * 100)
             return (
               <rect key={i} x={i * 18 + 3} y={110 - Math.max(1, h)} width={12} height={Math.max(1, h)} rx={2} style={{ fill: 'rgb(var(--brand))' }}>
-                <title>{`${s.date}: ${usd(s.cost)} · ${num(s.count)} analisi`}</title>
+                <title>{t.chartTooltip.replace('{date}', s.date).replace('{cost}', usd(s.cost)).replace('{n}', num(s.count))}</title>
               </rect>
             )
           })}
         </svg>
         <div className="mt-1 flex justify-between text-[10px] text-muted">
-          <span>{series[0]?.date}</span><span>oggi</span>
+          <span>{series[0]?.date}</span><span>{t.today}</span>
         </div>
       </div>
 
@@ -138,14 +144,14 @@ export default async function UsagePage() {
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="p-3">Utente</th>
-              <th className="p-3">Piano</th>
-              <th className="p-3 text-right">Analisi (mese)</th>
-              <th className="p-3 text-right">Costo (mese)</th>
-              <th className="p-3 text-right">Token (mese)</th>
-              <th className="p-3 text-right">Margine mese</th>
-              <th className="p-3 text-right">Analisi (tot)</th>
-              <th className="p-3 text-right">Costo (tot)</th>
+              <th className="p-3">{t.colUser}</th>
+              <th className="p-3">{t.colPlan}</th>
+              <th className="p-3 text-right">{t.colAnalysesMonth}</th>
+              <th className="p-3 text-right">{t.colCostMonth}</th>
+              <th className="p-3 text-right">{t.colTokensMonth}</th>
+              <th className="p-3 text-right">{t.colMarginMonth}</th>
+              <th className="p-3 text-right">{t.colAnalysesTotal}</th>
+              <th className="p-3 text-right">{t.colCostTotal}</th>
             </tr>
           </thead>
           <tbody>
@@ -154,7 +160,7 @@ export default async function UsagePage() {
               return (
                 <tr key={u.userId} className="border-b border-line/60">
                   <td className="max-w-[220px] truncate p-3 font-medium">{u.email}</td>
-                  <td className="p-3"><span className="rounded border border-line px-1.5 py-0.5 text-xs">{u.tier}</span> {u.planCents ? <span className="text-xs text-muted">{eur(u.planCents)}</span> : null}</td>
+                  <td className="p-3"><span className="rounded border border-line px-1.5 py-0.5 text-xs">{u.tier === 'nessuno' ? t.tierNone : u.tier}</span> {u.planCents ? <span className="text-xs text-muted">{eur(u.planCents)}</span> : null}</td>
                   <td className="p-3 text-right">{num(u.mAnalyses)}</td>
                   <td className="p-3 text-right">{usd(u.mCost)}</td>
                   <td className="p-3 text-right">{num(u.mTokens)}</td>
@@ -164,15 +170,12 @@ export default async function UsagePage() {
                 </tr>
               )
             })}
-            {list.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted">Nessun dato ancora.</td></tr>}
+            {list.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted">{t.empty}</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-muted">
-        I costi AI sono stimati dai token consumati (prezzi in <code>src/lib/attention/pricing.ts</code> — verifica quelli Qwen/DashScope).
-        Il margine confronta il ricavo del piano (€) con il costo AI del mese ($) assumendo ≈ parità di cambio; le analisi fatte prima di questo aggiornamento non hanno costo registrato.
-      </p>
+      <p className="mt-3 text-xs text-muted"><Rich text={t.note} /></p>
     </div>
   )
 }

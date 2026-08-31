@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
   const b = (await req.json().catch(() => ({}))) as any
-  if (!b?.name || !b?.slug) return NextResponse.json({ error: 'name e slug richiesti' }, { status: 400 })
+  if (!b?.name || !b?.slug) return NextResponse.json({ error: m('missingNameSlug') }, { status: 400 })
   const row = {
     name: b.name, slug: b.slug, tier: b.tier === 'premium' ? 'premium' : 'base',
     monthly_quota: Number(b.monthly_quota ?? 0), unlimited: !!b.unlimited,

@@ -1,6 +1,26 @@
 /* Foevo — popup controller */
+import { getLocale, setLocale, translator } from './i18n.js'
+
 const DEFAULT_BASE = 'https://foevo.app'
 const $ = (id) => document.getElementById(id)
+
+/* La lingua è quella scelta dall'utente (o quella di Chrome alla prima
+ * apertura). `t` viene rimpiazzata a ogni cambio lingua. */
+let locale = 'it'
+let t = translator(locale)
+
+/** Riempie il markup: testi, placeholder, title e aria-label marcati con data-i18n*. */
+function applyTranslations() {
+  document.documentElement.lang = locale
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n) })
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder) })
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle) })
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nAria)) })
+  document.querySelectorAll('.lang-btn').forEach((el) => {
+    el.classList.toggle('is-active', el.dataset.locale === locale)
+    el.setAttribute('aria-current', el.dataset.locale === locale ? 'true' : 'false')
+  })
+}
 
 const els = {
   viewMain: $('view-main'), viewSettings: $('view-settings'),
@@ -37,17 +57,15 @@ function setError(msg) {
 }
 function busy(on) {
   els.analyzeBtn.disabled = on
-  els.analyzeBtn.textContent = on ? 'Analisi in corso…' : 'Analizza questa pagina'
+  els.analyzeBtn.textContent = on ? t('analyzing') : t('analyze')
 }
 
 async function refreshLinks() {
   const { apiBase, apiKey, email } = await getSettings()
   els.dashLink.href = `${apiBase}/dashboard`
   if (els.signup) els.signup.href = `${apiBase}/signup`
-  els.tierHint.textContent = apiKey
-    ? 'La profondità dell\'analisi dipende dal tuo piano Foevo.'
-    : '⚠ Accedi con il tuo account Foevo dalle impostazioni (⚙).'
-  els.acct.textContent = apiKey ? (email || 'connesso') : 'non connesso'
+  els.tierHint.textContent = apiKey ? t('tierHintConnected') : t('tierHintDisconnected')
+  els.acct.textContent = apiKey ? (email || t('connected')) : t('disconnected')
 }
 
 /* ---- settings / login view ---- */
@@ -88,14 +106,14 @@ function resetOtp() {
   otpStep = 'email'
   if (els.code) els.code.value = ''
   if (els.codeStep) els.codeStep.hidden = true
-  els.saveBtn.textContent = 'Invia codice'
+  els.saveBtn.textContent = t('sendCode')
   els.email.disabled = false
 }
 
 function goToCodeStep() {
   otpStep = 'code'
   els.codeStep.hidden = false
-  els.saveBtn.textContent = 'Accedi'
+  els.saveBtn.textContent = t('signIn')
   els.email.disabled = true
   els.code.focus()
 }
@@ -111,7 +129,7 @@ async function requestCode(apiBase, email) {
     body: JSON.stringify({ email }),
   })
   const data = await resp.json().catch(() => ({}))
-  if (!resp.ok) throw new Error(data.error || `Errore ${resp.status}`)
+  if (!resp.ok) throw new Error(data.error || t('httpError', { status: resp.status }))
   return data
 }
 
@@ -122,33 +140,33 @@ async function verifyCode(apiBase, email, code) {
     body: JSON.stringify({ email, code }),
   })
   const data = await resp.json().catch(() => ({}))
-  if (!resp.ok || !data.key) throw new Error(data.error || `Errore ${resp.status}`)
+  if (!resp.ok || !data.key) throw new Error(data.error || t('httpError', { status: resp.status }))
   return data
 }
 
 els.saveBtn.addEventListener('click', async () => {
   const { apiBase } = await getSettings()
   const email = els.email.value.trim()
-  if (!email) { saveMsg('Inserisci la tua email.', true); return }
+  if (!email) { saveMsg(t('enterEmail'), true); return }
 
   const granted = await ensureHostPermission(apiBase)
-  if (!granted) { saveMsg('Permesso mancante per foevo.app: reinstalla l\u2019estensione.', true); return }
+  if (!granted) { saveMsg(t('missingPermission'), true); return }
 
   els.saveBtn.disabled = true
   try {
     if (otpStep === 'email') {
-      saveMsg('Invio del codice…', false)
+      saveMsg(t('sendingCode'), false)
       await requestCode(apiBase, email)
       goToCodeStep()
-      saveMsg('Ti abbiamo inviato un codice a 6 cifre. Controlla la posta.', false)
+      saveMsg(t('codeSent'), false)
     } else {
       const code = (els.code.value || '').replace(/\D/g, '')
-      if (code.length !== 6) { saveMsg('Inserisci il codice a 6 cifre.', true); return }
-      saveMsg('Verifica in corso…', false)
+      if (code.length !== 6) { saveMsg(t('enterSixDigits'), true); return }
+      saveMsg(t('verifying'), false)
       const data = await verifyCode(apiBase, email, code)
       await chrome.storage.sync.set({ apiKey: data.key, email: data.email || email })
       resetOtp()
-      saveMsg('Connesso \u2713', false)
+      saveMsg(t('connectedCheck'), false)
       setTimeout(() => { show('main'); refreshLinks(); setError('') }, 700)
     }
   } catch (e) {
@@ -171,24 +189,29 @@ if (els.code) {
 els.analyzeBtn.addEventListener('click', async () => {
   setError('')
   const { apiBase, apiKey } = await getSettings()
-  if (!apiKey) { setError('Accedi prima con il tuo account Foevo (⚙).'); await openSettings(); return }
+  if (!apiKey) { setError(t('signInFirst')); await openSettings(); return }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab || !/^https?:/.test(tab.url || '')) {
-    setError('Apri una pagina web (http/https) da analizzare.'); return
+    setError(t('openWebPage')); return
   }
 
   running = true
-  busy(true); setStatus('Cattura della pagina…')
+  busy(true); setStatus(t('capturingPage'))
   try {
     const res = await chrome.runtime.sendMessage({
       type: 'ANALYZE',
       tabId: tab.id,
       goal: els.goal.value,
       note: els.note.value.trim(),
+      // Il report viene scritto nella stessa lingua del popup.
+      lang: locale,
     })
-    if (!res || !res.ok) throw new Error(res?.error || 'Errore sconosciuto')
-    setStatus('Fatto! Apro il report…')
+    // Il background manda una chiave nota; il server manda un messaggio già
+    // tradotto. `t()` restituisce l'input quando non è una chiave, quindi
+    // entrambi i casi passano di qui.
+    if (!res || !res.ok) throw new Error(res?.error ? t(res.error) : t('unknownError'))
+    setStatus(t('done'))
     await chrome.tabs.create({ url: `${apiBase}${res.resultPath}` })
     window.close()
   } catch (e) {
@@ -203,7 +226,31 @@ els.analyzeBtn.addEventListener('click', async () => {
  * questo popup. Altrimenti, riaprendo il popup, si vedrebbe "Cattura in corso"
  * per un'analisi che l'utente non ha lanciato in questa sessione. */
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.type === 'PROGRESS' && running) setStatus(msg.text)
+  // Il background manda chiave + variabili, non testo già tradotto: così il
+  // popup lo rende sempre nella lingua correntemente scelta.
+  if (msg?.type === 'PROGRESS' && running) setStatus(t(msg.key, msg.vars))
 })
 
-refreshLinks()
+/* ---- selettore lingua ---- */
+document.querySelectorAll('.lang-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const next = btn.dataset.locale
+    if (next === locale) return
+    locale = next
+    t = translator(locale)
+    await setLocale(locale)
+    applyTranslations()
+    resetOtp()
+    await refreshLinks()
+  })
+})
+
+/* ---- avvio ---- */
+async function init() {
+  locale = await getLocale()
+  t = translator(locale)
+  applyTranslations()
+  await refreshLinks()
+}
+
+init()

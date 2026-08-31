@@ -20,7 +20,7 @@ export default async function InvitaPage() {
   const { data: aff } = await sc.from('affiliates')
     .select('id, code, full_name, status').eq('user_id', user!.id).maybeSingle()
 
-  if (!aff || aff.status !== 'active') return <ActivateForm />
+  if (!aff || aff.status !== 'active') return <ActivateForm t={dict.app.invita} />
 
   // Assicura una sessione affiliato (così la dashboard riusata e i suoi endpoint
   // funzionano con lo stesso cookie del resto dell'area affiliati).

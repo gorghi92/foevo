@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Foevo — Attention Heatmap & AI Page Analysis",
+    "description": "Extension name in the Chrome Web Store."
+  },
+  "extDescription": {
+    "message": "Scan a landing or product page and get an attention heatmap plus a conversion-oriented AI analysis.",
+    "description": "Short description of the extension in the Chrome Web Store."
+  }
+}

@@ -2,23 +2,24 @@ import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
 import { sendEmail, cancellationEmail } from '@/lib/email'
+import { m, requestLocale } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
 /** Annulla l'abbonamento su Whop (a fine periodo): l'accesso resta fino al rinnovo. */
 export async function POST() {
   const user = await getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: m('notAuthenticated') }, { status: 401 })
 
   const sc = createServiceClient()
   const { data: ent } = await sc.from('entitlements')
     .select('whop_membership_id, source, status, current_period_end').eq('user_id', user.id).maybeSingle()
   if (!ent || ent.source !== 'whop' || !ent.whop_membership_id) {
-    return NextResponse.json({ error: 'Nessun abbonamento Whop da annullare' }, { status: 400 })
+    return NextResponse.json({ error: m('noWhopSubscription') }, { status: 400 })
   }
 
   const { apiKey } = await getWhopConfig()
-  if (!apiKey) return NextResponse.json({ error: 'Configurazione Whop mancante' }, { status: 500 })
+  if (!apiKey) return NextResponse.json({ error: m('whopConfigMissing') }, { status: 500 })
 
   const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', Accept: 'application/json' }
   let ok = false
@@ -40,7 +41,7 @@ export async function POST() {
   // Email brandizzata di conferma annullamento (best-effort).
   if (user.email) {
     const until = ent.current_period_end ? new Date(ent.current_period_end as string).toLocaleDateString('it-IT') : null
-    const { subject, html } = cancellationEmail({ until })
+    const { subject, html } = cancellationEmail({ until, locale: requestLocale() })
     await sendEmail({ to: user.email, subject, html })
   }
   return NextResponse.json({ ok: true })

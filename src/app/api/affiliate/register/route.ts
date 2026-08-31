@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { hashPassword, uniqueCode, startSession } from '@/lib/affiliate/auth'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,19 +18,19 @@ export async function POST(req: Request) {
   const fullName = String(body.fullName || '').trim().slice(0, 120)
 
   if (!USERNAME_RE.test(username)) {
-    return NextResponse.json({ error: 'Username: 3–32 caratteri, solo lettere minuscole, numeri, . _ -' }, { status: 400 })
+    return NextResponse.json({ error: m('usernameFormatLong') }, { status: 400 })
   }
   if (!email.includes('@') || email.length < 5) {
-    return NextResponse.json({ error: 'Inserisci un indirizzo email valido.' }, { status: 400 })
+    return NextResponse.json({ error: m('enterValidEmail') }, { status: 400 })
   }
   if (password.length < 8) {
-    return NextResponse.json({ error: 'La password deve avere almeno 8 caratteri.' }, { status: 400 })
+    return NextResponse.json({ error: m('passwordTooShort') }, { status: 400 })
   }
 
   const sc = createServiceClient()
 
   const { data: exists } = await sc.from('affiliates').select('id').eq('username', username).maybeSingle()
-  if (exists) return NextResponse.json({ error: 'Username già in uso: scegline un altro.' }, { status: 409 })
+  if (exists) return NextResponse.json({ error: m('usernameTakenPickAnother') }, { status: 409 })
 
   const code = await uniqueCode(sc)
   const { data: created, error } = await sc.from('affiliates').insert({

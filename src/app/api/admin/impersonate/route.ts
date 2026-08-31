@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getUser, createClient, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -9,15 +10,15 @@ export const runtime = 'nodejs'
  *  sessione come l'utente target. Il ritorno avviene via /impersonate/stop. */
 export async function POST(req: Request) {
   const admin = await getUser()
-  if (!isSuperadmin(admin?.email)) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+  if (!isSuperadmin(admin?.email)) return NextResponse.json({ error: m('notAuthorized') }, { status: 403 })
 
   const { userId } = (await req.json().catch(() => ({}))) as { userId?: string }
-  if (!userId) return NextResponse.json({ error: 'userId richiesto' }, { status: 400 })
+  if (!userId) return NextResponse.json({ error: m('missingUserId') }, { status: 400 })
 
   const sc = createServiceClient()
   const { data: prof } = await sc.from('profiles').select('email').eq('id', userId).maybeSingle()
   const targetEmail = prof?.email as string | undefined
-  if (!targetEmail) return NextResponse.json({ error: 'Utente non trovato' }, { status: 404 })
+  if (!targetEmail) return NextResponse.json({ error: m('userNotFound') }, { status: 404 })
 
   const supa = createClient()
   const { data: { session } } = await supa.auth.getSession()

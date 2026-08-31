@@ -3,40 +3,43 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowDownCircle, XCircle } from 'lucide-react'
+import type { Dictionary } from '@/lib/i18n'
 
-export function DowngradeButton({ isWhop }: { isWhop: boolean }) {
+type Copy = Dictionary['app']['billing']['actions']
+
+export function DowngradeButton({ isWhop, t }: { isWhop: boolean; t: Copy }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   async function go() {
-    const msg = 'Vuoi passare al piano Base?' + (isWhop ? '\n\nRicorda: gestisci/annulla anche l’abbonamento su Whop per fermare gli addebiti.' : '')
+    const msg = t.downgradeConfirm + (isWhop ? t.downgradeWhopNote : '')
     if (!confirm(msg)) return
     setBusy(true)
     const res = await fetch('/api/billing/downgrade', { method: 'POST' })
     setBusy(false)
-    if (!res.ok) return alert((await res.json().catch(() => ({})))?.error || 'Errore')
+    if (!res.ok) return alert((await res.json().catch(() => ({})))?.error || t.error)
     router.refresh()
   }
   return (
     <button onClick={go} disabled={busy} className="btn btn-ghost px-3 py-1.5 text-[13px]">
-      <ArrowDownCircle size={14} /> {busy ? 'Downgrade…' : 'Passa a Base'}
+      <ArrowDownCircle size={14} /> {busy ? t.downgradeBusy : t.downgrade}
     </button>
   )
 }
 
-export function CancelButton() {
+export function CancelButton({ t }: { t: Copy }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   async function go() {
-    if (!confirm('Vuoi annullare l’abbonamento?\n\nResterà attivo fino alla data di rinnovo, poi non verrà più rinnovato.')) return
+    if (!confirm(t.cancelConfirm)) return
     setBusy(true)
     const res = await fetch('/api/billing/cancel', { method: 'POST' })
     setBusy(false)
-    if (!res.ok) return alert((await res.json().catch(() => ({})))?.error || 'Errore')
+    if (!res.ok) return alert((await res.json().catch(() => ({})))?.error || t.error)
     router.refresh()
   }
   return (
     <button onClick={go} disabled={busy} className="btn btn-ghost px-3 py-1.5 text-[13px] text-red-600">
-      <XCircle size={14} /> {busy ? 'Annullo…' : 'Annulla abbonamento'}
+      <XCircle size={14} /> {busy ? t.cancelBusy : t.cancel}
     </button>
   )
 }

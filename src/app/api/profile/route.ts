@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -8,7 +9,7 @@ const clean = (v: unknown) => { const s = String(v ?? '').trim(); return s || nu
 /** Aggiorna nome/cognome e/o dati di fatturazione del profilo (update parziale). */
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: m('notAuthenticated') }, { status: 401 })
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>
 
   const patch: Record<string, string | null> = {}
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   }
   for (const [k, col] of Object.entries(map)) if (k in b) patch[col] = clean(b[k])
 
-  if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nessun dato da aggiornare' }, { status: 400 })
+  if (Object.keys(patch).length === 0) return NextResponse.json({ error: m('nothingToUpdate') }, { status: 400 })
 
   const sc = createServiceClient()
   const { error } = await sc.from('profiles').update(patch).eq('id', user.id)

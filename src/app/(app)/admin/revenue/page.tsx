@@ -2,16 +2,21 @@ import { redirect } from 'next/navigation'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { isBillable } from '@/lib/billing'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { RevenueLive } from './revenue-live'
 
 export const dynamic = 'force-dynamic'
 
 const eur = (cents: number) => `€${((cents || 0) / 100).toFixed(2)}`
-const fdate = (d?: string | null) => (d ? new Date(d).toLocaleDateString('it-IT') : '—')
 
 export default async function RevenuePage() {
   const user = await getUser()
   if (!isSuperadmin(user?.email)) redirect('/dashboard')
+
+  const dict = getDictionary(getServerLocale())
+  const t = dict.app.admin.revenue
+  const fdate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(dict.common.dateLocale) : '—')
 
   const sc = createServiceClient()
   const now = new Date()
@@ -59,38 +64,38 @@ export default async function RevenuePage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-end"><RevenueLive /></div>
+      <div className="mb-4 flex items-center justify-end"><RevenueLive label={t.live} /></div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card label="MRR (IVA escl.)" value={eur(mrr)} sub={`${active.length} abbonamenti attivi`} />
-        <Card label="Incassato questo mese" value={eur(revMonth)} sub="IVA inclusa (Whop)" />
-        <Card label="Incassato totale" value={eur(revTotal)} sub={`${paid.length} pagamenti`} />
-        <Card label="Disiscritti" value={String(churned.length)} sub="canceled / past_due" />
+        <Card label={t.kpi.mrr} value={eur(mrr)} sub={t.kpi.mrrSub.replace('{n}', String(active.length))} />
+        <Card label={t.kpi.collectedMonth} value={eur(revMonth)} sub={t.kpi.collectedMonthSub} />
+        <Card label={t.kpi.collectedTotal} value={eur(revTotal)} sub={t.kpi.collectedTotalSub.replace('{n}', String(paid.length))} />
+        <Card label={t.kpi.churned} value={String(churned.length)} sub={t.kpi.churnedSub} />
       </div>
 
-      <h2 className="mt-6 text-lg font-bold">Abbonati attivi</h2>
+      <h2 className="mt-6 text-lg font-bold">{t.activeTitle}</h2>
       <div className="card mt-2 overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
-          <thead><tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted"><th className="p-3">Utente</th><th className="p-3">Piano</th><th className="p-3 text-right">Prezzo</th><th className="p-3">Fonte</th><th className="p-3">Prossimo rinnovo</th></tr></thead>
+          <thead><tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted"><th className="p-3">{t.colUser}</th><th className="p-3">{t.colPlan}</th><th className="p-3 text-right">{t.colPrice}</th><th className="p-3">{t.colSource}</th><th className="p-3">{t.colRenewal}</th></tr></thead>
           <tbody>
             {active.map((r, i) => (
               <tr key={i} className="border-b border-line/60">
                 <td className="max-w-[240px] truncate p-3 font-medium">{r.email}</td>
                 <td className="p-3">{r.plan}</td>
-                <td className="p-3 text-right">{eur(r.priceCents)} <span className="text-xs text-muted">+ IVA</span></td>
+                <td className="p-3 text-right">{eur(r.priceCents)} <span className="text-xs text-muted">{t.plusVat}</span></td>
                 <td className="p-3 text-xs">{r.source}</td>
                 <td className="p-3">{fdate(r.renewal)}</td>
               </tr>
             ))}
-            {active.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted">Nessun abbonamento attivo.</td></tr>}
+            {active.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted">{t.activeEmpty}</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <h2 className="mt-6 text-lg font-bold">Disiscritti / sospesi</h2>
+      <h2 className="mt-6 text-lg font-bold">{t.churnedTitle}</h2>
       <div className="card mt-2 overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
-          <thead><tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted"><th className="p-3">Utente</th><th className="p-3">Piano</th><th className="p-3">Stato</th><th className="p-3">Aggiornato</th></tr></thead>
+          <thead><tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted"><th className="p-3">{t.colUser}</th><th className="p-3">{t.colPlan}</th><th className="p-3">{t.colStatus}</th><th className="p-3">{t.colUpdated}</th></tr></thead>
           <tbody>
             {churned.map((r, i) => (
               <tr key={i} className="border-b border-line/60">
@@ -100,12 +105,12 @@ export default async function RevenuePage() {
                 <td className="p-3">{fdate(r.updated)}</td>
               </tr>
             ))}
-            {churned.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted">Nessun disiscritto.</td></tr>}
+            {churned.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted">{t.churnedEmpty}</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-muted">MRR calcolato sui piani attivi (prezzo IVA esclusa). L’incassato è quanto riscosso da Whop (IVA inclusa). I dati arrivano dai webhook Whop in tempo quasi reale.</p>
+      <p className="mt-3 text-xs text-muted">{t.note}</p>
     </div>
   )
 }

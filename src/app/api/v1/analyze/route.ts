@@ -5,6 +5,8 @@ import { runEngine, providerAvailable, type Tier } from '@/lib/attention/engine'
 import { resolveEntitlement, monthlyUsage, createAnalysis, attachScreenshot, completeAnalysis, failAnalysis } from '@/server/store'
 import type { PageElement } from '@/lib/attention/types'
 import { exceedsModelLimit } from '@/lib/attention/image-size'
+import { isLocale, DEFAULT_LOCALE, localeFromAcceptLanguage } from '@/lib/i18n/config'
+import { m } from '@/lib/i18n/api'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,6 +15,7 @@ export const maxDuration = 300
 
 interface Body {
   url?: string; title?: string; goal?: string | null; note?: string | null
+  lang?: string // lingua del report: la manda l'estensione, altrimenti la deduciamo
   image?: { width: number; height: number }
   fullSize?: { width: number; height: number }
   screenshot?: string
@@ -50,20 +53,20 @@ export async function POST(req: Request): Promise<Response> {
   return withKey(req, async ({ userId }) => {
     const body = (await req.json().catch(() => null)) as Body | null
     if (!body?.screenshot || !body.sample?.b64) {
-      return Response.json({ error: 'Payload incompleto: servono "screenshot" e "sample".' }, { status: 400 })
+      return Response.json({ error: m('incompletePayload') }, { status: 400 })
     }
 
     const ent = await resolveEntitlement(userId)
     if (ent.source === 'none') {
       return Response.json({
-        error: 'Nessun piano attivo: attiva un abbonamento su foevo.app per analizzare.',
+        error: m('noActivePlan'),
         code: 'no_plan',
       }, { status: 402 })
     }
     if (!ent.unlimited) {
       const used = await monthlyUsage(userId)
       if (used >= ent.quota) {
-        return Response.json({ error: `Quota mensile esaurita (${used}/${ent.quota}).`, code: 'quota_exceeded' }, { status: 402 })
+        return Response.json({ error: m('quotaExceeded', { used, quota: ent.quota }), code: 'quota_exceeded' }, { status: 402 })
       }
     }
 
@@ -75,18 +78,21 @@ export async function POST(req: Request): Promise<Response> {
     const aiImage = body.aiImage || body.screenshot
     if (exceedsModelLimit(aiImage)) {
       return Response.json({
-        error: body.aiImage
-          ? 'Immagine troppo grande per l\u2019analisi: riprova su una pagina meno lunga.'
-          : 'Pagina troppo lunga per questa versione dell\u2019estensione: aggiorna all\u2019ultima versione dalla dashboard.',
+        error: body.aiImage ? m('imageTooLarge') : m('pageTooLongOldExtension'),
         code: 'image_too_large',
       }, { status: 400 })
     }
 
     const tier = await pickTier(ent.tier)
-    if (!tier) return Response.json({ error: 'Nessun provider AI configurato.' }, { status: 503 })
+    if (!tier) return Response.json({ error: m('noAiProvider') }, { status: 503 })
 
     const url = String(body.url || ''); const title = String(body.title || '')
-    const ctx = { url, title, goal: body.goal ?? null, note: body.note ?? null }
+    // Il report segue la lingua dell'utente: la dichiara il client (estensione o
+    // app), altrimenti la deduciamo dall'Accept-Language della richiesta.
+    const lang = isLocale(body.lang)
+      ? body.lang
+      : localeFromAcceptLanguage(req.headers.get('accept-language')) ?? DEFAULT_LOCALE
+    const ctx = { url, title, goal: body.goal ?? null, note: body.note ?? null, lang }
     const elements = sanitizeElements(body.elements)
 
     const id = await createAnalysis({
@@ -99,10 +105,11 @@ export async function POST(req: Request): Promise<Response> {
     try {
       await getSettings() // allinea la config storage (DB → r2.ts) prima dell'upload
       if (r2Configured()) {
-        const m = body.screenshot.match(/^data:(image\/[a-z]+);base64,(.*)$/i)
-        if (m) {
+        // `match`, non `m`: `m()` qui è il traduttore dei messaggi.
+        const match = body.screenshot.match(/^data:(image\/[a-z]+);base64,(.*)$/i)
+        if (match) {
           const key = `analyses/${userId}/${id}.jpg`
-          if (await r2Put(key, Buffer.from(m[2], 'base64'), m[1])) screenshotUrl = r2PublicUrl(key)
+          if (await r2Put(key, Buffer.from(match[2], 'base64'), match[1])) screenshotUrl = r2PublicUrl(key)
         }
       }
     } catch (e) { console.error('[foevo] R2 upload failed', e) }
@@ -119,7 +126,7 @@ export async function POST(req: Request): Promise<Response> {
       })
       return Response.json({ id, resultPath: `/analyses/${id}`, tier: out.provider === 'claude' ? 'premium' : 'base' }, { status: 201 })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Errore analisi'
+      const msg = e instanceof Error ? e.message : m('analysisFailed')
       await failAnalysis(id, msg)
       return Response.json({ error: msg, id }, { status: 502 })
     }

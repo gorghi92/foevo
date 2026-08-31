@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { renderInvoicePdf } from '@/lib/pdf'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const user = await getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: m('notAuthenticated') }, { status: 401 })
 
   const sc = createServiceClient()
   const [{ data: p }, { data: prof }] = await Promise.all([
     sc.from('payments').select('*').eq('id', params.id).maybeSingle(),
     sc.from('profiles').select('full_name, email, billing_name, billing_vat, billing_cf, billing_address, billing_city, billing_zip, billing_country').eq('id', user.id).maybeSingle(),
   ])
-  if (!p || p.user_id !== user.id) return NextResponse.json({ error: 'Fattura non trovata' }, { status: 404 })
+  if (!p || p.user_id !== user.id) return NextResponse.json({ error: m('invoiceNotFound') }, { status: 404 })
 
   const amount = (Number(p.amount_cents) || 0) / 100
   const cur = String(p.currency || 'EUR')

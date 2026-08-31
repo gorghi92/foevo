@@ -25,28 +25,59 @@ export interface AttentionResult {
   recommendations: Recommendation[]
 }
 
-const GOAL_LABELS: Record<string, string> = {
-  lead: 'generazione lead / iscrizioni',
-  sale: 'vendita diretta / checkout',
-  product: 'scheda prodotto e-commerce (aggiunta al carrello)',
-  booking: 'prenotazione / appuntamento',
-  signup: 'registrazione / avvio trial',
+/**
+ * Lingua del report. I prompt restano in italiano (è la lingua in cui sono
+ * stati tarati), ma il modello riceve l'istruzione esplicita di SCRIVERE i
+ * testi nella lingua dell'utente. I valori enum (alta|media|bassa e simili)
+ * restano invece sempre in italiano: sono dati, non testo, e finiscono in
+ * JSONB — tradurli spezzerebbe le analisi già salvate.
+ */
+export type ReportLocale = 'it' | 'en'
+
+const GOAL_LABELS: Record<ReportLocale, Record<string, string>> = {
+  it: {
+    lead: 'generazione lead / iscrizioni',
+    sale: 'vendita diretta / checkout',
+    product: 'scheda prodotto e-commerce (aggiunta al carrello)',
+    booking: 'prenotazione / appuntamento',
+    signup: 'registrazione / avvio trial',
+  },
+  en: {
+    lead: 'lead generation / sign-ups',
+    sale: 'direct sale / checkout',
+    product: 'e-commerce product page (add to cart)',
+    booking: 'booking / appointment',
+    signup: 'registration / trial start',
+  },
 }
 
-export function goalHint(goal: string | null | undefined): string {
-  if (!goal) return 'da rilevare automaticamente dal contenuto della pagina'
-  return GOAL_LABELS[goal] ?? goal
+const GOAL_AUTO: Record<ReportLocale, string> = {
+  it: 'da rilevare automaticamente dal contenuto della pagina',
+  en: 'to be detected automatically from the page content',
+}
+
+/** Istruzione di lingua per i testi liberi del report. */
+const LANGUAGE_RULE: Record<ReportLocale, string> = {
+  it: 'Scrivi TUTTI i testi liberi (summary, label, reason, issues, suggestions, description, fix, title, detail, impact, tone, goal) in ITALIANO.',
+  en: 'Write ALL free-text fields (summary, label, reason, issues, suggestions, description, fix, title, detail, impact, tone, goal) in ENGLISH.',
+}
+
+export function goalHint(goal: string | null | undefined, locale: ReportLocale = 'it'): string {
+  if (!goal) return GOAL_AUTO[locale]
+  return GOAL_LABELS[locale][goal] ?? goal
 }
 
 /** System prompt shared by both tiers. */
-export function systemPrompt(): string {
+export function systemPrompt(locale: ReportLocale = 'it'): string {
   return [
     'Sei un esperto di neuromarketing e CRO (conversion rate optimization) e di eye-tracking predittivo.',
     'Analizzi lo screenshot full-page di una landing page o scheda prodotto e stimi DOVE cade l\'attenzione visiva',
     'nei primi secondi e se la gerarchia visiva è allineata all\'obiettivo di conversione.',
     'Rispondi SEMPRE ed ESCLUSIVAMENTE con un oggetto JSON valido, senza testo prima o dopo, senza markdown fences.',
     'Le coordinate bbox sono [x,y,w,h] normalizzate 0..1 rispetto all\'INTERA immagine (0,0 = alto-sinistra).',
-    'Gli score sono interi 0..100. Scrivi i testi in italiano.',
+    'Gli score sono interi 0..100.',
+    'I valori enum (pageType, priority, severity, role, usage) restano ESATTAMENTE come indicati nello schema, in italiano: sono dati, non testo.',
+    LANGUAGE_RULE[locale],
   ].join(' ')
 }
 
@@ -63,11 +94,12 @@ export function elementsBlock(elements?: PageElement[]): string {
 }
 
 /** Premium (Claude) — full brand + CTA + copy + conversion analysis. */
-export function premiumPrompt(ctx: { url: string; title: string; goal: string | null; note: string | null }, elements?: PageElement[]): string {
+export function premiumPrompt(ctx: { url: string; title: string; goal: string | null; note: string | null; lang?: ReportLocale }, elements?: PageElement[]): string {
+  const locale = ctx.lang ?? 'it'
   return `Contesto pagina:
 - URL: ${ctx.url}
 - Titolo: ${ctx.title}
-- Obiettivo di conversione: ${goalHint(ctx.goal)}
+- Obiettivo di conversione: ${goalHint(ctx.goal, locale)}
 - Note utente: ${ctx.note || '—'}
 
 Analizza e restituisci ESATTAMENTE questo JSON:
@@ -95,13 +127,15 @@ Regole:
 - Identifica i colori REALI usati (specialmente quello delle CTA) e valuta se la CTA "stacca" abbastanza dal resto.
 - Valuta se ciò che cattura l'attenzione (score alto nelle zones) coincide con l'elemento che porta alla conversione. Se no, spiegalo in summary e in recommendations.
 - ETICHETTE (label) fedeli a ciò che è VISIBILE: usa il testo reale dell'elemento. NON inventare marchi, nomi di aziende o piattaforme (es. Google, Trustpilot, Facebook) se non compaiono scritti nell'elemento. Se è un logo/marchio, etichettalo "Logo" (o "Logo — <nome se leggibile>"). Attribuisci "prova sociale"/"recensioni" SOLO se ci sono segnali espliciti (stelle, numero di recensioni, testimonianze, diciture tipo "come visto su"). Nel dubbio, descrivi ciò che vedi senza assegnare una funzione.
-- Includi 4-8 zones, 1-4 cta, 3-6 recommendations ordinate per priorità.${elementsBlock(elements)}`
+- Includi 4-8 zones, 1-4 cta, 3-6 recommendations ordinate per priorità.
+- ${LANGUAGE_RULE[locale]}${elementsBlock(elements)}`
 }
 
 /** Base (Qwen) — lighter zone + score analysis. */
-export function basePrompt(ctx: { url: string; title: string; goal: string | null }, elements?: PageElement[]): string {
-  return `Contesto: URL ${ctx.url}; Titolo "${ctx.title}"; Obiettivo: ${goalHint(ctx.goal)}.
-Restituisci ESATTAMENTE questo JSON (in italiano):
+export function basePrompt(ctx: { url: string; title: string; goal: string | null; lang?: ReportLocale }, elements?: PageElement[]): string {
+  const locale = ctx.lang ?? 'it'
+  return `Contesto: URL ${ctx.url}; Titolo "${ctx.title}"; Obiettivo: ${goalHint(ctx.goal, locale)}.
+Restituisci ESATTAMENTE questo JSON:
 {
   "pageType":"landing|product|homepage|other",
   "goal":"<obiettivo dedotto>",
@@ -112,7 +146,8 @@ Restituisci ESATTAMENTE questo JSON (in italiano):
   "recommendations":[{"priority":"alta|media|bassa","title":"...","detail":"...","impact":"..."}]
 }
 Includi 3-6 zones e 2-4 recommendations. bbox normalizzate 0..1 sull'intera immagine.
-ETICHETTE (label) fedeli a ciò che è VISIBILE: NON inventare marchi o piattaforme (es. Google, Trustpilot) se non sono scritti; un logo etichettalo "Logo"; usa "prova sociale" solo con segnali espliciti (stelle, numero recensioni, testimonianze).${elementsBlock(elements)}`
+ETICHETTE (label) fedeli a ciò che è VISIBILE: NON inventare marchi o piattaforme (es. Google, Trustpilot) se non sono scritti; un logo etichettalo "Logo"; usa "prova sociale" solo con segnali espliciti (stelle, numero recensioni, testimonianze).
+${LANGUAGE_RULE[locale]}${elementsBlock(elements)}`
 }
 
 // ---- defensive normalization (LLMs drift; never throw on a missing field) ----
@@ -122,7 +157,14 @@ const clamp = (n: unknown, lo = 0, hi = 100): number => {
 }
 const str = (s: unknown, d = ''): string => (typeof s === 'string' ? s : d)
 const arr = <T>(a: unknown): T[] => (Array.isArray(a) ? (a as T[]) : [])
-const prio = (p: unknown): Priority => (p === 'alta' || p === 'bassa' ? p : 'media')
+// Lo schema chiede alta|media|bassa, ma un modello che scrive in inglese può
+// scivolare su high|medium|low: normalizziamo entrambe le forme.
+const PRIO_ALIASES: Record<string, Priority> = {
+  alta: 'alta', media: 'media', bassa: 'bassa',
+  high: 'alta', medium: 'media', low: 'bassa',
+}
+const prio = (p: unknown): Priority =>
+  (typeof p === 'string' && PRIO_ALIASES[p.toLowerCase()]) || 'media'
 
 function normBbox(b: unknown): Bbox | null {
   if (!Array.isArray(b) || b.length < 4) return null

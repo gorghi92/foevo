@@ -1,9 +1,12 @@
 import { getSettingsFresh } from '@/lib/settings'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { AiConfigForm } from './ai-form'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AiConfigPage() {
+  const dict = getDictionary(getServerLocale())
   const s = await getSettingsFresh()
   const val = (k: string, def = '') => s[k] || process.env[k] || def
   const stat = (k: string): 'db' | 'env' | 'none' => (s[k] ? 'db' : process.env[k] ? 'env' : 'none')
@@ -22,6 +25,7 @@ export default async function AiConfigPage() {
         DASHSCOPE_API_KEY: stat('DASHSCOPE_API_KEY'),
         DASHSCOPE_BASE_URL: stat('DASHSCOPE_BASE_URL'),
       }}
+      t={dict.app.admin.ai}
     />
   )
 }

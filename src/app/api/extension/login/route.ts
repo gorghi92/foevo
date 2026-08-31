@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateKey } from '@/server/api-key'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -12,7 +13,7 @@ export const runtime = 'nodejs'
  */
 export async function POST(req: Request) {
   const { email, password } = (await req.json().catch(() => ({}))) as { email?: string; password?: string }
-  if (!email || !password) return NextResponse.json({ error: 'Email e password richieste' }, { status: 400 })
+  if (!email || !password) return NextResponse.json({ error: m('emailAndPasswordRequired') }, { status: 400 })
 
   const sb = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     { auth: { persistSession: false, autoRefreshToken: false } },
   )
   const { data, error } = await sb.auth.signInWithPassword({ email, password })
-  if (error || !data?.user) return NextResponse.json({ error: 'Credenziali non valide' }, { status: 401 })
+  if (error || !data?.user) return NextResponse.json({ error: m('invalidCredentials') }, { status: 401 })
 
   const userId = data.user.id
   const sc = createServiceClient()

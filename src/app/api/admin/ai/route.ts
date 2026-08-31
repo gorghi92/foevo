@@ -3,6 +3,7 @@ import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { clearSettingsCache } from '@/lib/settings'
 import { EFFORTS } from '@/lib/attention/llm'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +15,7 @@ const isModelId = (v: string) => /^[A-Za-z0-9._:@-]{1,80}$/.test(v)
 /** Salva la configurazione AI (chiavi, modelli, effort, mix heatmap) in app_settings. */
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
 
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>
   const now = new Date().toISOString()
@@ -42,14 +43,14 @@ export async function POST(req: Request) {
   if ('ATTENTION_CLAUDE_EFFORT' in b) {
     const value = String(b.ATTENTION_CLAUDE_EFFORT || '').trim()
     if (!value) toDelete.push('ATTENTION_CLAUDE_EFFORT')
-    else if (!(EFFORTS as readonly string[]).includes(value)) return NextResponse.json({ error: 'Effort non valido' }, { status: 400 })
+    else if (!(EFFORTS as readonly string[]).includes(value)) return NextResponse.json({ error: m('invalidEffort') }, { status: 400 })
     else toUpsert.push({ key: 'ATTENTION_CLAUDE_EFFORT', value, updated_at: now })
   }
 
   // Mix heatmap: quota semantica 0..100.
   if ('ATTENTION_SEMANTIC_PCT' in b) {
     const n = Math.round(Number(b.ATTENTION_SEMANTIC_PCT))
-    if (!Number.isFinite(n) || n < 0 || n > 100) return NextResponse.json({ error: 'Percentuale non valida (0–100)' }, { status: 400 })
+    if (!Number.isFinite(n) || n < 0 || n > 100) return NextResponse.json({ error: m('invalidPercent') }, { status: 400 })
     toUpsert.push({ key: 'ATTENTION_SEMANTIC_PCT', value: String(n), updated_at: now })
   }
 

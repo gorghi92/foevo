@@ -23,7 +23,10 @@ async function getSettings() {
   // Endpoint fisso: coincide con l'host dichiarato in host_permissions.
   return { apiBase: 'https://foevo.app', apiKey: s.apiKey || '' }
 }
-function progress(text) { chrome.runtime.sendMessage({ type: 'PROGRESS', text }).catch(() => {}) }
+/* Manda al popup la CHIAVE del messaggio, non il testo: il popup la rende
+ * nella lingua scelta dall'utente. Così il background non deve conoscere le
+ * traduzioni. */
+function progress(key, vars) { chrome.runtime.sendMessage({ type: 'PROGRESS', key, vars }).catch(() => {}) }
 
 /* ---- injected page functions (must be self-contained) ---- */
 function pageMetrics() {
@@ -157,7 +160,7 @@ async function captureFullPage(tab) {
       await runInTab(tabId, pageScrollTo, [offsets[i]])
       if (i === 1) await runInTab(tabId, pageHideSticky) // keep sticky on 1st slice only
       await sleep(i === 0 ? 260 : CAPTURE_GAP_MS)
-      progress(`Cattura ${i + 1}/${offsets.length}…`)
+      progress('captureSlice', { i: i + 1, n: offsets.length })
       const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 85 })
       slices.push({ y: offsets[i], bmp: await bitmapFromDataUrl(dataUrl) })
     }
@@ -240,19 +243,21 @@ function blobToDataUrl(blob) {
   })
 }
 
-async function analyze({ tabId, goal, note }) {
+async function analyze({ tabId, goal, note, lang }) {
   const { apiBase, apiKey } = await getSettings()
-  if (!apiKey) return { ok: false, error: 'API key mancante' }
+  // Il popup ha già mostrato l'avviso di accesso: qui basta un codice stabile.
+  if (!apiKey) return { ok: false, error: 'missingApiKey' }
   const tab = await chrome.tabs.get(tabId)
 
   const cap = await captureFullPage(tab)
-  progress('Invio al motore di analisi…')
+  progress('sendingToEngine')
 
   const body = {
     url: cap.meta.url,
     title: cap.meta.title,
     goal: goal || null,
     note: note || null,
+    lang: lang || 'it', // lingua in cui il server scrive il report
     viewport: { width: cap.meta.innerWidth, height: cap.meta.innerHeight, dpr: cap.meta.dpr },
     image: cap.image,
     fullSize: cap.fullSize,

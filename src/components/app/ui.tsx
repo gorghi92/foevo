@@ -1,5 +1,6 @@
-import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
+import type { Dictionary } from '@/lib/i18n'
+import { Rich } from '@/lib/i18n/rich'
 
 /** Intestazione di pagina coerente in tutta l'area utente. */
 export function PageHeader({
@@ -24,8 +25,8 @@ export function PageHeader({
 
 /** Consumo del mese: barra con colore che scalda avvicinandosi al limite. */
 export function UsageMeter({
-  used, quota, unlimited, compact = false,
-}: { used: number; quota: number; unlimited?: boolean; compact?: boolean }) {
+  t, used, quota, unlimited, compact = false,
+}: { t: Dictionary['app']['shell']['usage']; used: number; quota: number; unlimited?: boolean; compact?: boolean }) {
   const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(1, quota)) * 100))
   const bar = unlimited
     ? 'rgb(var(--brand))'
@@ -33,7 +34,7 @@ export function UsageMeter({
   return (
     <div className={compact ? '' : 'card p-4'}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-semibold text-muted">Analisi questo mese</span>
+        <span className="text-xs font-semibold text-muted">{t.title}</span>
         <span className="text-xs font-bold text-ink">{used}{unlimited ? '' : ` / ${quota}`}</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
@@ -44,7 +45,7 @@ export function UsageMeter({
       </div>
       {!unlimited && pct >= 80 && (
         <p className="mt-2 text-[11px] leading-snug text-muted">
-          Stai per esaurire la quota. <Link href="/billing" className="font-semibold text-brand">Passa a Premium</Link>
+          <Rich text={t.nearLimit} />
         </p>
       )}
     </div>

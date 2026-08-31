@@ -7,12 +7,13 @@
  * Modelli, effort e chiavi sono configurabili dal pannello superadmin (salvati
  * in app_settings); le variabili d'ambiente restano come fallback.
  */
-import { systemPrompt, premiumPrompt, basePrompt, extractJson, normalizeResult, type AttentionResult, type PageElement } from './types'
+import { systemPrompt, premiumPrompt, basePrompt, extractJson, normalizeResult, type AttentionResult, type PageElement, type ReportLocale } from './types'
 import { estimateCost, type Usage } from './pricing'
 import { getSettings } from '@/lib/settings'
 
 export type Tier = 'base' | 'premium'
-export interface AnalyzeCtx { url: string; title: string; goal: string | null; note: string | null }
+/** `lang` è la lingua in cui il report va scritto: segue quella dell'utente. */
+export interface AnalyzeCtx { url: string; title: string; goal: string | null; note: string | null; lang?: ReportLocale }
 export interface LlmOutput { result: AttentionResult; provider: 'claude' | 'qwen'; model: string; usage: Usage; costUsd: number }
 
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
@@ -118,8 +119,9 @@ async function callQwen(cfg: AiConfig, dataUrl: string, system: string, user: st
 
 export async function analyze(tier: Tier, dataUrl: string, ctx: AnalyzeCtx, elements?: PageElement[]): Promise<LlmOutput> {
   const cfg = await getAiConfig()
-  const system = systemPrompt()
-  const fallbackGoal = ctx.goal || 'conversione'
+  const locale: ReportLocale = ctx.lang ?? 'it'
+  const system = systemPrompt(locale)
+  const fallbackGoal = ctx.goal || (locale === 'en' ? 'conversion' : 'conversione')
   if (tier === 'premium') {
     const { text, usage } = await callClaude(cfg, dataUrl, system, premiumPrompt(ctx, elements))
     return { result: normalizeResult(extractJson(text), fallbackGoal, elements), provider: 'claude', model: cfg.claudeModel, usage, costUsd: estimateCost('claude', cfg.claudeModel, usage) }

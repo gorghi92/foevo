@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, Copy, Check, Download, Lock, ChevronDown } from 'lucide-react'
 import { buildImplementationPrompt } from '@/lib/attention/implementation-prompt'
+import type { Dictionary, Locale } from '@/lib/i18n'
+
+type Copy = Dictionary['app']['analyses']['aiPrompt']
 
 /**
  * "Prompt per l'AI": trasforma l'analisi in un prompt pronto da incollare in un
@@ -11,14 +14,14 @@ import { buildImplementationPrompt } from '@/lib/attention/implementation-prompt
  * quindi senza chiamate al modello e senza attesa.
  */
 export function AiPrompt({
-  result, url, title, premium,
-}: { result: any; url?: string | null; title?: string | null; premium: boolean }) {
+  result, url, title, premium, t, locale,
+}: { result: any; url?: string | null; title?: string | null; premium: boolean; t: Copy; locale: Locale }) {
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
 
   const prompt = useMemo(
-    () => (premium && result ? buildImplementationPrompt(result, { url, title }) : ''),
-    [premium, result, url, title],
+    () => (premium && result ? buildImplementationPrompt(result, { url, title, locale }) : ''),
+    [premium, result, url, title, locale],
   )
 
   async function copy() {
@@ -48,8 +51,8 @@ export function AiPrompt({
   const head = (
     <div className="flex items-center gap-2">
       <Sparkles size={17} className="text-brand" />
-      <b className="text-[15px]">Prompt per l’AI</b>
-      {!premium && <span className="rounded bg-brand-soft px-1.5 py-0.5 text-[10px] font-bold uppercase text-brand">Premium</span>}
+      <b className="text-[15px]">{t.title}</b>
+      {!premium && <span className="rounded bg-brand-soft px-1.5 py-0.5 text-[10px] font-bold uppercase text-brand">{t.badge}</span>}
     </div>
   )
 
@@ -58,12 +61,10 @@ export function AiPrompt({
       <div className="card mt-5 p-5">
         {head}
         <p className="mt-2 max-w-2xl text-[13px] leading-snug text-muted">
-          Trasforma questa analisi in un prompt dettagliato da incollare nel tuo assistente di coding
-          (Cursor, Claude Code, Lovable, v0…): interventi ordinati per impatto, copy proposto, vincoli
-          di brand e criteri di accettazione.
+          {t.lockedBody}
         </p>
         <Link href="/billing" className="btn btn-primary mt-4 px-3.5 py-2 text-[13px]">
-          <Lock size={14} /> Passa a Premium
+          <Lock size={14} /> {t.upgrade}
         </Link>
       </div>
     )
@@ -75,22 +76,20 @@ export function AiPrompt({
         {head}
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={copy} className="btn btn-primary px-3.5 py-2 text-[13px]">
-            {copied ? <><Check size={14} /> Copiato</> : <><Copy size={14} /> Copia prompt</>}
+            {copied ? <><Check size={14} /> {t.copied}</> : <><Copy size={14} /> {t.copy}</>}
           </button>
           <button onClick={download} className="btn btn-ghost px-3 py-2 text-[13px]">
             <Download size={14} /> .md
           </button>
           <button onClick={() => setOpen((v) => !v)} className="btn btn-ghost px-3 py-2 text-[13px]">
             <ChevronDown size={14} className={open ? 'rotate-180 transition' : 'transition'} />
-            {open ? 'Nascondi' : 'Anteprima'}
+            {open ? t.hide : t.preview}
           </button>
         </div>
       </div>
 
       <p className="mt-2 max-w-2xl text-[13px] leading-snug text-muted">
-        Incollalo nel tuo assistente di coding: contiene gli interventi in ordine di impatto, il copy
-        proposto, i vincoli di brand e i criteri di accettazione. Non contiene riferimenti a file del
-        tuo progetto — è l’assistente a doverli individuare.
+        {t.body}
       </p>
 
       {open && (

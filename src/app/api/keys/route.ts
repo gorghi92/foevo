@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { generateKey } from '@/server/api-key'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: m('notAuthenticated') }, { status: 401 })
   const { name } = (await req.json().catch(() => ({}))) as { name?: string }
   const { key, hash, prefix } = generateKey()
   const { data, error } = await createServiceClient()

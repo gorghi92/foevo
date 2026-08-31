@@ -1,4 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { SignupForm, type PlanOption } from './signup-form'
 
 export const dynamic = 'force-dynamic'
@@ -24,5 +26,7 @@ export default async function SignupPage() {
       tier: p.tier === 'premium' ? 'premium' : 'base',
     }))
 
-  return <SignupForm plans={plans} />
+  const t = getDictionary(getServerLocale()).app.auth.signup
+
+  return <SignupForm t={t} plans={plans} />
 }

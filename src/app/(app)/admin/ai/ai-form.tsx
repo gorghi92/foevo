@@ -3,13 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { KeyRound, Cpu, Gauge, SlidersHorizontal, RotateCcw, Eye, Brain, RefreshCw } from 'lucide-react'
+import type { Dictionary } from '@/lib/i18n'
+import { Rich } from '@/lib/i18n/rich'
 
 const CUSTOM = '__custom__'
 
+type Copy = Dictionary['app']['admin']['ai']
+type BadgeCopy = Copy['badge']
+
 /** Selettore di modello: elenca i disponibili (dal provider) + i noti + il valore
  *  corrente, con opzione "Personalizzato" per scrivere un id a mano. */
-function ModelSelect({ value, onChange, fetched, known }: {
-  value: string; onChange: (v: string) => void; fetched: string[]; known: string[]
+function ModelSelect({ value, onChange, fetched, known, t }: {
+  value: string; onChange: (v: string) => void; fetched: string[]; known: string[]; t: Copy
 }) {
   const options = Array.from(new Set([...fetched, ...known, value].filter(Boolean)))
   const [custom, setCustom] = useState(false)
@@ -17,8 +22,8 @@ function ModelSelect({ value, onChange, fetched, known }: {
   if (custom) {
     return (
       <div className="mt-1 flex gap-2">
-        <input className="input font-mono" value={value} onChange={(e) => onChange(e.target.value)} placeholder="id modello" autoFocus />
-        <button type="button" onClick={() => { setCustom(false); onChange(options[0] || '') }} className="btn btn-ghost px-3 text-sm">Lista</button>
+        <input className="input font-mono" value={value} onChange={(e) => onChange(e.target.value)} placeholder={t.modelIdPlaceholder} autoFocus />
+        <button type="button" onClick={() => { setCustom(false); onChange(options[0] || '') }} className="btn btn-ghost px-3 text-sm">{t.backToList}</button>
       </div>
     )
   }
@@ -29,7 +34,7 @@ function ModelSelect({ value, onChange, fetched, known }: {
       onChange={(e) => { if (e.target.value === CUSTOM) { setCustom(true) } else onChange(e.target.value) }}
     >
       {options.map((m) => <option key={m} value={m}>{m}</option>)}
-      <option value={CUSTOM}>✏️ Personalizzato…</option>
+      <option value={CUSTOM}>{t.customOption}</option>
     </select>
   )
 }
@@ -41,32 +46,32 @@ const CLAUDE_MODELS = ['claude-opus-5', 'claude-opus-4-8', 'claude-sonnet-5', 'c
 const QWEN_MODELS = ['qwen-vl-max-latest', 'qwen-vl-max', 'qwen-vl-plus', 'qwen3-vl-plus']
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
 
-function Badge({ s }: { s: KeyStat }) {
-  const map = { db: { t: 'Salvato', c: 'bg-green-100 text-green-700' }, env: { t: 'Da env', c: 'bg-sky-100 text-sky-700' }, none: { t: 'Non impostato', c: 'bg-amber-100 text-amber-700' } }[s]
+function Badge({ s, t }: { s: KeyStat; t: BadgeCopy }) {
+  const map = { db: { t: t.saved, c: 'bg-green-100 text-green-700' }, env: { t: t.fromEnv, c: 'bg-sky-100 text-sky-700' }, none: { t: t.notSet, c: 'bg-amber-100 text-amber-700' } }[s]
   return <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${map.c}`}>{map.t}</span>
 }
 
-function SecretField({ label, hint, status, value, cleared, onChange, onClear }: {
+function SecretField({ label, hint, status, value, cleared, onChange, onClear, t }: {
   label: string; hint?: string; status: KeyStat; value: string; cleared: boolean
-  onChange: (v: string) => void; onClear: () => void
+  onChange: (v: string) => void; onClear: () => void; t: Copy
 }) {
   return (
     <div>
       <div className="flex items-center justify-between">
         <label className="label">{label}</label>
         <div className="flex items-center gap-2">
-          <Badge s={cleared ? 'none' : status} />
-          {status === 'db' && <button type="button" onClick={onClear} title="Reimposta (torna all'env)" className="text-muted hover:text-red-600"><RotateCcw size={13} /></button>}
+          <Badge s={cleared ? 'none' : status} t={t.badge} />
+          {status === 'db' && <button type="button" onClick={onClear} title={t.resetTitle} className="text-muted hover:text-red-600"><RotateCcw size={13} /></button>}
         </div>
       </div>
       <input className="input mt-1 font-mono" type="password" autoComplete="off" value={value} onChange={(e) => onChange(e.target.value)}
-        placeholder={cleared ? 'sarà rimosso al salvataggio' : status !== 'none' ? '•••••••• (lascia vuoto per non cambiare)' : 'incolla la chiave'} />
+        placeholder={cleared ? t.clearedPlaceholder : status !== 'none' ? t.keepPlaceholder : t.keyPlaceholder} />
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   )
 }
 
-export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Record<string, KeyStat> }) {
+export function AiConfigForm({ init, keyStatus, t }: { init: Init; keyStatus: Record<string, KeyStat>; t: Copy }) {
   const router = useRouter()
   const [secrets, setSecrets] = useState<Record<string, string>>({})
   const [cleared, setCleared] = useState<Set<string>>(new Set())
@@ -107,9 +112,9 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
 
     const r = await fetch('/api/admin/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
     setBusy(false)
-    if (!r.ok) return setMsg((await r.json().catch(() => ({})))?.error || 'Errore nel salvataggio')
+    if (!r.ok) return setMsg((await r.json().catch(() => ({})))?.error || t.saveError)
     setSecrets({}); setCleared(new Set())
-    setMsg('Configurazione AI salvata. Attiva entro ~30s (cache), senza redeploy.')
+    setMsg(t.saved)
     router.refresh()
   }
 
@@ -118,21 +123,21 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
   return (
     <form onSubmit={save} className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-display text-xl font-extrabold">Configurazione AI</h1>
-        <p className="text-sm text-muted">Chiavi, modelli, effort e bilanciamento della heatmap. Le modifiche valgono per le nuove analisi.</p>
+        <h1 className="font-display text-xl font-extrabold">{t.title}</h1>
+        <p className="text-sm text-muted">{t.subtitle}</p>
       </div>
 
       {/* chiavi */}
       <div className="card p-5">
-        <div className="flex items-center gap-2 font-semibold"><KeyRound size={16} className="text-brand" /> Chiavi API</div>
+        <div className="flex items-center gap-2 font-semibold"><KeyRound size={16} className="text-brand" /> {t.keysTitle}</div>
         <div className="mt-4 space-y-4">
-          <SecretField label="Anthropic API key (premium)" hint="Usata per il tier Premium (Claude). console.anthropic.com → API keys."
+          <SecretField label={t.anthropicLabel} hint={t.anthropicHint} t={t}
             status={keyStatus.ANTHROPIC_API_KEY} value={secrets.ANTHROPIC_API_KEY ?? ''} cleared={cleared.has('ANTHROPIC_API_KEY')}
             onChange={(v) => setSecret('ANTHROPIC_API_KEY', v)} onClear={() => clearSecret('ANTHROPIC_API_KEY')} />
-          <SecretField label="DashScope API key (base — Qwen)" hint="Usata per il tier Base (Qwen-VL) su DashScope."
+          <SecretField label={t.dashscopeLabel} hint={t.dashscopeHint} t={t}
             status={keyStatus.DASHSCOPE_API_KEY} value={secrets.DASHSCOPE_API_KEY ?? ''} cleared={cleared.has('DASHSCOPE_API_KEY')}
             onChange={(v) => setSecret('DASHSCOPE_API_KEY', v)} onClear={() => clearSecret('DASHSCOPE_API_KEY')} />
-          <SecretField label="DashScope base URL (opzionale)" hint="Default: endpoint internazionale compatibile OpenAI. Cambialo solo se usi un'altra region."
+          <SecretField label={t.dashscopeUrlLabel} hint={t.dashscopeUrlHint} t={t}
             status={keyStatus.DASHSCOPE_BASE_URL} value={secrets.DASHSCOPE_BASE_URL ?? ''} cleared={cleared.has('DASHSCOPE_BASE_URL')}
             onChange={(v) => setSecret('DASHSCOPE_BASE_URL', v)} onClear={() => clearSecret('DASHSCOPE_BASE_URL')} />
         </div>
@@ -141,25 +146,25 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
       {/* modelli */}
       <div className="card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 font-semibold"><Cpu size={16} className="text-brand" /> Modelli</div>
+          <div className="flex items-center gap-2 font-semibold"><Cpu size={16} className="text-brand" /> {t.modelsTitle}</div>
           <button type="button" onClick={loadModels} disabled={loadingModels} className="btn btn-ghost px-2.5 py-1 text-xs">
-            <RefreshCw size={13} className={loadingModels ? 'animate-spin' : ''} /> {loadingModels ? 'Carico…' : 'Aggiorna elenco'}
+            <RefreshCw size={13} className={loadingModels ? 'animate-spin' : ''} /> {loadingModels ? t.loadingModels : t.refreshModels}
           </button>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="label">Modello Premium (Claude)</label>
-            <ModelSelect value={claudeModel} onChange={setClaudeModel} fetched={avail.claude} known={CLAUDE_MODELS} />
+            <label className="label">{t.claudeModelLabel}</label>
+            <ModelSelect value={claudeModel} onChange={setClaudeModel} fetched={avail.claude} known={CLAUDE_MODELS} t={t} />
             <p className="mt-1 text-xs text-muted">
-              {avail.claude.length ? `${avail.claude.length} modelli disponibili per la tua chiave.` : 'Elenco statico (chiave Anthropic non configurata o irraggiungibile).'}
+              {avail.claude.length ? t.claudeModelsAvailable.replace('{n}', String(avail.claude.length)) : t.claudeModelsStatic}
             </p>
           </div>
           <div>
-            <label className="label">Modello Base (Qwen)</label>
-            <ModelSelect value={qwenModel} onChange={setQwenModel} fetched={avail.qwen} known={QWEN_MODELS} />
+            <label className="label">{t.qwenModelLabel}</label>
+            <ModelSelect value={qwenModel} onChange={setQwenModel} fetched={avail.qwen} known={QWEN_MODELS} t={t} />
             <p className="mt-1 text-xs text-muted">
-              {avail.qwen.length ? `${avail.qwen.length} modelli vision disponibili. ` : 'Elenco statico (chiave DashScope non configurata). '}
-              Fallback automatico a <code>qwen-vl-max</code>.
+              {avail.qwen.length ? t.qwenModelsAvailable.replace('{n}', String(avail.qwen.length)) : t.qwenModelsStatic}
+              <Rich text={t.qwenFallback} strongClass="" />
             </p>
           </div>
         </div>
@@ -167,8 +172,8 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
 
       {/* effort */}
       <div className="card p-5">
-        <div className="flex items-center gap-2 font-semibold"><Gauge size={16} className="text-brand" /> Effort (solo Claude)</div>
-        <p className="mt-1 text-xs text-muted">Più alto = ragionamento e qualità maggiori, ma più lento e costoso.</p>
+        <div className="flex items-center gap-2 font-semibold"><Gauge size={16} className="text-brand" /> {t.effortTitle}</div>
+        <p className="mt-1 text-xs text-muted">{t.effortNote}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {EFFORTS.map((e) => (
             <button type="button" key={e} onClick={() => setEffort(e)}
@@ -177,25 +182,25 @@ export function AiConfigForm({ init, keyStatus }: { init: Init; keyStatus: Recor
             </button>
           ))}
         </div>
-        {heavyEffort && <p className="mt-2 text-xs text-amber-600">⚠︎ Con effort alto le analisi possono superare i tempi (timeout su pagine molto lunghe). Consigliato <b>medium</b> finché l'analisi resta sincrona.</p>}
+        {heavyEffort && <p className="mt-2 text-xs text-amber-600"><Rich text={t.effortWarning} strongClass="" /></p>}
       </div>
 
       {/* mix heatmap */}
       <div className="card p-5">
-        <div className="flex items-center gap-2 font-semibold"><SlidersHorizontal size={16} className="text-brand" /> Bilanciamento heatmap (stima eye-tracking)</div>
-        <p className="mt-1 text-xs text-muted">Quanto pesa il motore <b>semantico (AI)</b> rispetto alla <b>saliency visiva</b> nel calcolo della mappa dell'attenzione.</p>
+        <div className="flex items-center gap-2 font-semibold"><SlidersHorizontal size={16} className="text-brand" /> {t.mixTitle}</div>
+        <p className="mt-1 text-xs text-muted"><Rich text={t.mixNote} strongClass="" /></p>
         <div className="mt-4">
           <input type="range" min={0} max={100} step={1} value={pct} onChange={(e) => setPct(Number(e.target.value))} className="w-full accent-[var(--brand,#e5502e)]" />
           <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1.5 text-muted"><Eye size={14} /> Saliency visiva <b className="text-ink">{100 - pct}%</b></span>
-            <span className="flex items-center gap-1.5 text-muted">Motore semantico (AI) <b className="text-ink">{pct}%</b> <Brain size={14} /></span>
+            <span className="flex items-center gap-1.5 text-muted"><Eye size={14} /> {t.mixVisual} <b className="text-ink">{100 - pct}%</b></span>
+            <span className="flex items-center gap-1.5 text-muted">{t.mixSemantic} <b className="text-ink">{pct}%</b> <Brain size={14} /></span>
           </div>
-          <p className="mt-2 text-xs text-muted">Default consigliato: <b>44%</b> (equilibrio storico). 0% = solo visivo, 100% = solo AI.</p>
+          <p className="mt-2 text-xs text-muted"><Rich text={t.mixDefault} strongClass="" /></p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="btn btn-primary" disabled={busy}>{busy ? 'Salvo…' : 'Salva configurazione'}</button>
+        <button className="btn btn-primary" disabled={busy}>{busy ? t.saving : t.submit}</button>
         {msg && <span className="text-sm text-muted">{msg}</span>}
       </div>
     </form>

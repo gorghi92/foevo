@@ -1,10 +1,15 @@
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
 import { PageHeader } from '@/components/app/ui'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ProfilePage() {
+  const locale = getServerLocale()
+  const t = getDictionary(locale).app.profile
+
   const user = await getUser()
   const sc = createServiceClient()
   const { data: p } = await sc.from('profiles')
@@ -19,11 +24,12 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader
-        eyebrow="Account"
-        title="Profilo"
-        subtitle="Gestisci i tuoi dati, l’email di accesso e i dati di fatturazione."
+        eyebrow={t.eyebrow}
+        title={t.title}
+        subtitle={t.subtitle}
       />
       <ProfileForm
+        t={t}
         email={user!.email || ''}
         initial={{
           firstName: first, lastName: last,

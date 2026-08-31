@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getUser } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { getAiConfig } from '@/lib/attention/llm'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,7 @@ async function fetchJson(url: string, headers: Record<string, string>): Promise<
 /** Elenco dei modelli davvero disponibili per le chiavi configurate. */
 export async function GET() {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
 
   const cfg = await getAiConfig()
 

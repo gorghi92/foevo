@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,31 +10,39 @@
     <div class="logo"></div>
     <div>
       <div class="hdr-title">Foevo</div>
-      <div class="hdr-sub">Heatmap &amp; analisi AI</div>
+      <div class="hdr-sub" data-i18n="headerSub"></div>
     </div>
-    <button id="settings-btn" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">⚙</button>
+    <div class="lang" role="group" aria-label="Lingua / Language">
+      <button type="button" class="lang-btn" data-locale="it">IT</button>
+      <button type="button" class="lang-btn" data-locale="en">EN</button>
+    </div>
+    <button id="settings-btn" class="icon-btn" data-i18n-title="settings" data-i18n-aria="settings">⚙</button>
   </header>
 
   <!-- MAIN -->
   <section id="view-main" class="view">
-    <label class="lbl" for="goal">Obiettivo della pagina <span class="muted">(opzionale)</span></label>
+    <label class="lbl" for="goal">
+      <span data-i18n="goalLabel"></span> <span class="muted" data-i18n="optional"></span>
+    </label>
     <select id="goal" class="input">
-      <option value="">Rileva automaticamente</option>
-      <option value="lead">Generare lead / iscrizioni</option>
-      <option value="sale">Vendita diretta / checkout</option>
-      <option value="product">Scheda prodotto e-commerce</option>
-      <option value="booking">Prenotazione / appuntamento</option>
-      <option value="signup">Registrazione / trial</option>
+      <option value="" data-i18n="goalAuto"></option>
+      <option value="lead" data-i18n="goalLead"></option>
+      <option value="sale" data-i18n="goalSale"></option>
+      <option value="product" data-i18n="goalProduct"></option>
+      <option value="booking" data-i18n="goalBooking"></option>
+      <option value="signup" data-i18n="goalSignup"></option>
     </select>
 
-    <label class="lbl" for="note">Contesto <span class="muted">(opzionale)</span></label>
-    <input id="note" class="input" type="text" maxlength="140" placeholder="es. audience freddo da Meta Ads" />
+    <label class="lbl" for="note">
+      <span data-i18n="noteLabel"></span> <span class="muted" data-i18n="optional"></span>
+    </label>
+    <input id="note" class="input" type="text" maxlength="140" data-i18n-placeholder="notePlaceholder" />
 
-    <button id="analyze-btn" class="btn btn-primary">Analizza questa pagina</button>
+    <button id="analyze-btn" class="btn btn-primary" data-i18n="analyze"></button>
 
     <div id="status" class="status" hidden>
       <div class="spinner"></div>
-      <span id="status-text">Cattura in corso…</span>
+      <span id="status-text" data-i18n="capturing"></span>
     </div>
     <p id="error" class="error" hidden></p>
     <p class="tier-hint" id="tier-hint"></p>
@@ -42,31 +50,31 @@
 
   <!-- SETTINGS / LOGIN -->
   <section id="view-settings" class="view" hidden>
-    <label class="lbl" for="email">Email Foevo</label>
-    <input id="email" class="input" type="email" placeholder="tu@esempio.com" autocomplete="email" />
+    <label class="lbl" for="email" data-i18n="emailLabel"></label>
+    <input id="email" class="input" type="email" data-i18n-placeholder="emailPlaceholder" autocomplete="email" />
 
     <!-- passo 2: codice ricevuto via email -->
     <div id="code-step" hidden>
-      <label class="lbl" for="code">Codice ricevuto via email</label>
+      <label class="lbl" for="code" data-i18n="codeLabel"></label>
       <input id="code" class="input code-input" type="text" inputmode="numeric" autocomplete="one-time-code"
              placeholder="000000" />
-      <a href="#" id="change-email" class="link">Usa un&rsquo;altra email</a>
+      <a href="#" id="change-email" class="link" data-i18n="changeEmail"></a>
     </div>
 
-    <a id="signup-link" class="link" target="_blank">Non hai un account? Registrati &rarr;</a>
+    <a id="signup-link" class="link" target="_blank" data-i18n="noAccount"></a>
 
     <div class="row">
-      <button id="save-settings" class="btn btn-primary">Invia codice</button>
-      <button id="back-btn" class="btn btn-ghost">Indietro</button>
+      <button id="save-settings" class="btn btn-primary" data-i18n="sendCode"></button>
+      <button id="back-btn" class="btn btn-ghost" data-i18n="back"></button>
     </div>
-    <p id="settings-saved" class="ok" hidden>Connesso &#10003;</p>
+    <p id="settings-saved" class="ok" hidden></p>
   </section>
 
   <footer class="ftr">
     <span id="acct" class="muted"></span>
-    <a href="#" id="dashboard-link" target="_blank">Le mie analisi →</a>
+    <a href="#" id="dashboard-link" target="_blank" data-i18n="myAnalyses"></a>
   </footer>
 
-  <script src="popup.js"></script>
+  <script src="popup.js" type="module"></script>
 </body>
 </html>

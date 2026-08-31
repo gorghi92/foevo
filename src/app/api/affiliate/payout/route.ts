@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getAffiliate } from '@/lib/affiliate/auth'
 import { getAffiliateRules } from '@/lib/affiliate/commission'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST() {
   const aff = await getAffiliate()
-  if (!aff) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  if (!aff) return NextResponse.json({ error: m('notAuthenticated') }, { status: 401 })
 
   const sc = createServiceClient()
   const rules = await getAffiliateRules()
@@ -21,7 +22,7 @@ export async function POST() {
   const { data: bank } = await sc.from('affiliate_bank')
     .select('holder, iban').eq('affiliate_id', aff.id).maybeSingle()
   if (!bank?.iban || !bank?.holder) {
-    return NextResponse.json({ error: 'Prima inserisci le coordinate bancarie (IBAN e intestatario).', code: 'no_bank' }, { status: 400 })
+    return NextResponse.json({ error: m('bankDetailsFirst'), code: 'no_bank' }, { status: 400 })
   }
 
   const { data: comms } = await sc.from('commissions')
@@ -40,7 +41,7 @@ export async function POST() {
     affiliate_id: aff.id, amount_cents: total, status: 'requested',
     holder_snapshot: bank.holder, iban_snapshot: bank.iban,
   }).select('id').single()
-  if (error || !pr) return NextResponse.json({ error: 'Richiesta non riuscita, riprova.' }, { status: 500 })
+  if (error || !pr) return NextResponse.json({ error: m('requestFailed') }, { status: 500 })
 
   // Impegna le commissioni: legate alla richiesta, non più prelevabili altrove.
   await sc.from('commissions').update({ payout_request_id: pr.id }).in('id', ids)

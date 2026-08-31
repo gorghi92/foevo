@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createHash, randomInt } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendEmail, extensionOtpEmail, emailConfigured } from '@/lib/email'
+import { m, requestLocale } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -19,10 +20,10 @@ const hashCode = (email: string, code: string) =>
 export async function POST(req: Request) {
   const { email: raw } = (await req.json().catch(() => ({}))) as { email?: string }
   const email = String(raw || '').trim().toLowerCase()
-  if (!email || !email.includes('@')) return NextResponse.json({ error: 'Email non valida' }, { status: 400 })
+  if (!email || !email.includes('@')) return NextResponse.json({ error: m('invalidEmail') }, { status: 400 })
 
   if (!(await emailConfigured())) {
-    return NextResponse.json({ error: 'Invio email non configurato' }, { status: 503 })
+    return NextResponse.json({ error: m('emailNotConfigured') }, { status: 503 })
   }
 
   const sc = createServiceClient()
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     .select('created_at').eq('email', email).eq('purpose', 'extension')
     .order('created_at', { ascending: false }).limit(1).maybeSingle()
   if (last?.created_at && Date.now() - new Date(last.created_at as string).getTime() < COOLDOWN_S * 1000) {
-    return NextResponse.json({ error: 'Hai già richiesto un codice: attendi qualche secondo.' }, { status: 429 })
+    return NextResponse.json({ error: m('codeAlreadyRequested') }, { status: 429 })
   }
 
   const { data: prof } = await sc.from('profiles').select('id').ilike('email', email).maybeSingle()
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
       email, purpose: 'extension', code_hash: hashCode(email, code),
       expires_at: new Date(Date.now() + TTL_MIN * 60_000).toISOString(),
     })
-    const { subject, html } = extensionOtpEmail(code)
+    const { subject, html } = extensionOtpEmail(code, requestLocale(req))
     await sendEmail({ to: email, subject, html })
   }
 

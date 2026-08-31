@@ -3,6 +3,7 @@ import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { clearSettingsCache } from '@/lib/settings'
 import { getAffiliateRules } from '@/lib/affiliate/commission'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic'
  *  una copia in cache del router/Next. */
 export async function GET() {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
   const r = await getAffiliateRules(true)
   return NextResponse.json({
     basePct: r.baseBps / 100, premiumPct: r.premiumBps / 100,
@@ -26,7 +27,7 @@ const int = (v: unknown, min: number, max: number) => Math.max(min, Math.min(max
 /** Salva le percentuali di affiliazione (inserite in % ed € dall'admin). */
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
 
   const b = (await req.json().catch(() => ({}))) as { basePct?: number; premiumPct?: number; minEur?: number; months?: number }
   const rows = [

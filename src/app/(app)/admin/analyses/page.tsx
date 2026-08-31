@@ -1,9 +1,12 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { AnalysesAdmin } from './analyses-admin'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminAnalysesPage() {
+  const dict = getDictionary(getServerLocale())
   const sc = createServiceClient()
   const { data: analyses } = await sc
     .from('analyses')
@@ -22,5 +25,5 @@ export default async function AdminAnalysesPage() {
   }))
   const emails = Array.from(new Set(rows.map((r) => r.email))).sort()
 
-  return <AnalysesAdmin rows={rows} emails={emails} />
+  return <AnalysesAdmin rows={rows} emails={emails} t={dict.app.admin.analyses} dateLocale={dict.common.dateLocale} />
 }

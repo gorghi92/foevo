@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { SETTING_KEYS, clearSettingsCache } from '@/lib/settings'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +15,7 @@ export const runtime = 'nodejs'
  */
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>
   const sc = createServiceClient()

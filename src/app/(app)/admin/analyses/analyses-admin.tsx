@@ -4,17 +4,20 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Search, Trash2, ExternalLink } from 'lucide-react'
+import type { Dictionary } from '@/lib/i18n'
 
 type Row = { id: string; url: string | null; title: string | null; status: string; tier: string | null; email: string; created: string; score: number | null; cost: number }
-const d = (s: string) => new Date(s).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+type Copy = Dictionary['app']['admin']['analyses']
 const sc = (v: number | null) => (v == null ? '#999' : v >= 70 ? '#16a34a' : v >= 45 ? '#d97706' : '#dc2626')
 
-export function AnalysesAdmin({ rows, emails }: { rows: Row[]; emails: string[] }) {
+export function AnalysesAdmin({ rows, emails, t, dateLocale }: { rows: Row[]; emails: string[]; t: Copy; dateLocale: string }) {
   const router = useRouter()
   const [user, setUser] = useState('')
   const [period, setPeriod] = useState('all')
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState('')
+
+  const d = (s: string) => new Date(s).toLocaleString(dateLocale, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 
   const filtered = useMemo(() => {
     const now = Date.now()
@@ -30,11 +33,11 @@ export function AnalysesAdmin({ rows, emails }: { rows: Row[]; emails: string[] 
   const totalCost = filtered.reduce((s, r) => s + r.cost, 0)
 
   async function del(r: Row) {
-    if (!confirm('Eliminare questa analisi?')) return
+    if (!confirm(t.confirmDelete)) return
     setBusy(r.id)
     const res = await fetch('/api/admin/analysis', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: r.id }) })
     setBusy('')
-    if (!res.ok) return alert((await res.json().catch(() => ({})))?.error || 'Errore')
+    if (!res.ok) return alert((await res.json().catch(() => ({})))?.error || t.error)
     router.refresh()
   }
 
@@ -42,24 +45,24 @@ export function AnalysesAdmin({ rows, emails }: { rows: Row[]; emails: string[] 
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select className="input" style={{ width: 220 }} value={user} onChange={(e) => setUser(e.target.value)}>
-          <option value="">Tutti gli utenti</option>
+          <option value="">{t.allUsers}</option>
           {emails.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
         <select className="input" style={{ width: 150 }} value={period} onChange={(e) => setPeriod(e.target.value)}>
-          <option value="all">Sempre</option><option value="today">Oggi</option><option value="7d">Ultimi 7 giorni</option><option value="30d">Ultimi 30 giorni</option>
+          <option value="all">{t.periodAll}</option><option value="today">{t.periodToday}</option><option value="7d">{t.period7d}</option><option value="30d">{t.period30d}</option>
         </select>
         <div className="relative flex-1" style={{ minWidth: 200, maxWidth: 320 }}>
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="input pl-9" placeholder="Cerca url o titolo…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input pl-9" placeholder={t.searchPlaceholder} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <span className="ml-auto text-sm text-muted">{filtered.length} analisi · costo ${totalCost.toFixed(4)}</span>
+        <span className="ml-auto text-sm text-muted">{t.summary.replace('{n}', String(filtered.length)).replace('{cost}', `$${totalCost.toFixed(4)}`)}</span>
       </div>
 
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="p-3">Data</th><th className="p-3">Utente</th><th className="p-3">Pagina</th><th className="p-3">Tier</th><th className="p-3">Stato</th><th className="p-3 text-right">Conv.</th><th className="p-3 text-right">Costo</th><th className="p-3 text-right">Azioni</th>
+              <th className="p-3">{t.colDate}</th><th className="p-3">{t.colUser}</th><th className="p-3">{t.colPage}</th><th className="p-3">{t.colTier}</th><th className="p-3">{t.colStatus}</th><th className="p-3 text-right">{t.colConversion}</th><th className="p-3 text-right">{t.colCost}</th><th className="p-3 text-right">{t.colActions}</th>
             </tr>
           </thead>
           <tbody>
@@ -74,13 +77,13 @@ export function AnalysesAdmin({ rows, emails }: { rows: Row[]; emails: string[] 
                 <td className="p-3 text-right text-muted">${r.cost.toFixed(4)}</td>
                 <td className="p-3">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Link href={`/analyses/${r.id}`} title="Apri" className="rounded-lg border border-line p-1.5 hover:bg-bg"><ExternalLink size={14} /></Link>
-                    <button onClick={() => del(r)} disabled={busy === r.id} title="Elimina" className="rounded-lg border border-line p-1.5 text-red-600 hover:bg-red-50"><Trash2 size={14} /></button>
+                    <Link href={`/analyses/${r.id}`} title={t.open} className="rounded-lg border border-line p-1.5 hover:bg-bg"><ExternalLink size={14} /></Link>
+                    <button onClick={() => del(r)} disabled={busy === r.id} title={t.delete} className="rounded-lg border border-line p-1.5 text-red-600 hover:bg-red-50"><Trash2 size={14} /></button>
                   </div>
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted">Nessuna analisi con questi filtri.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted">{t.empty}</td></tr>}
           </tbody>
         </table>
       </div>

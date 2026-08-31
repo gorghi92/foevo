@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
 /** Imposta o rimuove l'override percentuale di un singolo affiliato. */
 export async function POST(req: Request) {
   const user = await getUser()
-  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: 'Solo superadmin' }, { status: 403 })
+  if (!isSuperadmin(user?.email)) return NextResponse.json({ error: m('superadminOnly') }, { status: 403 })
   const b = (await req.json().catch(() => ({}))) as { id?: string; pct?: number | null }
-  if (!b.id) return NextResponse.json({ error: 'id mancante' }, { status: 400 })
+  if (!b.id) return NextResponse.json({ error: m('missingId') }, { status: 400 })
 
   // pct null/'' → rimuove l'override (torna al default per piano)
   const override = b.pct == null || b.pct === ('' as any)

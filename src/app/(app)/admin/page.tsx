@@ -1,21 +1,28 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/server'
 import { isBillable } from '@/lib/billing'
+import { getDictionary, type Dictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { Users, Image, BarChart3, Wallet, Package, SlidersHorizontal, ServerCog, ArrowRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
+type AgoCopy = Dictionary['app']['admin']['overview']['ago']
+
 const eur = (c: number) => `€${((c || 0) / 100).toFixed(2)}`
 const usd = (n: number) => `$${(n || 0).toFixed(2)}`
-const ago = (d: string) => {
+const ago = (d: string, t: AgoCopy) => {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
-  if (s < 60) return 'ora'
-  if (s < 3600) return `${Math.floor(s / 60)}m fa`
-  if (s < 86400) return `${Math.floor(s / 3600)}h fa`
-  return `${Math.floor(s / 86400)}g fa`
+  if (s < 60) return t.now
+  if (s < 3600) return t.minutes.replace('{n}', String(Math.floor(s / 60)))
+  if (s < 86400) return t.hours.replace('{n}', String(Math.floor(s / 3600)))
+  return t.days.replace('{n}', String(Math.floor(s / 86400)))
 }
 
 export default async function AdminOverview() {
+  const dict = getDictionary(getServerLocale())
+  const t = dict.app.admin.overview
+
   const sc = createServiceClient()
   const now = new Date()
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
@@ -56,23 +63,23 @@ export default async function AdminOverview() {
   if (aUids.length) { const { data } = await sc.from('profiles').select('id, email').in('id', aUids); for (const p of data ?? []) emailMap.set(p.id, p.email) }
 
   const kpis = [
-    { label: 'Utenti', value: String(users ?? 0) },
-    { label: 'Abbonamenti attivi', value: String(activeSubs ?? 0) },
-    { label: 'MRR', value: eur(mrr), sub: 'IVA escl.' },
-    { label: 'Costo AI (mese)', value: usd(monthCost) },
-    { label: 'Analisi oggi', value: String(today ?? 0) },
-    { label: 'Analisi mese', value: String(month ?? 0) },
-    { label: 'Analisi totali', value: String(total ?? 0) },
-    { label: 'Errori', value: String(errors ?? 0) },
+    { label: t.kpi.users, value: String(users ?? 0) },
+    { label: t.kpi.activeSubs, value: String(activeSubs ?? 0) },
+    { label: t.kpi.mrr, value: eur(mrr), sub: t.kpi.mrrSub },
+    { label: t.kpi.aiCostMonth, value: usd(monthCost) },
+    { label: t.kpi.analysesToday, value: String(today ?? 0) },
+    { label: t.kpi.analysesMonth, value: String(month ?? 0) },
+    { label: t.kpi.analysesTotal, value: String(total ?? 0) },
+    { label: t.kpi.errors, value: String(errors ?? 0) },
   ]
   const sections = [
-    { href: '/admin/users', label: 'Utenti', desc: 'Crea, modifica, elimina, impersonifica', icon: Users },
-    { href: '/admin/analyses', label: 'Analisi', desc: 'Tutte le analisi, filtri e ricerca', icon: Image },
-    { href: '/admin/usage', label: 'Consumo', desc: 'Costo AI e token per utente', icon: BarChart3 },
-    { href: '/admin/revenue', label: 'Ricavi', desc: 'MRR, rinnovi, disiscritti', icon: Wallet },
-    { href: '/admin/packages', label: 'Pacchetti', desc: 'Piani, prezzi e Plan ID Whop', icon: Package },
-    { href: '/admin/settings', label: 'Impostazioni', desc: 'Configura Whop e lo storage', icon: SlidersHorizontal },
-    { href: '/admin/system', label: 'Sistema', desc: 'Diagnostica e stato config', icon: ServerCog },
+    { href: '/admin/users', label: t.sections.usersLabel, desc: t.sections.usersDesc, icon: Users },
+    { href: '/admin/analyses', label: t.sections.analysesLabel, desc: t.sections.analysesDesc, icon: Image },
+    { href: '/admin/usage', label: t.sections.usageLabel, desc: t.sections.usageDesc, icon: BarChart3 },
+    { href: '/admin/revenue', label: t.sections.revenueLabel, desc: t.sections.revenueDesc, icon: Wallet },
+    { href: '/admin/packages', label: t.sections.packagesLabel, desc: t.sections.packagesDesc, icon: Package },
+    { href: '/admin/settings', label: t.sections.settingsLabel, desc: t.sections.settingsDesc, icon: SlidersHorizontal },
+    { href: '/admin/system', label: t.sections.systemLabel, desc: t.sections.systemDesc, icon: ServerCog },
   ]
 
   return (
@@ -101,35 +108,35 @@ export default async function AdminOverview() {
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <div className="card p-4 lg:col-span-1">
-          <div className="mb-2 font-semibold">Ultime analisi</div>
+          <div className="mb-2 font-semibold">{t.recentAnalyses}</div>
           <div className="space-y-2">
             {(recentA ?? []).map((a: any) => (
               <Link key={a.id} href={`/analyses/${a.id}`} className="block rounded-lg p-2 hover:bg-bg">
-                <div className="flex items-center gap-2 text-[13px]"><span className="truncate font-medium">{a.title || a.url || 'Analisi'}</span><span className="ml-auto text-xs text-muted">{ago(a.created_at)}</span></div>
+                <div className="flex items-center gap-2 text-[13px]"><span className="truncate font-medium">{a.title || a.url || t.analysisFallback}</span><span className="ml-auto text-xs text-muted">{ago(a.created_at, t.ago)}</span></div>
                 <div className="truncate text-xs text-muted">{emailMap.get(a.user_id) || '—'} · {a.status} · {a.tier || '—'}</div>
               </Link>
             ))}
-            {(!recentA || recentA.length === 0) && <div className="text-sm text-muted">Nessuna analisi.</div>}
+            {(!recentA || recentA.length === 0) && <div className="text-sm text-muted">{t.noAnalyses}</div>}
           </div>
         </div>
 
         <div className="card p-4">
-          <div className="mb-2 font-semibold">Nuovi utenti</div>
+          <div className="mb-2 font-semibold">{t.newUsers}</div>
           <div className="space-y-1.5">
             {(recentU ?? []).map((u: any) => (
-              <div key={u.id} className="flex items-center gap-2 text-[13px]"><span className="truncate">{u.email}</span><span className="ml-auto text-xs text-muted">{ago(u.created_at)}</span></div>
+              <div key={u.id} className="flex items-center gap-2 text-[13px]"><span className="truncate">{u.email}</span><span className="ml-auto text-xs text-muted">{ago(u.created_at, t.ago)}</span></div>
             ))}
-            {(!recentU || recentU.length === 0) && <div className="text-sm text-muted">Nessuno.</div>}
+            {(!recentU || recentU.length === 0) && <div className="text-sm text-muted">{t.noUsers}</div>}
           </div>
         </div>
 
         <div className="card p-4">
-          <div className="mb-2 font-semibold">Ultimi pagamenti</div>
+          <div className="mb-2 font-semibold">{t.recentPayments}</div>
           <div className="space-y-1.5">
             {(recentP ?? []).map((p: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 text-[13px]"><span className="truncate">{p.email || '—'}</span><span className="ml-auto font-semibold">{eur(p.amount_cents)}</span><span className="text-xs text-muted">{ago(p.created_at)}</span></div>
+              <div key={i} className="flex items-center gap-2 text-[13px]"><span className="truncate">{p.email || '—'}</span><span className="ml-auto font-semibold">{eur(p.amount_cents)}</span><span className="text-xs text-muted">{ago(p.created_at, t.ago)}</span></div>
             ))}
-            {(!recentP || recentP.length === 0) && <div className="text-sm text-muted">Nessun pagamento.</div>}
+            {(!recentP || recentP.length === 0) && <div className="text-sm text-muted">{t.noPayments}</div>}
           </div>
         </div>
       </div>

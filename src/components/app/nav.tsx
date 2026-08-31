@@ -3,21 +3,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, CreditCard, User, Shield, Gift, Share2, BarChart3, type LucideIcon } from 'lucide-react'
+import type { Dictionary } from '@/lib/i18n'
 
 type NavItem = { href: string; label: string; icon: LucideIcon }
+type Copy = Dictionary['app']['shell']['nav']
 
 /* Le voci vivono qui, nel componente client: le icone sono componenti React e
- * non possono essere passate come prop da un Server Component. */
-const MAIN: NavItem[] = [
-  { href: '/dashboard', label: 'Analisi', icon: LayoutGrid },
-  { href: '/billing', label: 'Piano', icon: CreditCard },
-  { href: '/profile', label: 'Profilo', icon: User },
-  { href: '/invita', label: 'Invita e guadagna', icon: Gift },
+ * non possono essere passate come prop da un Server Component. Le etichette
+ * arrivano invece dal dizionario, passato dal layout. */
+const main = (t: Copy): NavItem[] => [
+  { href: '/dashboard', label: t.analyses, icon: LayoutGrid },
+  { href: '/billing', label: t.billing, icon: CreditCard },
+  { href: '/profile', label: t.profile, icon: User },
+  { href: '/invita', label: t.invite, icon: Gift },
 ]
-const ADMIN: NavItem[] = [
-  { href: '/admin', label: 'Superadmin', icon: Shield },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/affiliazione', label: 'Affiliazione', icon: Share2 },
+const adminItems = (t: Copy): NavItem[] => [
+  { href: '/admin', label: t.superadmin, icon: Shield },
+  { href: '/analytics', label: t.analytics, icon: BarChart3 },
+  { href: '/affiliazione', label: t.affiliate, icon: Share2 },
 ]
 
 function isActive(path: string, href: string) {
@@ -56,16 +59,16 @@ function Items({ items, path, badges }: { items: NavItem[]; path: string; badges
 }
 
 /** Voci della sidebar, con sezione amministrazione opzionale. */
-export function SidebarNav({ admin = false, alertCount = 0 }: { admin?: boolean; alertCount?: number }) {
+export function SidebarNav({ t, admin = false, alertCount = 0 }: { t: Copy; admin?: boolean; alertCount?: number }) {
   const path = usePathname()
   const badges = { '/affiliazione': alertCount }
   return (
     <>
-      <Items items={MAIN} path={path} />
+      <Items items={main(t)} path={path} />
       {admin && (
         <>
-          <div className="label mt-6 px-3 text-muted">Amministrazione</div>
-          <div className="mt-2"><Items items={ADMIN} path={path} badges={badges} /></div>
+          <div className="label mt-6 px-3 text-muted">{t.adminSection}</div>
+          <div className="mt-2"><Items items={adminItems(t)} path={path} badges={badges} /></div>
         </>
       )}
     </>
@@ -73,9 +76,9 @@ export function SidebarNav({ admin = false, alertCount = 0 }: { admin?: boolean;
 }
 
 /** Barra di navigazione fissa in basso, solo su mobile. */
-export function MobileNav({ admin = false }: { admin?: boolean }) {
+export function MobileNav({ t, admin = false }: { t: Copy; admin?: boolean }) {
   const path = usePathname()
-  const items = admin ? [...MAIN, ...ADMIN] : MAIN
+  const items = admin ? [...main(t), ...adminItems(t)] : main(t)
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 backdrop-blur md:hidden">
       <div className="mx-auto flex max-w-lg">

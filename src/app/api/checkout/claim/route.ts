@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getWhopConfig } from '@/lib/settings'
 import { sendReceiptOnce } from '@/lib/email'
+import { requestLocale } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -100,6 +101,7 @@ export async function POST(req: Request) {
               }, { onConflict: 'whop_payment_id' })
 
               await sendReceiptOnce(sc, {
+                locale: requestLocale(req),
                 whopPaymentId: pay?.id ?? paymentId, to: finalEmail,
                 planName: (pkg as any)?.tier ? ((pkg as any).tier === 'premium' ? 'Premium' : 'Base') : 'Abbonamento Foevo',
                 amount: `${String(pay?.currency || 'eur').toUpperCase()} ${(cents / 100).toFixed(2)}`,

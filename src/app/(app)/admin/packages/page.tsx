@@ -1,9 +1,12 @@
 import { getUser, createServiceClient } from '@/lib/supabase/server'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import AdminPanel from '../panel'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PackagesPage() {
+  const dict = getDictionary(getServerLocale())
   await getUser()
   const sc = createServiceClient()
   const now = new Date()
@@ -28,5 +31,5 @@ export default async function PackagesPage() {
   const entitlements = (ents.data ?? []).map((e: any) => ({ ...e, email: emailMap.get(e.user_id) ?? e.user_id }))
   const stats = { total: total.count ?? 0, month: month.count ?? 0, done: done.count ?? 0, error: err.count ?? 0, activeEntitlements: activeEnt.count ?? 0 }
 
-  return <AdminPanel packages={packages.data ?? []} entitlements={entitlements} stats={stats} />
+  return <AdminPanel packages={packages.data ?? []} entitlements={entitlements} stats={stats} t={dict.app.admin.packages} />
 }

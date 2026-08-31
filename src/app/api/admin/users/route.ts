@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 
@@ -13,9 +14,9 @@ async function guard() {
 /** Crea un utente (passwordless: confermato, accede via magic link). */
 export async function POST(req: Request) {
   const g = await guard()
-  if (!g.ok) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+  if (!g.ok) return NextResponse.json({ error: m('notAuthorized') }, { status: 403 })
   const { email, tier } = (await req.json().catch(() => ({}))) as { email?: string; tier?: string }
-  if (!email) return NextResponse.json({ error: 'Email richiesta' }, { status: 400 })
+  if (!email) return NextResponse.json({ error: m('emailRequired') }, { status: 400 })
 
   const sc = createServiceClient()
   const { data, error } = await sc.auth.admin.createUser({ email, email_confirm: true })
@@ -35,10 +36,10 @@ export async function POST(req: Request) {
 /** Elimina un utente (e a cascata i suoi dati). */
 export async function DELETE(req: Request) {
   const g = await guard()
-  if (!g.ok) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+  if (!g.ok) return NextResponse.json({ error: m('notAuthorized') }, { status: 403 })
   const { userId } = (await req.json().catch(() => ({}))) as { userId?: string }
-  if (!userId) return NextResponse.json({ error: 'userId richiesto' }, { status: 400 })
-  if (userId === g.user?.id) return NextResponse.json({ error: 'Non puoi eliminare il tuo account' }, { status: 400 })
+  if (!userId) return NextResponse.json({ error: m('missingUserId') }, { status: 400 })
+  if (userId === g.user?.id) return NextResponse.json({ error: m('cannotDeleteSelf') }, { status: 400 })
 
   const sc = createServiceClient()
   const { error } = await sc.auth.admin.deleteUser(userId)

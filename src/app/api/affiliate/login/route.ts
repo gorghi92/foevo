@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { verifyPassword, startSession } from '@/lib/affiliate/auth'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
   const username = String(body.username || '').trim().toLowerCase()
   const password = String(body.password || '')
   if (!username || !password) {
-    return NextResponse.json({ error: 'Inserisci username e password.' }, { status: 400 })
+    return NextResponse.json({ error: m('enterUsernameAndPassword') }, { status: 400 })
   }
 
   const sc = createServiceClient()
@@ -19,10 +20,10 @@ export async function POST(req: Request) {
 
   // Messaggio identico per utente inesistente e password errata: non riveliamo
   // quali username esistono.
-  const fail = () => NextResponse.json({ error: 'Username o password non corretti.' }, { status: 401 })
+  const fail = () => NextResponse.json({ error: m('wrongUsernameOrPassword') }, { status: 401 })
   if (!aff || !verifyPassword(password, String(aff.password_hash))) return fail()
   if (aff.status !== 'active') {
-    return NextResponse.json({ error: 'Account sospeso. Contatta l’assistenza.' }, { status: 403 })
+    return NextResponse.json({ error: m('accountSuspended') }, { status: 403 })
   }
 
   await startSession(aff.id as string)

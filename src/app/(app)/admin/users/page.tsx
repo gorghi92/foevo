@@ -1,9 +1,12 @@
 import { getUser, createServiceClient } from '@/lib/supabase/server'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { UsersPanel } from './users-panel'
 
 export const dynamic = 'force-dynamic'
 
 export default async function UsersPage() {
+  const dict = getDictionary(getServerLocale())
   const me = await getUser()
   const sc = createServiceClient()
   const now = new Date()
@@ -47,5 +50,5 @@ export default async function UsersPage() {
     }
   }).sort((a, b) => (b.created || '').localeCompare(a.created || ''))
 
-  return <UsersPanel users={users} meId={me?.id ?? ''} />
+  return <UsersPanel users={users} meId={me?.id ?? ''} t={dict.app.admin.users} dateLocale={dict.common.dateLocale} />
 }

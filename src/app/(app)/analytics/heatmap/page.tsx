@@ -1,12 +1,19 @@
 import Link from 'next/link'
 import { trackedPaths, heatmapData } from '@/lib/analytics/admin'
+import { getDictionary } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n/server'
 import { HeatmapViewer } from './heatmap-viewer'
 
 export const dynamic = 'force-dynamic'
 
-const nf = (n: number) => (n || 0).toLocaleString('it-IT')
+const nf = (n: number, loc: string) => (n || 0).toLocaleString(loc)
 
 export default async function HeatmapPage({ searchParams }: { searchParams: { path?: string; d?: string; dev?: string } }) {
+  const dict = getDictionary(getServerLocale())
+  const t = dict.app.analytics.heatmap
+  const loc = dict.common.dateLocale
+  const dayS = dict.app.analytics.daysSuffix
+
   const days = [7, 30, 90].includes(Number(searchParams.d)) ? Number(searchParams.d) : 30
   const dev = ['all', 'desktop', 'mobile', 'tablet'].includes(searchParams.dev || '') ? searchParams.dev! : 'all'
 
@@ -24,36 +31,36 @@ export default async function HeatmapPage({ searchParams }: { searchParams: { pa
       {/* controlli */}
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-muted">Pagina</label>
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-muted">{t.pageLabel}</label>
           <div className="flex flex-wrap gap-1.5">
             {paths.slice(0, 12).map((p) => (
               <Link key={p.path} href={q({ path: p.path })}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium ${p.path === selected ? 'bg-brand text-brand-fg' : 'border border-line text-muted hover:text-ink'}`}>
                 <span className="max-w-[180px] truncate">{p.path}</span>
-                <span className={`text-[10px] ${p.path === selected ? 'text-brand-fg/80' : 'text-muted'}`}>{nf(p.views)}</span>
+                <span className={`text-[10px] ${p.path === selected ? 'text-brand-fg/80' : 'text-muted'}`}>{nf(p.views, loc)}</span>
               </Link>
             ))}
-            {!paths.length && <span className="text-sm text-muted">Nessuna pagina tracciata ancora.</span>}
+            {!paths.length && <span className="text-sm text-muted">{t.noPages}</span>}
           </div>
         </div>
         <div className="ml-auto flex items-end gap-3">
-          <Segment label="Periodo" options={[['7', '7g'], ['30', '30g'], ['90', '90g']]} active={String(days)} href={(v) => q({ d: v })} />
-          <Segment label="Device" options={[['all', 'Tutti'], ['desktop', 'Desktop'], ['mobile', 'Mobile']]} active={dev} href={(v) => q({ dev: v })} />
+          <Segment label={t.periodLabel} options={[['7', `7${dayS}`], ['30', `30${dayS}`], ['90', `90${dayS}`]]} active={String(days)} href={(v) => q({ d: v })} />
+          <Segment label={t.deviceLabel} options={[['all', t.deviceAll], ['desktop', t.deviceDesktop], ['mobile', t.deviceMobile]]} active={dev} href={(v) => q({ dev: v })} />
         </div>
       </div>
 
       {data && (
         <div className="grid gap-3 sm:grid-cols-3">
-          <Stat label="Click registrati" value={nf(data.clicks)} />
-          <Stat label="Pagine viste" value={nf(data.pageviews)} />
-          <Stat label="Campioni di scroll" value={nf(data.scrollSamples)} />
+          <Stat label={t.statClicks} value={nf(data.clicks, loc)} />
+          <Stat label={t.statPageviews} value={nf(data.pageviews, loc)} />
+          <Stat label={t.statScrollSamples} value={nf(data.scrollSamples, loc)} />
         </div>
       )}
 
       {data ? (
-        <HeatmapViewer path={selected} points={data.points} scrollBuckets={data.scrollBuckets} />
+        <HeatmapViewer path={selected} points={data.points} scrollBuckets={data.scrollBuckets} t={t} />
       ) : (
-        <div className="card p-6 text-sm text-muted">Seleziona una pagina per vedere la heatmap.</div>
+        <div className="card p-6 text-sm text-muted">{t.pickPage}</div>
       )}
     </div>
   )

@@ -4,6 +4,7 @@ import { getWhopConfig } from '@/lib/settings'
 import { sendReceiptOnce } from '@/lib/email'
 import { attributePayment, linkReferralUser, handleRefund } from '@/lib/affiliate/attribute'
 import { createHmac, timingSafeEqual } from 'crypto'
+import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -65,10 +66,10 @@ async function resolveWhopEmail(apiKey: string, ids: { membershipId?: string | n
 export async function POST(req: Request) {
   const raw = await req.text()
   const { webhookSecret, apiKey } = await getWhopConfig()
-  if (!verifyWhop(raw, req.headers, webhookSecret)) return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+  if (!verifyWhop(raw, req.headers, webhookSecret)) return NextResponse.json({ error: m('invalidSignature') }, { status: 400 })
 
   let payload: any
-  try { payload = JSON.parse(raw) } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  try { payload = JSON.parse(raw) } catch { return NextResponse.json({ error: m('invalidJson') }, { status: 400 }) }
 
   // Whop invia l'evento come `action` (a volte `event`); normalizziamo.
   const event: string = String(payload?.action ?? payload?.event ?? '').replace(/_/g, '.')
