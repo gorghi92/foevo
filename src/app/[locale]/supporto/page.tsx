@@ -5,6 +5,7 @@ import { issueFormToken } from '@/lib/form-token'
 import { CHROME_STORE_URL } from '@/lib/links'
 import { getDictionary, isLocale, localePath, DEFAULT_LOCALE, type Locale } from '@/lib/i18n'
 import { Rich } from '@/lib/i18n/rich'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
 // Il token è legato al momento del render, quindi la pagina non va messa in cache.
 export const dynamic = 'force-dynamic'
@@ -25,9 +26,12 @@ export default function SupportPage({ params }: Params) {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <Link href={localePath(locale, '/')} className="text-sm font-semibold text-muted transition hover:text-ink">
-        {t.backHome}
-      </Link>
+      <div className="flex items-center justify-between gap-4">
+        <Link href={localePath(locale, '/')} className="text-sm font-semibold text-muted transition hover:text-ink">
+          {t.backHome}
+        </Link>
+        <LanguageSwitcher current={locale} />
+      </div>
 
       <h1 className="mt-4 font-display text-3xl font-extrabold tracking-tight">{t.title}</h1>
       <p className="mt-2 text-muted">{t.sub}</p>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { getDictionary, isLocale, DEFAULT_LOCALE, type Locale } from '@/lib/i18n'
 import { Rich } from '@/lib/i18n/rich'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
 type Params = { params: { locale: string } }
 
@@ -11,12 +12,18 @@ export function generateMetadata({ params }: Params): Metadata {
 }
 
 export default function PrivacyPage({ params }: Params) {
-  const t = getDictionary(pick(params.locale)).privacy
+  const locale = pick(params.locale)
+  const t = getDictionary(locale).privacy
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-3xl font-extrabold">{t.title}</h1>
-      <p className="mt-1 text-sm text-muted">{t.updated}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold">{t.title}</h1>
+          <p className="mt-1 text-sm text-muted">{t.updated}</p>
+        </div>
+        <LanguageSwitcher current={locale} className="mt-1 shrink-0" />
+      </div>
 
       <p className="mt-6"><Rich text={t.intro} /></p>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { getDictionary, isLocale, localePath, DEFAULT_LOCALE, type Locale } from '@/lib/i18n'
 import { Rich } from '@/lib/i18n/rich'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
 type Params = { params: { locale: string } }
 
@@ -22,7 +23,10 @@ export default function ReviewPage({ params }: Params) {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand">{t.kicker}</p>
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand">{t.kicker}</p>
+        <LanguageSwitcher current={locale} />
+      </div>
       <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight">{t.title}</h1>
       <p className="mt-3 text-muted">{t.intro}</p>
 
