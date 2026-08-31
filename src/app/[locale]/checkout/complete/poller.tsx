@@ -4,27 +4,26 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import type { Dictionary } from '@/lib/i18n'
+
+type Copy = Dictionary['checkout']
 
 /** Il webhook Whop attiva il piano in modo asincrono: ricarichiamo la pagina
  *  server (che rilegge l'entitlement) finché non risulta attivo, con un limite. */
-export function ActivationPoller({ done, tries = 15, intervalMs = 3000 }: { done: boolean; tries?: number; intervalMs?: number }) {
+export function ActivationPoller({
+  done, t, tries = 15, intervalMs = 3000,
+}: { done: boolean; t: Copy; tries?: number; intervalMs?: number }) {
   const router = useRouter()
   const [n, setN] = useState(0)
 
   useEffect(() => {
     if (done || n >= tries) return
-    const t = setTimeout(() => { setN((v) => v + 1); router.refresh() }, intervalMs)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => { setN((v) => v + 1); router.refresh() }, intervalMs)
+    return () => clearTimeout(timer)
   }, [done, n, tries, intervalMs, router])
 
   if (done) return null
-  return (
-    <p className="mt-3 text-sm text-muted">
-      {n >= tries
-        ? 'L’attivazione sta impiegando più del previsto. Aggiorna tra poco: il piano si attiva appena Whop conferma il pagamento.'
-        : 'Stiamo confermando il pagamento con Whop… questa pagina si aggiorna da sola.'}
-    </p>
-  )
+  return <p className="mt-3 text-sm text-muted">{n >= tries ? t.activatingSlow : t.activating}</p>
 }
 
 /**
@@ -33,7 +32,7 @@ export function ActivationPoller({ done, tries = 15, intervalMs = 3000 }: { done
  * pronti, poi entriamo automaticamente. Nessun login se il pagamento non è
  * confermato.
  */
-export function ClaimPoller({ paymentId }: { paymentId?: string }) {
+export function ClaimPoller({ paymentId, t }: { paymentId?: string; t: Copy }) {
   const [state, setState] = useState<'pending' | 'ok' | 'none' | 'slow'>('pending')
   const [n, setN] = useState(0)
   const MAX = 25
@@ -41,7 +40,7 @@ export function ClaimPoller({ paymentId }: { paymentId?: string }) {
   useEffect(() => {
     if (state === 'ok' || state === 'none') return
     let stop = false
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const r = await fetch('/api/checkout/claim', {
           method: 'POST', headers: { 'content-type': 'application/json' },
@@ -54,15 +53,15 @@ export function ClaimPoller({ paymentId }: { paymentId?: string }) {
       } catch { /* riprova */ }
       if (!stop) setN((v) => { const nv = v + 1; if (nv >= MAX) setState('slow'); return nv })
     }, 3000)
-    return () => { stop = true; clearTimeout(t) }
-  }, [n, state])
+    return () => { stop = true; clearTimeout(timer) }
+  }, [n, state, paymentId])
 
   if (state === 'ok') {
     return (
       <>
         <CheckCircle2 size={44} className="mx-auto text-green-600" />
-        <h1 className="mt-4 text-xl font-extrabold">Piano attivo 🎉</h1>
-        <p className="mt-2 text-sm text-muted">Ti stiamo portando nella dashboard…</p>
+        <h1 className="mt-4 text-xl font-extrabold">{t.activeTitle}</h1>
+        <p className="mt-2 text-sm text-muted">{t.claimRedirect}</p>
       </>
     )
   }
@@ -70,22 +69,18 @@ export function ClaimPoller({ paymentId }: { paymentId?: string }) {
     return (
       <>
         <CheckCircle2 size={44} className="mx-auto text-green-600" />
-        <h1 className="mt-4 text-xl font-extrabold">Pagamento confermato</h1>
-        <p className="mt-2 text-sm text-muted">Accedi con la stessa email del pagamento per entrare: il piano è già attivo.</p>
-        <Link href="/login" className="btn btn-primary mt-6 w-full">Accedi a Foevo</Link>
+        <h1 className="mt-4 text-xl font-extrabold">{t.confirmedTitle}</h1>
+        <p className="mt-2 text-sm text-muted">{t.confirmedBody}</p>
+        <Link href="/login" className="btn btn-primary mt-6 w-full">{t.signIn}</Link>
       </>
     )
   }
   return (
     <>
       <Loader2 size={44} className="mx-auto animate-spin text-brand" />
-      <h1 className="mt-4 text-xl font-extrabold">Pagamento ricevuto</h1>
-      <p className="mt-2 text-sm text-muted">
-        {state === 'slow'
-          ? 'La conferma sta impiegando più del previsto. Puoi accedere tra poco con la tua email.'
-          : 'Stiamo attivando il tuo account e il tuo piano… ci vuole qualche secondo.'}
-      </p>
-      {state === 'slow' && <Link href="/login" className="btn btn-ghost mt-6 w-full">Accedi</Link>}
+      <h1 className="mt-4 text-xl font-extrabold">{t.receivedTitle}</h1>
+      <p className="mt-2 text-sm text-muted">{state === 'slow' ? t.claimingSlow : t.claiming}</p>
+      {state === 'slow' && <Link href="/login" className="btn btn-ghost mt-6 w-full">{t.login}</Link>}
     </>
   )
 }

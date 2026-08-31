@@ -215,6 +215,250 @@ export const it = {
         '**Il nome.** La *fovea* è la fossetta al centro della retina dove la vista è più nitida: il punto in cui l’occhio mette a fuoco l’attenzione. Sulla retina, però, ogni immagine arriva capovolta — è il cervello a rimetterla dritta. Anche **Foevo** ha due lettere scambiate di posto: un piccolo promemoria che quello che credi si veda non è mai esattamente quello che si vede.',
     },
   },
+
+  privacy: {
+    meta: { title: 'Privacy', description: 'Privacy policy di Foevo e dell’estensione Chrome Foevo.' },
+    title: 'Privacy Policy',
+    updated: 'Foevo · aggiornata 2026-08-26',
+    intro:
+      'Foevo cattura uno screenshot di una pagina che **scegli esplicitamente di analizzare** e lo usa per generare una heatmap di attenzione e un’analisi orientata alla conversione.',
+    access: {
+      h: 'Cosa accede l’estensione',
+      items: [
+        '**Screenshot della scheda attiva**, solo quando premi “Analizza” (permesso `activeTab`, per-click).',
+        '**URL e titolo** della pagina, per etichettare l’analisi.',
+        'Eventuali **obiettivo e note** che digiti.',
+      ],
+    },
+    device: {
+      h: 'Dati salvati sul dispositivo',
+      p: 'Endpoint e credenziali di sessione sono salvati in `chrome.storage` e lasciano il browser solo come header `Authorization` verso l’endpoint Foevo che hai configurato.',
+    },
+    where: {
+      h: 'Dove vanno i dati',
+      items: [
+        'Screenshot e metadati sono inviati in HTTPS al tuo account Foevo.',
+        'Per produrre l’analisi, lo screenshot è elaborato da un **provider AI di terze parti**. Screenshot e risultato restano nel tuo account.',
+      ],
+    },
+    never: {
+      h: 'Cosa NON facciamo',
+      items: [
+        'Nessun tracking o SDK pubblicitari.',
+        'Nessuna vendita dei dati a terzi oltre al provider AI necessario.',
+        'Nessuna cattura senza un tuo click.',
+      ],
+    },
+    contact: {
+      h: 'Cancellazione & contatti',
+      p: 'Elimina analisi dalla dashboard in qualsiasi momento. Per richieste: [info@akmehub.com](mailto:info@akmehub.com).',
+    },
+  },
+
+  support: {
+    meta: {
+      title: 'Assistenza',
+      description: 'Assistenza per Foevo e per l’estensione Chrome: risposte alle domande frequenti e modulo di contatto.',
+    },
+    backHome: '← Foevo',
+    title: 'Assistenza',
+    sub: 'Prima le domande che riceviamo più spesso: quasi sempre la risposta è qui. Se non trovi quello che ti serve, scrivici col modulo in fondo.',
+    faqTitle: 'Domande frequenti',
+    faq: [
+      {
+        q: 'L’estensione chiede un permesso o non completa l’accesso',
+        a: 'Assicurati di avere la **versione 1.2.2 o successiva**: la trovi in basso nella card dell’estensione su `chrome://extensions`. Le versioni precedenti chiedevano un permesso a runtime che interrompeva l’accesso al primo tentativo. L’estensione è sul [Chrome Web Store](STORE_URL) e si aggiorna da sola; per forzare l’aggiornamento vai su `chrome://extensions`, attiva la modalità sviluppatore e premi **Aggiorna**.',
+      },
+      {
+        q: 'Non arriva il codice di accesso via email',
+        a: 'Controlla la posta indesiderata. Puoi richiederne uno nuovo dopo circa 30 secondi e ogni codice resta valido 10 minuti. Se copi il codice dall’email, incolla pure: gli spazi vengono ignorati.',
+      },
+      {
+        q: 'L’analisi dà errore su una pagina molto lunga',
+        a: 'Aggiorna l’estensione all’ultima versione. Dalla 1.2.0 l’immagine inviata al modello viene ridimensionata entro i limiti supportati, quindi l’errore non si presenta più. Resta un limite di sicurezza sulla cattura oltre i 20.000 pixel di altezza.',
+      },
+      {
+        q: 'Il pulsante Analizza dà errore 401',
+        a: 'La sessione dell’estensione è scaduta. Apri le impostazioni dell’estensione (icona ingranaggio) e rifai l’accesso con il codice via email.',
+      },
+      {
+        q: '“Apri una pagina web” quando premo Analizza',
+        a: 'Sei su una pagina che Chrome non permette di catturare: `chrome://…`, un PDF o il Web Store. Apri una normale pagina http/https.',
+      },
+      {
+        q: 'Come disdico l’abbonamento',
+        a: 'Dalla sezione **Piano** del tuo account: l’abbonamento resta attivo fino alla scadenza del periodo già pagato e poi non viene rinnovato. Le fatture si scaricano dalla stessa pagina.',
+      },
+      {
+        q: 'Che dati raccoglie l’estensione',
+        a: 'Cattura lo screenshot solo della scheda attiva e solo quando premi Analizza. Il dettaglio completo è nella [privacy policy](PRIVACY_URL).',
+      },
+    ],
+    formTitle: 'Scrivici',
+    formSub: 'Rispondiamo di norma entro un giorno lavorativo. Più dettagli ci dai — pagina, browser, messaggio d’errore — più veloce è la risposta.',
+    form: {
+      topics: ['Estensione Chrome', 'Analisi e report', 'Account e accesso', 'Pagamenti e fatture', 'Altro'],
+      name: 'Nome',
+      email: 'Email',
+      topic: 'Argomento',
+      message: 'Messaggio',
+      messagePlaceholder: 'Cosa stavi facendo, cosa ti aspettavi e cosa è successo. Se c’è un messaggio d’errore, incollalo qui.',
+      submit: 'Invia messaggio',
+      submitting: 'Invio…',
+      genericError: 'Invio non riuscito. Riprova tra poco.',
+      sentTitle: 'Messaggio inviato.',
+      sentBody: 'Ti rispondiamo all’indirizzo che hai indicato, di solito entro un giorno lavorativo.',
+      privacyNote: 'Usiamo il tuo indirizzo solo per risponderti. Vedi la [privacy policy](PRIVACY_URL).',
+    },
+    footerPrivacy: 'Privacy',
+  },
+
+  review: {
+    meta: {
+      title: 'Reviewer guide',
+      description: 'Istruzioni di test passo passo per il revisore del Chrome Web Store.',
+    },
+    kicker: 'Chrome Web Store',
+    title: 'Guida di test per il revisore',
+    intro:
+      'Foevo trasforma una pagina che scegli tu in una heatmap di attenzione più un’analisi di conversione. L’accesso usa un codice via email invece di una password: questi passi mostrano come leggere quel codice da una casella pubblica, senza bisogno di condividere password.',
+    card: {
+      account: 'Account di test',
+      password: 'Password',
+      passwordValue: 'nessuna — codice via email',
+      inbox: 'Casella dei codici',
+      inboxValue: 'mailinator.com (pubblica)',
+    },
+    steps: [
+      {
+        t: 'Fissa l’estensione',
+        d: 'Dopo l’installazione, clicca l’icona a forma di puzzle nella barra di Chrome e fissa **Foevo**, così la sua icona resta visibile.',
+      },
+      {
+        t: 'Apri la schermata di accesso',
+        d: 'Clicca l’icona Foevo per aprire il popup, poi clicca l’icona a **ingranaggio (impostazioni)** in alto a destra nel popup.',
+      },
+      {
+        t: 'Inserisci l’email di test',
+        d: 'Nel campo email scrivi **ACCOUNT** e clicca **“Invia codice”**. L’accesso usa un codice via email monouso: non c’è password.',
+      },
+      {
+        t: 'Leggi il codice dalla casella pubblica',
+        d: 'Il codice a 6 cifre arriva in una casella pubblica che puoi aprire senza alcun accesso: [apri la casella →](INBOX_URL). Apri il messaggio “Foevo” più recente e copia il codice. Vale 10 minuti; se è scaduto, clicca di nuovo “Invia codice”.',
+      },
+      {
+        t: 'Completa l’accesso',
+        d: 'Incolla le 6 cifre nel popup e clicca **“Accedi”**. L’account di test ha un piano a pagamento attivo, quindi l’analisi è abilitata.',
+      },
+      {
+        t: 'Esegui un’analisi',
+        d: 'Apri una normale pagina **https** (una landing o una scheda prodotto vanno benissimo — non una pagina `chrome://`, un PDF o il Web Store). Clicca **“Analizza questa pagina”**. Dopo circa un minuto si apre in una nuova scheda un report con heatmap di attenzione e analisi di conversione.',
+      },
+    ],
+    permissions:
+      '**Permessi.** L’estensione cattura uno screenshot della sola scheda attiva e solo quando clicchi “Analizza”, e parla soltanto con `foevo.app` — il proprio servizio — per restituire il report. Non modifica le pagine, non inietta contenuti e non legge la cronologia. Dettaglio completo: [privacy policy](PRIVACY_URL).',
+  },
+
+  checkout: {
+    failedTitle: 'Pagamento non completato',
+    failedBody: 'Il pagamento è stato annullato o non è andato a buon fine. Puoi riprovare quando vuoi.',
+    retry: 'Riprova',
+    activeTitle: 'Piano attivo 🎉',
+    activeBody: 'Il pagamento è confermato e il tuo piano **PLAN** è attivo. Buon lavoro con Foevo!',
+    toDashboard: 'Vai alla dashboard',
+    receivedTitle: 'Pagamento ricevuto',
+    receivedBody: 'Grazie! Stiamo attivando il tuo piano.',
+    activating: 'Stiamo confermando il pagamento con Whop… questa pagina si aggiorna da sola.',
+    activatingSlow: 'L’attivazione sta impiegando più del previsto. Aggiorna tra poco: il piano si attiva appena Whop conferma il pagamento.',
+    claimRedirect: 'Ti stiamo portando nella dashboard…',
+    confirmedTitle: 'Pagamento confermato',
+    confirmedBody: 'Accedi con la stessa email del pagamento per entrare: il piano è già attivo.',
+    signIn: 'Accedi a Foevo',
+    claiming: 'Stiamo attivando il tuo account e il tuo piano… ci vuole qualche secondo.',
+    claimingSlow: 'La conferma sta impiegando più del previsto. Puoi accedere tra poco con la tua email.',
+    login: 'Accedi',
+  },
+
+  affiliates: {
+    layout: { brandSuffix: '· Affiliati', backToSite: 'Torna al sito →' },
+
+    become: {
+      meta: {
+        title: 'Diventa un affiliato Foevo — guadagna consigliando Foevo',
+        description:
+          'Promuovi Foevo con il tuo link personale e guadagna una commissione ricorrente su ogni cliente che porti, per i primi 12 mesi. Pagamenti via bonifico.',
+      },
+      badge: 'Programma affiliazione',
+      titleA: 'Consiglia Foevo.',
+      titleB: 'Guadagna {rate} per {months} mesi.',
+      titleUpTo: 'fino al ',
+      titleThe: 'il ',
+      sub: 'Ogni cliente che si abbona dal tuo link ti fa guadagnare una commissione ricorrente, su ogni suo rinnovo, per il primo anno. Iscrizione gratuita, nessun vincolo.',
+      ctaRegister: 'Diventa affiliato',
+      ctaLogin: 'Ho già un account',
+      metricCommission: 'Commissione, per {months} mesi',
+      metricThreshold: 'Soglia minima di pagamento',
+      metricPayout: 'Bonifico',
+      metricPayoutLabel: 'istantaneo, come ti paghiamo',
+      pointsTitle: 'Come funziona il guadagno',
+      points: [
+        {
+          title: 'Guadagno ricorrente',
+          body: 'Non prendi la commissione una volta sola: la incassi su ogni rinnovo del cliente, per i primi {months} mesi del suo abbonamento.',
+        },
+        {
+          title: 'Un link solo tuo',
+          body: 'Ricevi un link personale unico. Chiunque si abbona passando da lì viene attribuito a te, in automatico.',
+        },
+        {
+          title: 'Paghiamo con bonifico istantaneo',
+          body: 'Richiedi il pagamento quando vuoi, dai {min} € di saldo disponibile. Inserisci l’IBAN e ricevi il bonifico istantaneo.',
+        },
+        {
+          title: 'Tutto tracciato',
+          body: 'Click, clienti portati, commissioni maturate e disponibili: li vedi in tempo reale dal tuo pannello.',
+        },
+      ],
+      ratesTitle: 'Quanto guadagni, per piano',
+      ratesSub: 'Su ogni pagamento del cliente, per i primi {months} mesi.',
+      planBase: 'Piano Base',
+      planPremium: 'Piano Premium',
+      rateCaption: 'di commissione, per {months} mesi',
+      stepsTitle: 'In 4 passi',
+      steps: [
+        'Ti registri e ricevi il tuo link personale.',
+        'Condividi il link dove vuoi: social, newsletter, community, DM.',
+        'Chi si abbona dal tuo link ti fa guadagnare il {rate} per {months} mesi.',
+        'Al raggiungimento dei {min} € richiedi il bonifico.',
+      ],
+      alreadyCustomer:
+        'Sei già cliente Foevo? Puoi diventare affiliato anche dal tuo account, nella sezione **“Invita e guadagna”**.',
+      finalCta: 'Crea il mio account affiliato',
+    },
+
+    auth: {
+      loginTitle: 'Accedi',
+      loginSub: 'Area affiliati Foevo.',
+      registerTitle: 'Diventa affiliato',
+      registerSub: 'Promuovi Foevo e guadagna una commissione su ogni cliente che porti.',
+      username: 'Username',
+      password: 'Password',
+      fullName: 'Nome e cognome',
+      email: 'Email',
+      emailHint: 'La usiamo per avvisarti sui pagamenti. Non è pubblica.',
+      usernameHint: '3–32 caratteri: lettere minuscole, numeri, . _ -',
+      passwordHint: 'Almeno 8 caratteri.',
+      wait: 'Attendi…',
+      login: 'Accedi',
+      register: 'Crea account affiliato',
+      loginError: 'Accesso non riuscito.',
+      registerError: 'Registrazione non riuscita.',
+      noAccount: 'Non sei ancora affiliato?',
+      goRegister: 'Registrati',
+      hasAccount: 'Hai già un account?',
+      goLogin: 'Accedi',
+    },
+  },
 }
 
 export type Dictionary = typeof it

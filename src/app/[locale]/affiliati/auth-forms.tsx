@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import type { Dictionary } from '@/lib/i18n'
+
+type Copy = Dictionary['affiliates']['auth']
 
 function Field(props: {
   label: string; name: string; type?: string; value: string; onChange: (v: string) => void
@@ -21,7 +24,7 @@ function Field(props: {
   )
 }
 
-export function LoginForm() {
+export function LoginForm({ t, home, registerHref }: { t: Copy; home: string; registerHref: string }) {
   const router = useRouter()
   const [username, setU] = useState('')
   const [password, setP] = useState('')
@@ -36,27 +39,27 @@ export function LoginForm() {
     })
     const j = await r.json().catch(() => ({} as any))
     setBusy(false)
-    if (!r.ok) return setError(j.error || 'Accesso non riuscito.')
-    router.push('/affiliati')
+    if (!r.ok) return setError(j.error || t.loginError)
+    router.push(home)
     router.refresh()
   }
 
   return (
     <form onSubmit={submit} className="card mx-auto max-w-md space-y-3 p-6">
-      <h1 className="font-display text-2xl font-extrabold">Accedi</h1>
-      <p className="text-sm text-muted">Area affiliati Foevo.</p>
-      <Field label="Username" name="username" value={username} onChange={setU} autoComplete="username" />
-      <Field label="Password" name="password" type="password" value={password} onChange={setP} autoComplete="current-password" />
+      <h1 className="font-display text-2xl font-extrabold">{t.loginTitle}</h1>
+      <p className="text-sm text-muted">{t.loginSub}</p>
+      <Field label={t.username} name="username" value={username} onChange={setU} autoComplete="username" />
+      <Field label={t.password} name="password" type="password" value={password} onChange={setP} autoComplete="current-password" />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="btn btn-primary w-full" disabled={busy}>{busy ? 'Attendi…' : 'Accedi'}</button>
+      <button className="btn btn-primary w-full" disabled={busy}>{busy ? t.wait : t.login}</button>
       <p className="text-center text-sm text-muted">
-        Non sei ancora affiliato? <Link href="/affiliati/registrati" className="font-semibold text-brand">Registrati</Link>
+        {t.noAccount} <Link href={registerHref} className="font-semibold text-brand">{t.goRegister}</Link>
       </p>
     </form>
   )
 }
 
-export function RegisterForm() {
+export function RegisterForm({ t, home, loginHref }: { t: Copy; home: string; loginHref: string }) {
   const router = useRouter()
   const [f, setF] = useState({ fullName: '', email: '', username: '', password: '' })
   const set = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: v }))
@@ -70,26 +73,26 @@ export function RegisterForm() {
     })
     const j = await r.json().catch(() => ({} as any))
     setBusy(false)
-    if (!r.ok) return setError(j.error || 'Registrazione non riuscita.')
-    router.push('/affiliati')
+    if (!r.ok) return setError(j.error || t.registerError)
+    router.push(home)
     router.refresh()
   }
 
   return (
     <form onSubmit={submit} className="card mx-auto max-w-md space-y-3 p-6">
-      <h1 className="font-display text-2xl font-extrabold">Diventa affiliato</h1>
-      <p className="text-sm text-muted">Promuovi Foevo e guadagna una commissione su ogni cliente che porti.</p>
-      <Field label="Nome e cognome" name="fullName" value={f.fullName} onChange={set('fullName')} autoComplete="name" />
-      <Field label="Email" name="email" type="email" value={f.email} onChange={set('email')} autoComplete="email"
-        hint="La usiamo per avvisarti sui pagamenti. Non è pubblica." />
-      <Field label="Username" name="username" value={f.username} onChange={set('username')} autoComplete="username"
-        hint="3–32 caratteri: lettere minuscole, numeri, . _ -" />
-      <Field label="Password" name="password" type="password" value={f.password} onChange={set('password')} autoComplete="new-password"
-        hint="Almeno 8 caratteri." />
+      <h1 className="font-display text-2xl font-extrabold">{t.registerTitle}</h1>
+      <p className="text-sm text-muted">{t.registerSub}</p>
+      <Field label={t.fullName} name="fullName" value={f.fullName} onChange={set('fullName')} autoComplete="name" />
+      <Field label={t.email} name="email" type="email" value={f.email} onChange={set('email')} autoComplete="email"
+        hint={t.emailHint} />
+      <Field label={t.username} name="username" value={f.username} onChange={set('username')} autoComplete="username"
+        hint={t.usernameHint} />
+      <Field label={t.password} name="password" type="password" value={f.password} onChange={set('password')} autoComplete="new-password"
+        hint={t.passwordHint} />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="btn btn-primary w-full" disabled={busy}>{busy ? 'Attendi…' : 'Crea account affiliato'}</button>
+      <button className="btn btn-primary w-full" disabled={busy}>{busy ? t.wait : t.register}</button>
       <p className="text-center text-sm text-muted">
-        Hai già un account? <Link href="/affiliati/accedi" className="font-semibold text-brand">Accedi</Link>
+        {t.hasAccount} <Link href={loginHref} className="font-semibold text-brand">{t.goLogin}</Link>
       </p>
     </form>
   )

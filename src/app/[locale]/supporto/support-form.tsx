@@ -1,16 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import type { Dictionary } from '@/lib/i18n'
+import { Rich } from '@/lib/i18n/rich'
 
-const TOPICS = [
-  'Estensione Chrome',
-  'Analisi e report',
-  'Account e accesso',
-  'Pagamenti e fatture',
-  'Altro',
-]
+type FormCopy = Dictionary['support']['form']
 
-export function SupportForm({ token }: { token: string }) {
+export function SupportForm({ token, t, privacyHref }: { token: string; t: FormCopy; privacyHref: string }) {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -31,17 +27,15 @@ export function SupportForm({ token }: { token: string }) {
     })
     const j = await r.json().catch(() => ({} as any))
     setBusy(false)
-    if (!r.ok) return setError(j.error || 'Invio non riuscito. Riprova tra poco.')
+    if (!r.ok) return setError(j.error || t.genericError)
     setSent(true)
   }
 
   if (sent) {
     return (
       <div className="card mt-4 p-6">
-        <p className="font-semibold text-green-700">Messaggio inviato.</p>
-        <p className="mt-1 text-sm text-muted">
-          Ti rispondiamo all’indirizzo che hai indicato, di solito entro un giorno lavorativo.
-        </p>
+        <p className="font-semibold text-green-700">{t.sentTitle}</p>
+        <p className="mt-1 text-sm text-muted">{t.sentBody}</p>
       </div>
     )
   }
@@ -50,25 +44,25 @@ export function SupportForm({ token }: { token: string }) {
     <form onSubmit={submit} className="card mt-4 space-y-3 p-6">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label" htmlFor="name">Nome</label>
+          <label className="label" htmlFor="name">{t.name}</label>
           <input id="name" name="name" className="input mt-1" autoComplete="name" />
         </div>
         <div>
-          <label className="label" htmlFor="email">Email <span className="text-brand">*</span></label>
+          <label className="label" htmlFor="email">{t.email} <span className="text-brand">*</span></label>
           <input id="email" name="email" type="email" required className="input mt-1" autoComplete="email" />
         </div>
       </div>
       <div>
-        <label className="label" htmlFor="topic">Argomento</label>
-        <select id="topic" name="topic" className="input mt-1" defaultValue={TOPICS[0]}>
-          {TOPICS.map((t) => <option key={t}>{t}</option>)}
+        <label className="label" htmlFor="topic">{t.topic}</label>
+        <select id="topic" name="topic" className="input mt-1" defaultValue={t.topics[0]}>
+          {t.topics.map((x) => <option key={x}>{x}</option>)}
         </select>
       </div>
       <div>
-        <label className="label" htmlFor="message">Messaggio <span className="text-brand">*</span></label>
+        <label className="label" htmlFor="message">{t.message} <span className="text-brand">*</span></label>
         <textarea
           id="message" name="message" required rows={6} className="input mt-1"
-          placeholder="Cosa stavi facendo, cosa ti aspettavi e cosa è successo. Se c'è un messaggio d'errore, incollalo qui."
+          placeholder={t.messagePlaceholder}
         />
       </div>
       {/* esca anti-bot: nascosta agli utenti, ignorata dagli screen reader */}
@@ -77,9 +71,9 @@ export function SupportForm({ token }: { token: string }) {
         className="hidden" defaultValue=""
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="btn btn-primary" disabled={busy}>{busy ? 'Invio…' : 'Invia messaggio'}</button>
+      <button className="btn btn-primary" disabled={busy}>{busy ? t.submitting : t.submit}</button>
       <p className="text-xs text-muted">
-        Usiamo il tuo indirizzo solo per risponderti. Vedi la <a href="/privacy" className="font-semibold text-brand">privacy policy</a>.
+        <Rich text={t.privacyNote.replace('PRIVACY_URL', privacyHref)} />
       </p>
     </form>
   )
