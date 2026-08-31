@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, CreditCard, User, Shield, Gift, Share2, type LucideIcon } from 'lucide-react'
+import { LayoutGrid, CreditCard, User, Shield, Gift, Share2, BarChart3, type LucideIcon } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: LucideIcon }
 
@@ -16,6 +16,7 @@ const MAIN: NavItem[] = [
 ]
 const ADMIN: NavItem[] = [
   { href: '/admin', label: 'Superadmin', icon: Shield },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/affiliazione', label: 'Affiliazione', icon: Share2 },
 ]
 

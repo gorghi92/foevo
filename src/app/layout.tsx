@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Sora, Plus_Jakarta_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
+import { AnalyticsTracker } from '@/components/analytics/tracker'
 
 const display = Sora({ subsets: ['latin'], weight: ['600', '700', '800'], variable: '--font-display' })
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-sans' })
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="it" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>{children}<AnalyticsTracker /></body>
     </html>
   )
 }
