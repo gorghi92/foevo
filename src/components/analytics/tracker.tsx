@@ -18,6 +18,13 @@ const SESSION_TTL = 30 * 60 * 1000 // 30 minuti di inattività = nuova sessione
 const MAX_CLICKS = 200 // tetto per sessione, evita flood
 const FLUSH_MS = 4000
 
+// Tracciamo solo il FRONTEND pubblico (landing e pagine marketing), non il
+// prodotto autenticato. Questi prefissi sono il gruppo (app) e vanno esclusi.
+const APP_PREFIXES = ['/dashboard', '/admin', '/affiliazione', '/analyses', '/analytics', '/billing', '/invita', '/profile']
+function isAppArea(path: string): boolean {
+  return APP_PREFIXES.some((p) => path === p || path.startsWith(p + '/'))
+}
+
 type Evt = Record<string, unknown>
 
 function uid(): string {
@@ -66,6 +73,7 @@ function disabled(): boolean {
 export function AnalyticsTracker() {
   const pathname = usePathname()
   const ready = useRef(false)
+  const tracking = useRef(false) // true solo sulle pagine del frontend pubblico
   const queue = useRef<Evt[]>([])
   const meta = useRef({ vid: '', sid: '', device: 'desktop', browser: '', os: '' })
   const page = useRef({ path: '', start: 0, maxScroll: 0, clicks: 0, firstOfSession: false })
@@ -101,6 +109,7 @@ export function AnalyticsTracker() {
     const touchSession = () => { try { sessionStorage.setItem('foevo_sid_ts', String(Date.now())) } catch {} }
 
     const onClick = (e: MouseEvent) => {
+      if (!tracking.current) return
       if (page.current.clicks >= MAX_CLICKS) return
       page.current.clicks++
       const docW = document.documentElement.scrollWidth || window.innerWidth || 1
@@ -115,6 +124,7 @@ export function AnalyticsTracker() {
     }
 
     const onScroll = () => {
+      if (!tracking.current) return
       const st = window.scrollY || document.documentElement.scrollTop || 0
       const h = (document.documentElement.scrollHeight || 1) - window.innerHeight
       const pct = h > 0 ? Math.round((st / h) * 100) : 100
@@ -144,6 +154,13 @@ export function AnalyticsTracker() {
   useEffect(() => {
     if (!ready.current || disabled()) return
     if (page.current.path) finalize() // pagina precedente
+    if (isAppArea(pathname)) {
+      // Prodotto autenticato: non tracciare, solo frontend pubblico.
+      page.current = { path: '', start: 0, maxScroll: 0, clicks: 0, firstOfSession: page.current.firstOfSession }
+      tracking.current = false
+      return
+    }
+    tracking.current = true
     startPage(pathname)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
