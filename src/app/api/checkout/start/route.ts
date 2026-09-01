@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/server'
 import { recordReferral } from '@/lib/affiliate/attribute'
+import { guard, ipKey } from '@/lib/rate-limit'
 import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
@@ -18,6 +19,14 @@ export async function POST(req: Request) {
   const plan = String(body.plan || '').trim()
   if (!email || !email.includes('@')) return NextResponse.json({ error: m('invalidEmail') }, { status: 400 })
   if (!plan) return NextResponse.json({ error: m('planMissing') }, { status: 400 })
+
+  // L'endpoint è pubblico e registra la referral sull'email ricevuta: senza un
+  // tetto si potrebbero attribuire a un affiliato migliaia di email inventate.
+  const blocked = await guard(req, [
+    { bucket: 'checkout-start-ip', key: ipKey(req), windowSeconds: 3600, max: 30 },
+  ])
+  if (blocked) return blocked
+
   const full_name = `${body.firstName || ''} ${body.lastName || ''}`.trim()
 
   const sc = createServiceClient()

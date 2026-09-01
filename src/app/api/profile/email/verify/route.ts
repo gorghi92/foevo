@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createHash, timingSafeEqual } from 'crypto'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
+import { guard, subjectKey } from '@/lib/rate-limit'
 import { m } from '@/lib/i18n/api'
+import { serverError } from '@/lib/api-error'
 
 export const runtime = 'nodejs'
 
@@ -24,6 +26,11 @@ export async function POST(req: Request) {
   const code = String(rawCode || '').replace(/\D/g, '')
   if (code.length !== 6) return NextResponse.json({ error: m('enterSixDigitCode') }, { status: 400 })
 
+  const blocked = await guard(req, [
+    { bucket: 'email-verify-user', key: subjectKey(`user:${user.id}`), windowSeconds: 900, max: 15 },
+  ])
+  if (blocked) return blocked
+
   const sc = createServiceClient()
   const { data: otp } = await sc.from('extension_otp')
     .select('id, code_hash, expires_at, attempts, payload')
@@ -34,16 +41,22 @@ export async function POST(req: Request) {
   if (new Date(otp.expires_at as string).getTime() < Date.now()) {
     return NextResponse.json({ error: m('codeExpired') }, { status: 400 })
   }
-  if ((otp.attempts as number) >= MAX_ATTEMPTS) {
+  // Tentativo contato prima del confronto e con incremento atomico: leggere e
+  // riscrivere `attempts` dal codice lasciava passare richieste parallele.
+  const { data: attempts } = await sc.rpc('otp_attempt', { p_id: otp.id })
+  const used = Number(attempts ?? MAX_ATTEMPTS)
+  if (used > MAX_ATTEMPTS) {
     await sc.from('extension_otp').update({ used_at: new Date().toISOString() }).eq('id', otp.id)
     return NextResponse.json({ error: m('tooManyAttempts') }, { status: 429 })
   }
 
   const newEmail = String(otp.payload).toLowerCase()
   if (!safeEq(String(otp.code_hash), hashCode(newEmail, code))) {
-    await sc.from('extension_otp').update({ attempts: (otp.attempts as number) + 1 }).eq('id', otp.id)
-    const left = MAX_ATTEMPTS - (otp.attempts as number) - 1
-    return NextResponse.json({ error: left > 0 ? `Codice errato (${left} tentativi rimasti).` : 'Codice errato.' }, { status: 401 })
+    const left = MAX_ATTEMPTS - used
+    return NextResponse.json(
+      { error: left > 0 ? m('wrongCodeLeft', { n: left }) : m('wrongCode') },
+      { status: 401 },
+    )
   }
 
   // Ricontrolla che nel frattempo l'indirizzo non sia stato preso da altri.
@@ -53,7 +66,7 @@ export async function POST(req: Request) {
   }
 
   const { error: upErr } = await sc.auth.admin.updateUserById(user.id, { email: newEmail, email_confirm: true })
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 400 })
+  if (upErr) return serverError('profile/email/verify', upErr, 400)
   await sc.from('profiles').update({ email: newEmail }).eq('id', user.id)
   await sc.from('extension_otp').update({ used_at: new Date().toISOString() }).eq('id', otp.id)
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createHash, randomInt } from 'crypto'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { sendEmail, emailChangeOtpEmail, emailConfigured } from '@/lib/email'
+import { guard, ipKey, subjectKey } from '@/lib/rate-limit'
 import { m, requestLocale } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
@@ -25,6 +26,14 @@ export async function POST(req: Request) {
   if (newEmail === String(user.email || '').toLowerCase()) {
     return NextResponse.json({ error: m('sameEmailAsCurrent') }, { status: 400 })
   }
+
+  // Il cambio email manda un codice a un indirizzo scelto da chi chiama: senza
+  // un tetto, un account autenticato diventa un mezzo per inondare terzi.
+  const blocked = await guard(req, [
+    { bucket: 'email-change-user', key: subjectKey(`user:${user.id}`), windowSeconds: 3600, max: 6 },
+    { bucket: 'email-change-ip', key: ipKey(req), windowSeconds: 3600, max: 15 },
+  ])
+  if (blocked) return blocked
 
   const sc = createServiceClient()
   const { data: taken } = await sc.from('profiles').select('id').ilike('email', newEmail).maybeSingle()

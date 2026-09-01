@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { verifyPassword, startSession } from '@/lib/affiliate/auth'
+import { guard, ipKey, subjectKey } from '@/lib/rate-limit'
 import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
@@ -13,6 +14,14 @@ export async function POST(req: Request) {
   if (!username || !password) {
     return NextResponse.json({ error: m('enterUsernameAndPassword') }, { status: 400 })
   }
+
+  // Doppio freno: per IP (un attaccante che prova molti account) e per username
+  // (una botnet che prova molte password sullo stesso account da IP diversi).
+  const blocked = await guard(req, [
+    { bucket: 'aff-login-ip', key: ipKey(req), windowSeconds: 900, max: 20 },
+    { bucket: 'aff-login-user', key: subjectKey(`aff:${username}`), windowSeconds: 900, max: 8 },
+  ])
+  if (blocked) return blocked
 
   const sc = createServiceClient()
   const { data: aff } = await sc.from('affiliates')

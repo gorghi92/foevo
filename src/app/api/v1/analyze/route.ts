@@ -126,9 +126,13 @@ export async function POST(req: Request): Promise<Response> {
       })
       return Response.json({ id, resultPath: `/analyses/${id}`, tier: out.provider === 'claude' ? 'premium' : 'base' }, { status: 201 })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : m('analysisFailed')
-      await failAnalysis(id, msg)
-      return Response.json({ error: msg, id }, { status: 502 })
+      // Il dettaglio del guasto (provider, modello, risposta) resta sull'analisi
+      // e nei log: al client va un messaggio generico, perché non è qualcosa
+      // che può correggere e i messaggi dei provider raccontano troppo.
+      const detail = e instanceof Error ? e.message : String(e)
+      console.error('[foevo] analisi fallita', detail)
+      await failAnalysis(id, detail)
+      return Response.json({ error: m('analysisFailed'), id }, { status: 502 })
     }
   })
 }

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { emailConfigured, sendEmail, magicLinkEmail } from '@/lib/email'
+import { guard, ipKey, subjectKey } from '@/lib/rate-limit'
 import { m, requestLocale } from '@/lib/i18n/api'
+import { serverError } from '@/lib/api-error'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +16,16 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { email?: string; next?: string }
   const email = String(body.email || '').trim().toLowerCase()
   if (!email || !email.includes('@')) return NextResponse.json({ error: m('invalidEmail') }, { status: 400 })
+
+  // Il limite per IP chiude il sondaggio massivo (la risposta dice se l'account
+  // esiste); quello per email evita di trasformare il login in un mezzo per
+  // bombardare di messaggi la casella di qualcun altro.
+  const blocked = await guard(req, [
+    { bucket: 'magiclink-ip', key: ipKey(req), windowSeconds: 900, max: 15 },
+    { bucket: 'magiclink-email', key: subjectKey(`email:${email}`), windowSeconds: 900, max: 5 },
+  ])
+  if (blocked) return blocked
+
   const next = body.next && body.next.startsWith('/') ? body.next : '/dashboard'
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, '')
 
@@ -24,7 +36,7 @@ export async function POST(req: Request) {
   if (await emailConfigured()) {
     const { data: link, error } = await sc.auth.admin.generateLink({ type: 'magiclink', email })
     const tokenHash = (link as any)?.properties?.hashed_token as string | undefined
-    if (error || !tokenHash) return NextResponse.json({ error: error?.message || 'Errore generazione link' }, { status: 500 })
+    if (error || !tokenHash) return serverError('auth/login generateLink', error)
     const cb = `${appUrl}/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=magiclink&next=${encodeURIComponent(next)}`
     const { subject, html } = magicLinkEmail(cb, requestLocale(req))
     const sent = await sendEmail({ to: email, subject, html })
@@ -38,6 +50,6 @@ export async function POST(req: Request) {
     email,
     options: { shouldCreateUser: false, emailRedirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(next)}` },
   })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('auth/login signInWithOtp', error)
   return NextResponse.json({ ok: true, branded: false })
 }

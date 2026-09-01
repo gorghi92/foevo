@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateKey } from '@/server/api-key'
 import { m } from '@/lib/i18n/api'
+import { serverError } from '@/lib/api-error'
 
 export const runtime = 'nodejs'
 
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
   const { key, hash, prefix } = generateKey()
   const { error: insErr } = await sc.from('api_keys')
     .insert({ user_id: userId, name: 'Estensione', key_hash: hash, prefix, scopes: ['analyze:write'] })
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+  if (insErr) return serverError('extension/login', insErr)
 
   return NextResponse.json({ key, email: data.user.email })
 }

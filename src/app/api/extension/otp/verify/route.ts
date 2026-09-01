@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { createHash, timingSafeEqual } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateKey } from '@/server/api-key'
+import { guard, ipKey, subjectKey } from '@/lib/rate-limit'
 import { m } from '@/lib/i18n/api'
+import { serverError } from '@/lib/api-error'
 
 export const runtime = 'nodejs'
 
@@ -25,6 +27,15 @@ export async function POST(req: Request) {
   const code = String(body.code || '').replace(/\D/g, '')
   if (!email || code.length !== 6) return NextResponse.json({ error: m('emailAndCodeRequired') }, { status: 400 })
 
+  // Il tetto di 5 tentativi vale per singolo codice: chiedendone uno nuovo ogni
+  // 30 secondi si tornerebbe comunque a indovinare all'infinito. Questi limiti
+  // chiudono la finestra a monte, prima ancora di toccare il database.
+  const blocked = await guard(req, [
+    { bucket: 'otp-verify-ip', key: ipKey(req), windowSeconds: 900, max: 30 },
+    { bucket: 'otp-verify-email', key: subjectKey(`email:${email}`), windowSeconds: 900, max: 15 },
+  ])
+  if (blocked) return blocked
+
   const sc = createServiceClient()
   const { data: otp } = await sc.from('extension_otp')
     .select('id, code_hash, expires_at, attempts')
@@ -35,15 +46,23 @@ export async function POST(req: Request) {
   if (new Date(otp.expires_at as string).getTime() < Date.now()) {
     return NextResponse.json({ error: m('codeExpired') }, { status: 400 })
   }
-  if ((otp.attempts as number) >= MAX_ATTEMPTS) {
+  // Il tentativo si conta PRIMA del confronto, e con un incremento atomico lato
+  // database: leggere `attempts` e riscriverlo dal codice lasciava passare N
+  // richieste parallele, che leggevano tutte lo stesso valore e aggiravano il
+  // tetto sparando i tentativi insieme invece che in fila.
+  const { data: attempts } = await sc.rpc('otp_attempt', { p_id: otp.id })
+  const used = Number(attempts ?? MAX_ATTEMPTS)
+  if (used > MAX_ATTEMPTS) {
     await sc.from('extension_otp').update({ used_at: new Date().toISOString() }).eq('id', otp.id)
     return NextResponse.json({ error: m('tooManyAttempts') }, { status: 429 })
   }
 
   if (!safeEq(String(otp.code_hash), hashCode(email, code))) {
-    await sc.from('extension_otp').update({ attempts: (otp.attempts as number) + 1 }).eq('id', otp.id)
-    const left = MAX_ATTEMPTS - (otp.attempts as number) - 1
-    return NextResponse.json({ error: left > 0 ? `Codice errato (${left} tentativi rimasti).` : 'Codice errato.' }, { status: 401 })
+    const left = MAX_ATTEMPTS - used
+    return NextResponse.json(
+      { error: left > 0 ? m('wrongCodeLeft', { n: left }) : m('wrongCode') },
+      { status: 401 },
+    )
   }
 
   const { data: prof } = await sc.from('profiles').select('id, email').ilike('email', email).maybeSingle()
@@ -59,7 +78,7 @@ export async function POST(req: Request) {
   const { key, hash, prefix } = generateKey()
   const { error: insErr } = await sc.from('api_keys')
     .insert({ user_id: prof.id, name: 'Estensione', key_hash: hash, prefix, scopes: ['analyze:write'] })
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+  if (insErr) return serverError('extension/otp/verify', insErr)
 
   return NextResponse.json({ key, email: prof.email ?? email })
 }

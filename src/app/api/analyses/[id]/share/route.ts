@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { m } from '@/lib/i18n/api'
+import { serverError } from '@/lib/api-error'
 
 export const runtime = 'nodejs'
 
@@ -20,7 +21,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   const token = (row.share_token as string) || randomBytes(12).toString('base64url')
   const { error } = await sc.from('analyses').update({ public: true, share_token: token }).eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('analyses/[id]/share', error)
 
   return NextResponse.json({ path: `/a/${token}`, token, public: true })
 }
@@ -33,6 +34,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const { data: row } = await sc.from('analyses').select('user_id').eq('id', params.id).maybeSingle()
   if (!row || row.user_id !== user.id) return NextResponse.json({ error: m('analysisNotFound') }, { status: 404 })
   const { error } = await sc.from('analyses').update({ public: false }).eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('analyses/[id]/share', error)
   return NextResponse.json({ public: false })
 }

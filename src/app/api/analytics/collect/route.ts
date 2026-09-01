@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { consume, ipKey } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,11 +31,27 @@ const f = (v: unknown): number | null => {
   return Math.min(1, Math.max(0, n))
 }
 
+/** Tetto al corpo della richiesta: 60 eventi troncati non arrivano a tanto. */
+const MAX_BODY_BYTES = 64 * 1024
+
 export async function POST(req: Request) {
+  const declared = Number(req.headers.get('content-length') || 0)
+  if (declared > MAX_BODY_BYTES) return new NextResponse(null, { status: 204 })
+
+  // Endpoint pubblico e scrivente: il tetto è largo (il tracker manda batch, non
+  // una richiesta per evento) e serve solo a fermare chi prova a gonfiare la
+  // tabella. Come tutto il resto qui, risponde 204 anche quando rifiuta: il
+  // visitatore non deve accorgersi di nulla.
+  const verdict = await consume([
+    { bucket: 'analytics-ip', key: ipKey(req), windowSeconds: 600, max: 300 },
+  ])
+  if (!verdict.ok) return new NextResponse(null, { status: 204 })
+
   let payload: any
   try {
     // sendBeacon manda text/plain: leggiamo il testo e proviamo il parse.
     const txt = await req.text()
+    if (txt.length > MAX_BODY_BYTES) return new NextResponse(null, { status: 204 })
     payload = JSON.parse(txt)
   } catch {
     return new NextResponse(null, { status: 204 })

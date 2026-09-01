@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createHash, randomInt } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendEmail, extensionOtpEmail, emailConfigured } from '@/lib/email'
+import { guard, ipKey, subjectKey } from '@/lib/rate-limit'
 import { m, requestLocale } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
@@ -21,6 +22,14 @@ export async function POST(req: Request) {
   const { email: raw } = (await req.json().catch(() => ({}))) as { email?: string }
   const email = String(raw || '').trim().toLowerCase()
   if (!email || !email.includes('@')) return NextResponse.json({ error: m('invalidEmail') }, { status: 400 })
+
+  // Il cooldown di 30 secondi qui sotto è per email: da solo non impedisce a un
+  // singolo IP di ciclare migliaia di indirizzi per capire quali esistono.
+  const blocked = await guard(req, [
+    { bucket: 'otp-req-ip', key: ipKey(req), windowSeconds: 900, max: 20 },
+    { bucket: 'otp-req-email', key: subjectKey(`email:${email}`), windowSeconds: 3600, max: 8 },
+  ])
+  if (blocked) return blocked
 
   if (!(await emailConfigured())) {
     return NextResponse.json({ error: m('emailNotConfigured') }, { status: 503 })

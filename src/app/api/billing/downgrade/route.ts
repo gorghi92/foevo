@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getUser, createServiceClient } from '@/lib/supabase/server'
 import { m } from '@/lib/i18n/api'
+import { serverError } from '@/lib/api-error'
 
 export const runtime = 'nodejs'
 
@@ -20,6 +21,6 @@ export async function POST() {
     monthly_quota: (base as any).monthly_quota, unlimited: (base as any).unlimited,
     status: 'active', updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('billing/downgrade', error)
   return NextResponse.json({ ok: true })
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { hashPassword, uniqueCode, startSession } from '@/lib/affiliate/auth'
+import { guard, ipKey } from '@/lib/rate-limit'
 import { m } from '@/lib/i18n/api'
 
 export const runtime = 'nodejs'
@@ -26,6 +27,12 @@ export async function POST(req: Request) {
   if (password.length < 8) {
     return NextResponse.json({ error: m('passwordTooShort') }, { status: 400 })
   }
+
+  // Un affiliato si registra una volta: chi ne apre a raffica sta facendo altro.
+  const blocked = await guard(req, [
+    { bucket: 'aff-register-ip', key: ipKey(req), windowSeconds: 3600, max: 5 },
+  ])
+  if (blocked) return blocked
 
   const sc = createServiceClient()
 
