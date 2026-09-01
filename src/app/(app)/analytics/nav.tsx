@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Flame, type LucideIcon } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { LayoutDashboard, Flame, RefreshCw, type LucideIcon } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
 
 type NavCopy = Dictionary['app']['analytics']['nav']
@@ -40,6 +41,37 @@ export function RangePicker({ days, base, daysSuffix }: { days: number; base: st
           {d}{daysSuffix}
         </Link>
       ))}
+    </div>
+  )
+}
+
+/** Ricarica i dati del server component senza ricaricare la pagina:
+ *  `router.refresh()` rifà solo la richiesta RSC, quindi scroll, filtri
+ *  e stato dei client component (slider della heatmap) restano dove sono. */
+export function RefreshButton({ t, locale }: { t: Dictionary['app']['analytics']['refresh']; locale: string }) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const [at, setAt] = useState<string | null>(null)
+
+  // L'orario si calcola solo nel browser: sul server non conosciamo il fuso
+  // dell'utente e due rese diverse romperebbero l'hydration.
+  useEffect(() => {
+    if (!pending) setAt(new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }))
+  }, [pending, locale])
+
+  return (
+    <div className="flex items-center gap-2">
+      {at && <span className="hidden text-[11px] text-muted sm:inline">{t.updatedAt.replace('{v}', at)}</span>}
+      <button
+        type="button"
+        onClick={() => startTransition(() => router.refresh())}
+        disabled={pending}
+        aria-busy={pending}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-[13px] font-medium text-muted transition hover:text-ink disabled:opacity-60"
+      >
+        <RefreshCw size={14} className={pending ? 'animate-spin' : ''} />
+        {pending ? t.pending : t.label}
+      </button>
     </div>
   )
 }

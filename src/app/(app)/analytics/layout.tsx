@@ -4,7 +4,7 @@ import { getUser } from '@/lib/supabase/server'
 import { isSuperadmin } from '@/lib/superadmin'
 import { getDictionary } from '@/lib/i18n'
 import { getServerLocale } from '@/lib/i18n/server'
-import { AnalyticsNav } from './nav'
+import { AnalyticsNav, RefreshButton } from './nav'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,8 @@ export default async function AnalyticsLayout({ children }: { children: React.Re
   const user = await getUser()
   if (!isSuperadmin(user?.email)) redirect('/dashboard')
 
-  const t = getDictionary(getServerLocale()).app.analytics
+  const dict = getDictionary(getServerLocale())
+  const t = dict.app.analytics
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -21,6 +22,9 @@ export default async function AnalyticsLayout({ children }: { children: React.Re
         <div>
           <h1 className="font-display text-xl font-extrabold leading-tight">{t.header.title}</h1>
           <p className="text-xs text-muted">{t.header.subtitle}</p>
+        </div>
+        <div className="ml-auto shrink-0">
+          <RefreshButton t={t.refresh} locale={dict.common.dateLocale} />
         </div>
       </div>
       <div className="border-b border-line pb-2">

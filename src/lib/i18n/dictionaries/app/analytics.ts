@@ -13,6 +13,13 @@ export const it = {
   /** Suffisso dei selettori di periodo: 7g / 30g / 90g. */
   daysSuffix: 'g',
 
+  /** Bottone di aggiornamento dei dati senza ricaricare la pagina. */
+  refresh: {
+    label: 'Aggiorna',
+    pending: 'Aggiornamento…',
+    updatedAt: 'aggiornato alle {v}',
+  },
+
   overview: {
     liveOne: 'visitatore',
     liveMany: 'visitatori',
@@ -105,6 +112,13 @@ export const en: typeof it = {
 
   /** Suffisso dei selettori di periodo: 7d / 30d / 90d. */
   daysSuffix: 'd',
+
+  /** Bottone di aggiornamento dei dati senza ricaricare la pagina. */
+  refresh: {
+    label: 'Refresh',
+    pending: 'Refreshing…',
+    updatedAt: 'updated at {v}',
+  },
 
   overview: {
     liveOne: 'visitor',
