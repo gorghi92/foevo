@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Foevo — Heatmap di attenzione e analisi AI della pagina",
+    "description": "Nome dell'estensione nel Chrome Web Store."
+  },
+  "extDescription": {
+    "message": "Scansiona una landing o scheda prodotto e genera una heatmap di attenzione + analisi AI orientata alla conversione.",
+    "description": "Descrizione breve dell'estensione nel Chrome Web Store."
+  }
+}

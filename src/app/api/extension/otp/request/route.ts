@@ -1,0 +1,63 @@
+import { NextResponse } from 'next/server'
+import { createHash, randomInt } from 'crypto'
+import { createServiceClient } from '@/lib/supabase/server'
+import { sendEmail, extensionOtpEmail, emailConfigured } from '@/lib/email'
+import { guard, ipKey, subjectKey } from '@/lib/rate-limit'
+import { m, requestLocale } from '@/lib/i18n/api'
+
+export const runtime = 'nodejs'
+
+const TTL_MIN = 10
+const COOLDOWN_S = 30
+
+const hashCode = (email: string, code: string) =>
+  createHash('sha256').update(`${email.toLowerCase()}:${code}`).digest('hex')
+
+/**
+ * Richiede un codice OTP per il login dell'estensione.
+ * Per non rivelare quali email esistono, la risposta è sempre la stessa:
+ * il codice viene inviato solo se l'account esiste davvero.
+ */
+export async function POST(req: Request) {
+  const { email: raw } = (await req.json().catch(() => ({}))) as { email?: string }
+  const email = String(raw || '').trim().toLowerCase()
+  if (!email || !email.includes('@')) return NextResponse.json({ error: m('invalidEmail') }, { status: 400 })
+
+  // Il cooldown di 30 secondi qui sotto è per email: da solo non impedisce a un
+  // singolo IP di ciclare migliaia di indirizzi per capire quali esistono.
+  const blocked = await guard(req, [
+    { bucket: 'otp-req-ip', key: ipKey(req), windowSeconds: 900, max: 20 },
+    { bucket: 'otp-req-email', key: subjectKey(`email:${email}`), windowSeconds: 3600, max: 8 },
+  ])
+  if (blocked) return blocked
+
+  if (!(await emailConfigured())) {
+    return NextResponse.json({ error: m('emailNotConfigured') }, { status: 503 })
+  }
+
+  const sc = createServiceClient()
+
+  // Anti-spam: un codice ogni 30 secondi per email.
+  const { data: last } = await sc.from('extension_otp')
+    .select('created_at').eq('email', email).eq('purpose', 'extension')
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  if (last?.created_at && Date.now() - new Date(last.created_at as string).getTime() < COOLDOWN_S * 1000) {
+    return NextResponse.json({ error: m('codeAlreadyRequested') }, { status: 429 })
+  }
+
+  const { data: prof } = await sc.from('profiles').select('id').ilike('email', email).maybeSingle()
+  if (prof) {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
+    // Invalida i codici precedenti ancora validi per questa email.
+    await sc.from('extension_otp').update({ used_at: new Date().toISOString() })
+      .eq('email', email).eq('purpose', 'extension').is('used_at', null)
+    await sc.from('extension_otp').insert({
+      email, purpose: 'extension', code_hash: hashCode(email, code),
+      expires_at: new Date(Date.now() + TTL_MIN * 60_000).toISOString(),
+    })
+    const { subject, html } = extensionOtpEmail(code, requestLocale(req))
+    await sendEmail({ to: email, subject, html })
+  }
+
+  return NextResponse.json({ ok: true, ttlMinutes: TTL_MIN })
+}

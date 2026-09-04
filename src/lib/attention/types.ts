@@ -1,0 +1,267 @@
+/** Structured output of the attention analysis (stored as JSONB, rendered in the dashboard). */
+
+export type Priority = 'alta' | 'media' | 'bassa'
+export type Bbox = [number, number, number, number] // x,y,w,h normalized 0..1 over the full page
+
+/** Real DOM element rect captured by the extension (pixel-accurate boundaries). */
+export interface PageElement { type: string; text: string; bbox: Bbox }
+
+export interface AttentionZone { label: string; bbox: Bbox; score: number; reason: string }
+export interface CtaItem { text: string; bbox: Bbox | null; color: string | null; contrast: number; visibility: number; issues: string[] }
+export interface BrandColor { hex: string; role: string }
+export interface Friction { severity: Priority; area: string; description: string; fix: string }
+export interface Recommendation { priority: Priority; title: string; detail: string; impact: string }
+
+export interface AttentionResult {
+  pageType: string
+  goal: string
+  summary: string
+  brand: { palette: BrandColor[]; fonts: { family: string; usage: string }[]; tone: string }
+  attention: { zones: AttentionZone[]; firstGlance: string[] }
+  cta: CtaItem[]
+  copy: { headline: string | null; clarity: number; issues: string[]; suggestions: string[] }
+  frictions: Friction[]
+  scores: { attentionAlignment: number; clarity: number; cta: number; conversion: number }
+  recommendations: Recommendation[]
+}
+
+/**
+ * Lingua del report. I prompt restano in italiano (è la lingua in cui sono
+ * stati tarati), ma il modello riceve l'istruzione esplicita di SCRIVERE i
+ * testi nella lingua dell'utente. I valori enum (alta|media|bassa e simili)
+ * restano invece sempre in italiano: sono dati, non testo, e finiscono in
+ * JSONB — tradurli spezzerebbe le analisi già salvate.
+ */
+export type ReportLocale = 'it' | 'en'
+
+const GOAL_LABELS: Record<ReportLocale, Record<string, string>> = {
+  it: {
+    lead: 'generazione lead / iscrizioni',
+    sale: 'vendita diretta / checkout',
+    product: 'scheda prodotto e-commerce (aggiunta al carrello)',
+    booking: 'prenotazione / appuntamento',
+    signup: 'registrazione / avvio trial',
+  },
+  en: {
+    lead: 'lead generation / sign-ups',
+    sale: 'direct sale / checkout',
+    product: 'e-commerce product page (add to cart)',
+    booking: 'booking / appointment',
+    signup: 'registration / trial start',
+  },
+}
+
+const GOAL_AUTO: Record<ReportLocale, string> = {
+  it: 'da rilevare automaticamente dal contenuto della pagina',
+  en: 'to be detected automatically from the page content',
+}
+
+/** Istruzione di lingua per i testi liberi del report. */
+const LANGUAGE_RULE: Record<ReportLocale, string> = {
+  it: 'Scrivi TUTTI i testi liberi (summary, label, reason, issues, suggestions, description, fix, title, detail, impact, tone, goal) in ITALIANO.',
+  en: 'Write ALL free-text fields (summary, label, reason, issues, suggestions, description, fix, title, detail, impact, tone, goal) in ENGLISH.',
+}
+
+export function goalHint(goal: string | null | undefined, locale: ReportLocale = 'it'): string {
+  if (!goal) return GOAL_AUTO[locale]
+  return GOAL_LABELS[locale][goal] ?? goal
+}
+
+/** System prompt shared by both tiers. */
+export function systemPrompt(locale: ReportLocale = 'it'): string {
+  return [
+    'Sei un esperto di neuromarketing e CRO (conversion rate optimization) e di eye-tracking predittivo.',
+    'Analizzi lo screenshot full-page di una landing page o scheda prodotto e stimi DOVE cade l\'attenzione visiva',
+    'nei primi secondi e se la gerarchia visiva è allineata all\'obiettivo di conversione.',
+    'Rispondi SEMPRE ed ESCLUSIVAMENTE con un oggetto JSON valido, senza testo prima o dopo, senza markdown fences.',
+    'Le coordinate bbox sono [x,y,w,h] normalizzate 0..1 rispetto all\'INTERA immagine (0,0 = alto-sinistra).',
+    'Gli score sono interi 0..100.',
+    'I valori enum (pageType, priority, severity, role, usage) restano ESATTAMENTE come indicati nello schema, in italiano: sono dati, non testo.',
+    LANGUAGE_RULE[locale],
+  ].join(' ')
+}
+
+/** Formats the real DOM elements the extension captured, so the model can
+ *  reference their EXACT coordinates instead of estimating bboxes. */
+export function elementsBlock(elements?: PageElement[]): string {
+  if (!elements?.length) return ''
+  const lines = elements.slice(0, 40).map((e, i) => {
+    const b = e.bbox.map((n) => Math.round(n * 1000) / 1000).join(',')
+    const t = (e.text || '').replace(/\s+/g, ' ').slice(0, 60)
+    return `[${i}] ${e.type} "${t}" bbox=[${b}]`
+  }).join('\n')
+  return `\n\nELEMENTI REALI rilevati sulla pagina (coordinate ESATTE dal DOM, 0..1 sull'intera immagine):\n${lines}\n\nIMPORTANTE per le "zones": quando una zona corrisponde a uno di questi elementi, imposta il campo "ref" con l'INDICE dell'elemento (numero tra parentesi) e NON inventare "bbox" — verrà usato il rettangolo reale. Usa "bbox" tuo solo se nessun elemento combacia. Preferisci sempre gli elementi reali.`
+}
+
+/** Premium (Claude) — full brand + CTA + copy + conversion analysis. */
+export function premiumPrompt(ctx: { url: string; title: string; goal: string | null; note: string | null; lang?: ReportLocale }, elements?: PageElement[]): string {
+  const locale = ctx.lang ?? 'it'
+  return `Contesto pagina:
+- URL: ${ctx.url}
+- Titolo: ${ctx.title}
+- Obiettivo di conversione: ${goalHint(ctx.goal, locale)}
+- Note utente: ${ctx.note || '—'}
+
+Analizza e restituisci ESATTAMENTE questo JSON:
+{
+  "pageType": "landing" | "product" | "homepage" | "checkout" | "other",
+  "goal": "<obiettivo di conversione dedotto, breve>",
+  "summary": "<2-3 frasi: cosa attira l'attenzione ora e se è allineato all'obiettivo>",
+  "brand": {
+    "palette": [{"hex":"#rrggbb","role":"background|primary|cta|text|accent"}],
+    "fonts": [{"family":"<nome o stile es. sans grotesque>","usage":"heading|body|cta"}],
+    "tone": "<tono percepito del brand: es. premium, amichevole, tecnico>"
+  },
+  "attention": {
+    "zones": [{"label":"<es. Headline, CTA principale, Immagine hero, Prezzo>","ref":<indice elemento reale o null>,"bbox":[x,y,w,h],"score":0-100,"reason":"<perché attira o no>"}],
+    "firstGlance": ["<label>", "..."]  // ordine dei 3-5 elementi visti per primi
+  },
+  "cta": [{"text":"<testo bottone>","bbox":[x,y,w,h],"color":"#rrggbb","contrast":0-100,"visibility":0-100,"issues":["..."]}],
+  "copy": {"headline":"<headline principale>","clarity":0-100,"issues":["..."],"suggestions":["<riscrittura più persuasiva>","..."]},
+  "frictions": [{"severity":"alta|media|bassa","area":"<zona>","description":"<cosa disturba la conversione>","fix":"<come risolvere>"}],
+  "scores": {"attentionAlignment":0-100,"clarity":0-100,"cta":0-100,"conversion":0-100},
+  "recommendations": [{"priority":"alta|media|bassa","title":"<azione>","detail":"<come farla>","impact":"<effetto atteso sulla conversione>"}]
+}
+
+Regole:
+- Identifica i colori REALI usati (specialmente quello delle CTA) e valuta se la CTA "stacca" abbastanza dal resto.
+- Valuta se ciò che cattura l'attenzione (score alto nelle zones) coincide con l'elemento che porta alla conversione. Se no, spiegalo in summary e in recommendations.
+- ETICHETTE (label) fedeli a ciò che è VISIBILE: usa il testo reale dell'elemento. NON inventare marchi, nomi di aziende o piattaforme (es. Google, Trustpilot, Facebook) se non compaiono scritti nell'elemento. Se è un logo/marchio, etichettalo "Logo" (o "Logo — <nome se leggibile>"). Attribuisci "prova sociale"/"recensioni" SOLO se ci sono segnali espliciti (stelle, numero di recensioni, testimonianze, diciture tipo "come visto su"). Nel dubbio, descrivi ciò che vedi senza assegnare una funzione.
+- Includi 4-8 zones, 1-4 cta, 3-6 recommendations ordinate per priorità.
+- ${LANGUAGE_RULE[locale]}${elementsBlock(elements)}`
+}
+
+/** Base (Qwen) — lighter zone + score analysis. */
+export function basePrompt(ctx: { url: string; title: string; goal: string | null; lang?: ReportLocale }, elements?: PageElement[]): string {
+  const locale = ctx.lang ?? 'it'
+  return `Contesto: URL ${ctx.url}; Titolo "${ctx.title}"; Obiettivo: ${goalHint(ctx.goal, locale)}.
+Restituisci ESATTAMENTE questo JSON:
+{
+  "pageType":"landing|product|homepage|other",
+  "goal":"<obiettivo dedotto>",
+  "summary":"<2 frasi su cosa attira l'attenzione e se aiuta la conversione>",
+  "attention":{"zones":[{"label":"...","ref":<indice elemento reale o null>,"bbox":[x,y,w,h],"score":0-100,"reason":"..."}],"firstGlance":["..."]},
+  "cta":[{"text":"...","bbox":[x,y,w,h],"color":"#rrggbb","contrast":0-100,"visibility":0-100,"issues":[]}],
+  "scores":{"attentionAlignment":0-100,"clarity":0-100,"cta":0-100,"conversion":0-100},
+  "recommendations":[{"priority":"alta|media|bassa","title":"...","detail":"...","impact":"..."}]
+}
+Includi 3-6 zones e 2-4 recommendations. bbox normalizzate 0..1 sull'intera immagine.
+ETICHETTE (label) fedeli a ciò che è VISIBILE: NON inventare marchi o piattaforme (es. Google, Trustpilot) se non sono scritti; un logo etichettalo "Logo"; usa "prova sociale" solo con segnali espliciti (stelle, numero recensioni, testimonianze).
+${LANGUAGE_RULE[locale]}${elementsBlock(elements)}`
+}
+
+// ---- defensive normalization (LLMs drift; never throw on a missing field) ----
+const clamp = (n: unknown, lo = 0, hi = 100): number => {
+  const v = typeof n === 'number' ? n : Number(n)
+  return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : 0
+}
+const str = (s: unknown, d = ''): string => (typeof s === 'string' ? s : d)
+const arr = <T>(a: unknown): T[] => (Array.isArray(a) ? (a as T[]) : [])
+// Lo schema chiede alta|media|bassa, ma un modello che scrive in inglese può
+// scivolare su high|medium|low: normalizziamo entrambe le forme.
+const PRIO_ALIASES: Record<string, Priority> = {
+  alta: 'alta', media: 'media', bassa: 'bassa',
+  high: 'alta', medium: 'media', low: 'bassa',
+}
+const prio = (p: unknown): Priority =>
+  (typeof p === 'string' && PRIO_ALIASES[p.toLowerCase()]) || 'media'
+
+function normBbox(b: unknown): Bbox | null {
+  if (!Array.isArray(b) || b.length < 4) return null
+  const n = b.map((x) => { const v = Number(x); return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0 }) as number[]
+  return [n[0], n[1], Math.max(0.01, n[2]), Math.max(0.01, n[3])]
+}
+
+/** Frazione dell'area di `a` coperta da `b` (0..1). */
+function coverage(a: Bbox, b: Bbox): number {
+  const x = Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]))
+  const y = Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]))
+  const inter = x * y
+  const areaA = Math.max(1e-6, a[2] * a[3])
+  return inter / areaA
+}
+
+/**
+ * Aggancia un rettangolo stimato dal modello all'elemento reale del DOM che gli
+ * corrisponde. Senza questo, le bbox inventate ritagliano l'elemento a metà o
+ * lo incorniciano storto: qui scegliamo l'elemento che copre meglio la stima
+ * (e che la stima copre a sua volta), così la cornice contiene l'elemento intero.
+ */
+function snapToElement(box: Bbox, elements?: PageElement[]): Bbox {
+  if (!elements?.length) return box
+  let best: { bbox: Bbox; score: number } | null = null
+  for (const el of elements) {
+    const covOfBox = coverage(box, el.bbox)   // quanto dell'elemento sta nella stima
+    const covOfEl = coverage(el.bbox, box)    // quanto della stima sta nell'elemento
+    const ratio = (box[2] * box[3]) / Math.max(1e-6, el.bbox[2] * el.bbox[3])
+    // Accetta solo se si sovrappongono davvero e le dimensioni sono confrontabili.
+    if (covOfBox < 0.55 && covOfEl < 0.55) continue
+    if (ratio > 4 || ratio < 0.08) continue
+    const score = covOfBox + covOfEl
+    if (!best || score > best.score) best = { bbox: el.bbox, score }
+  }
+  return best ? best.bbox : box
+}
+
+/** Evita cornici troppo sottili per essere leggibili e le tiene dentro l'immagine. */
+function usableBox(b: Bbox): Bbox {
+  const w = Math.max(0.03, Math.min(1, b[2]))
+  const h = Math.max(0.02, Math.min(1, b[3]))
+  return [Math.min(b[0], 1 - w), Math.min(b[1], 1 - h), w, h]
+}
+
+export function normalizeResult(raw: any, fallbackGoal: string, elements?: PageElement[]): AttentionResult {
+  const r = raw && typeof raw === 'object' ? raw : {}
+  const zones = arr<any>(r?.attention?.zones).map((z) => {
+    // Prefer the real DOM element's exact rect when the model referenced one.
+    const ref = Number(z?.ref)
+    const refBox = elements && Number.isInteger(ref) && ref >= 0 && ref < elements.length ? elements[ref].bbox : null
+    // Con "ref" il rettangolo è già quello reale; altrimenti proviamo ad
+    // agganciare la stima all'elemento che le corrisponde.
+    const guess = normBbox(z?.bbox) ?? [0.4, 0.1, 0.2, 0.1] as Bbox
+    return {
+      label: str(z?.label, 'Zona'),
+      bbox: usableBox(refBox ?? snapToElement(guess, elements)),
+      score: clamp(z?.score), reason: str(z?.reason),
+    }
+  }).filter((z) => z.label).slice(0, 12)
+
+  return {
+    pageType: str(r.pageType, 'other'),
+    goal: str(r.goal, fallbackGoal),
+    summary: str(r.summary),
+    brand: {
+      palette: arr<any>(r?.brand?.palette).map((c) => ({ hex: str(c?.hex), role: str(c?.role, 'accent') })).filter((c) => /^#?[0-9a-f]{3,8}$/i.test(c.hex)).slice(0, 8),
+      fonts: arr<any>(r?.brand?.fonts).map((f) => ({ family: str(f?.family), usage: str(f?.usage) })).filter((f) => f.family).slice(0, 4),
+      tone: str(r?.brand?.tone),
+    },
+    attention: { zones, firstGlance: arr<any>(r?.attention?.firstGlance).map((s) => str(s)).filter(Boolean).slice(0, 6) },
+    cta: arr<any>(r.cta).map((c) => ({
+      text: str(c?.text), bbox: normBbox(c?.bbox), color: /^#?[0-9a-f]{3,8}$/i.test(str(c?.color)) ? str(c?.color) : null,
+      contrast: clamp(c?.contrast), visibility: clamp(c?.visibility), issues: arr<any>(c?.issues).map((s) => str(s)).filter(Boolean),
+    })).filter((c) => c.text).slice(0, 6),
+    copy: {
+      headline: r?.copy?.headline ? str(r.copy.headline) : null,
+      clarity: clamp(r?.copy?.clarity), issues: arr<any>(r?.copy?.issues).map((s) => str(s)).filter(Boolean),
+      suggestions: arr<any>(r?.copy?.suggestions).map((s) => str(s)).filter(Boolean),
+    },
+    frictions: arr<any>(r.frictions).map((f) => ({ severity: prio(f?.severity), area: str(f?.area), description: str(f?.description), fix: str(f?.fix) })).filter((f) => f.description).slice(0, 8),
+    scores: {
+      attentionAlignment: clamp(r?.scores?.attentionAlignment), clarity: clamp(r?.scores?.clarity),
+      cta: clamp(r?.scores?.cta), conversion: clamp(r?.scores?.conversion),
+    },
+    recommendations: arr<any>(r.recommendations).map((x) => ({ priority: prio(x?.priority), title: str(x?.title), detail: str(x?.detail), impact: str(x?.impact) })).filter((x) => x.title).slice(0, 8),
+  }
+}
+
+/** Extract a JSON object from an LLM text response (tolerates fences / prose). */
+export function extractJson(text: string): any {
+  if (!text) throw new Error('empty LLM response')
+  let t = text.trim()
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fence) t = fence[1].trim()
+  const start = t.indexOf('{')
+  const end = t.lastIndexOf('}')
+  if (start === -1 || end === -1 || end < start) throw new Error('no JSON object in LLM response')
+  return JSON.parse(t.slice(start, end + 1))
+}

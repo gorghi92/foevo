@@ -1,0 +1,57 @@
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { hashPassword, uniqueCode, startSession } from '@/lib/affiliate/auth'
+import { guard, ipKey } from '@/lib/rate-limit'
+import { m } from '@/lib/i18n/api'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+const USERNAME_RE = /^[a-z0-9._-]{3,32}$/
+
+export async function POST(req: Request) {
+  const body = (await req.json().catch(() => ({}))) as {
+    username?: string; email?: string; password?: string; fullName?: string; userId?: string
+  }
+  const username = String(body.username || '').trim().toLowerCase()
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = String(body.password || '')
+  const fullName = String(body.fullName || '').trim().slice(0, 120)
+
+  if (!USERNAME_RE.test(username)) {
+    return NextResponse.json({ error: m('usernameFormatLong') }, { status: 400 })
+  }
+  if (!email.includes('@') || email.length < 5) {
+    return NextResponse.json({ error: m('enterValidEmail') }, { status: 400 })
+  }
+  if (password.length < 8) {
+    return NextResponse.json({ error: m('passwordTooShort') }, { status: 400 })
+  }
+
+  // Un affiliato si registra una volta: chi ne apre a raffica sta facendo altro.
+  const blocked = await guard(req, [
+    { bucket: 'aff-register-ip', key: ipKey(req), windowSeconds: 3600, max: 5 },
+  ])
+  if (blocked) return blocked
+
+  const sc = createServiceClient()
+
+  const { data: exists } = await sc.from('affiliates').select('id').eq('username', username).maybeSingle()
+  if (exists) return NextResponse.json({ error: m('usernameTakenPickAnother') }, { status: 409 })
+
+  const code = await uniqueCode(sc)
+  const { data: created, error } = await sc.from('affiliates').insert({
+    username, email, full_name: fullName || null,
+    password_hash: hashPassword(password), code,
+    user_id: body.userId || null,
+  }).select('id, code').single()
+
+  if (error || !created) {
+    // Corsa sull'unicità (username o code) → riprova a segnalarlo con chiarezza.
+    const msg = /username/i.test(error?.message || '') ? 'Username già in uso.' : 'Registrazione non riuscita, riprova.'
+    return NextResponse.json({ error: msg }, { status: 409 })
+  }
+
+  await startSession(created.id)
+  return NextResponse.json({ ok: true, code: created.code })
+}
