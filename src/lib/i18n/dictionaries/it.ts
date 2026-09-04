@@ -571,7 +571,7 @@ export const it = {
     frictions: 'Frizioni alla conversione',
     footerTitle: 'Vuoi la stessa analisi sulle tue pagine?',
     footerBody: 'Foevo genera una heatmap di attenzione ibrida (computer-vision + AI) e un’analisi orientata alla conversione, direttamente dal browser.',
-    footerCta: 'Inizia gratis con Foevo',
+    footerCta: 'Prova Foevo da €5/mese',
     generatedWith: 'Report generato con',
   },
 }

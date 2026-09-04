@@ -569,7 +569,7 @@ export const en: Dictionary = {
     frictions: 'Conversion frictions',
     footerTitle: 'Want the same analysis on your own pages?',
     footerBody: 'Foevo generates a hybrid attention heatmap (computer vision + AI) and a conversion-oriented analysis, straight from your browser.',
-    footerCta: 'Start free with Foevo',
+    footerCta: 'Try Foevo from €5/month',
     generatedWith: 'Report generated with',
   },
 }
