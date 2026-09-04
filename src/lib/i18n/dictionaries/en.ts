@@ -28,7 +28,7 @@ export const en: Dictionary = {
       titleA: 'See where your customers look.',
       titleB: 'And why they don’t buy.',
       sub: 'Foevo analyses your page and gives you an attention map plus an action plan covering brand, CTA, copy and friction. Without waiting weeks for traffic.',
-      ctaPrimary: 'Get started — from €19/month',
+      ctaPrimary: 'Get started — from €5/month',
       ctaSecondary: 'See how it works',
       note: 'Cancel anytime, in one click · VAT calculated at checkout',
       demoNote: 'Sample output. Switch between **Heatmap** and **Zones** to see both readings.',
@@ -119,12 +119,28 @@ export const en: Dictionary = {
 
     pricing: {
       eyebrow: 'Pricing',
-      title: 'Two plans, no surprises',
+      title: 'Three plans, no surprises',
       sub: 'Prices exclude VAT: the tax for your country is calculated at checkout.',
       featuredBadge: 'Most chosen by people working with clients',
       perMonth: '+ VAT / month',
       plans: [
         {
+          slug: 'starter',
+          name: 'Starter',
+          per: 'To get going: a few pages, the ones that really matter',
+          price: '5',
+          note: '€1 per analysis',
+          cta: 'Get Starter',
+          feats: [
+            '5 analyses per month',
+            'Hybrid heatmap and Focus mode',
+            'Attention zones on real elements',
+            'Conversion score with reasoning',
+            'Analysis history',
+          ],
+        },
+        {
+          slug: 'base',
           name: 'Base',
           per: 'For anyone with a site who wants to keep it sharp',
           price: '19',
@@ -139,6 +155,7 @@ export const en: Dictionary = {
           ],
         },
         {
+          slug: 'premium',
           name: 'Premium',
           per: 'For anyone working on clients’ pages',
           price: '49',
@@ -202,7 +219,7 @@ export const en: Dictionary = {
       titleB: 'You may as well know which one.',
       sub: 'Analyse it and read what you’d change first. It takes a minute, and you already know where to restart.',
       cta: 'Get started',
-      note: 'From €19/month + VAT · cancel anytime',
+      note: 'From €5/month + VAT · cancel anytime',
     },
 
     footer: {
@@ -420,7 +437,7 @@ export const en: Dictionary = {
       ],
       ratesTitle: 'What you earn, per plan',
       ratesSub: 'On every payment the customer makes, for their first {months} months.',
-      planBase: 'Base plan',
+      planBase: 'Starter and Base plans',
       planPremium: 'Premium plan',
       rateCaption: 'commission, for {months} months',
       stepsTitle: 'In 4 steps',

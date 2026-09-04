@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { getUser } from '@/lib/supabase/server'
-import { resolveEntitlement } from '@/server/store'
+import { resolveEntitlement, planLabel } from '@/server/store'
 import { ActivationPoller, ClaimPoller } from './poller'
 import { getDictionary, isLocale, localePath, DEFAULT_LOCALE, type Locale } from '@/lib/i18n'
 import { Rich } from '@/lib/i18n/rich'
@@ -27,9 +27,12 @@ export default async function CheckoutComplete({
 
   const user = await getUser()
   const ent = user ? await resolveEntitlement(user.id) : null
-  // Considera attivo se l'entitlement è attivo e (nessun piano richiesto o coincide col tier)
-  const wantTier = planSlug === 'premium' ? 'premium' : planSlug === 'base' ? 'base' : ''
-  const active = !!ent && ent.status === 'active' && ent.source !== 'none' && (!wantTier || ent.tier === wantTier)
+  // Attivo se l'entitlement è attivo e, quando l'URL dichiara un piano,
+  // è proprio quello: il confronto è sullo slug perché Starter e Base
+  // condividono il tier `base`.
+  const active =
+    !!ent && ent.status === 'active' && ent.source !== 'none' &&
+    (!planSlug || !ent.planSlug || ent.planSlug === planSlug)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
@@ -53,7 +56,7 @@ export default async function CheckoutComplete({
             <CheckCircle2 size={44} className="mx-auto text-green-600" />
             <h1 className="mt-4 text-xl font-extrabold">{t.activeTitle}</h1>
             <p className="mt-2 text-sm text-muted">
-              <Rich text={t.activeBody.replace('PLAN', ent!.tier === 'premium' ? 'Premium' : 'Base')} />
+              <Rich text={t.activeBody.replace('PLAN', planLabel(ent!))} />
             </p>
             <Link href="/dashboard" className="btn btn-primary mt-6 w-full">{t.toDashboard}</Link>
           </>

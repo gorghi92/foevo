@@ -30,7 +30,7 @@ export const it = {
       titleA: 'Scopri dove guardano i tuoi clienti.',
       titleB: 'E perché non comprano.',
       sub: 'Foevo analizza una tua pagina e ti restituisce la mappa dell’attenzione più un piano d’azione su brand, CTA, copy e frizioni. Senza aspettare settimane di traffico.',
-      ctaPrimary: 'Inizia ora — da €19/mese',
+      ctaPrimary: 'Inizia ora — da €5/mese',
       ctaSecondary: 'Guarda come funziona',
       note: 'Disdici quando vuoi, con un click · IVA calcolata al checkout',
       demoNote: 'Esempio di output. Passa da **Heatmap** a **Zone** per vedere le due letture.',
@@ -121,12 +121,28 @@ export const it = {
 
     pricing: {
       eyebrow: 'Prezzi',
-      title: 'Due piani, nessuna sorpresa',
+      title: 'Tre piani, nessuna sorpresa',
       sub: 'Prezzi IVA esclusa: l’imposta del tuo Paese viene calcolata al checkout.',
       featuredBadge: 'Il più scelto da chi lavora coi clienti',
       perMonth: '+ IVA / mese',
       plans: [
         {
+          slug: 'starter',
+          name: 'Starter',
+          per: 'Per iniziare: poche pagine, quelle che contano davvero',
+          price: '5',
+          note: '€1 ad analisi',
+          cta: 'Attiva Starter',
+          feats: [
+            '5 analisi al mese',
+            'Heatmap ibrida e modalità Focus',
+            'Zone di attenzione sugli elementi',
+            'Punteggio di conversione con motivazione',
+            'Storico delle analisi',
+          ],
+        },
+        {
+          slug: 'base',
           name: 'Base',
           per: 'Per chi ha un sito e vuole tenerlo in ordine',
           price: '19',
@@ -141,6 +157,7 @@ export const it = {
           ],
         },
         {
+          slug: 'premium',
           name: 'Premium',
           per: 'Per chi lavora sulle pagine dei clienti',
           price: '49',
@@ -204,7 +221,7 @@ export const it = {
       titleB: 'Tanto vale sapere quale.',
       sub: 'Analizzala e leggi cosa cambieresti per primo. Ci vuole un minuto, e sai già da dove ripartire.',
       cta: 'Inizia ora',
-      note: 'Da €19/mese + IVA · disdici quando vuoi',
+      note: 'Da €5/mese + IVA · disdici quando vuoi',
     },
 
     footer: {
@@ -422,7 +439,7 @@ export const it = {
       ],
       ratesTitle: 'Quanto guadagni, per piano',
       ratesSub: 'Su ogni pagamento del cliente, per i primi {months} mesi.',
-      planBase: 'Piano Base',
+      planBase: 'Piani Starter e Base',
       planPremium: 'Piano Premium',
       rateCaption: 'di commissione, per {months} mesi',
       stepsTitle: 'In 4 passi',

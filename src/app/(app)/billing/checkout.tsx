@@ -36,8 +36,8 @@ function CheckoutModal({ pkg, email, fullName, onClose, t }: { pkg: Pkg; email: 
   )
 }
 
-export function Checkout({ packages, email, fullName, currentTier, currentStatus, t }: {
-  packages: Pkg[]; email: string; fullName: string; currentTier: string; currentStatus: string; t: Copy
+export function Checkout({ packages, email, fullName, currentSlug, currentStatus, t }: {
+  packages: Pkg[]; email: string; fullName: string; currentSlug: string; currentStatus: string; t: Copy
 }) {
   const [active, setActive] = useState<Pkg | null>(null)
 
@@ -49,11 +49,13 @@ export function Checkout({ packages, email, fullName, currentTier, currentStatus
     if (pkg) setActive(pkg)
   }, [packages])
 
-  const isCurrent = (p: Pkg) => currentStatus === 'active' && p.tier === currentTier
+  // Starter e Base condividono il tier `base` (è il motore AI, non il prezzo):
+  // il piano attivo si riconosce dallo slug del pacchetto acquistato.
+  const isCurrent = (p: Pkg) => currentStatus === 'active' && p.slug === currentSlug
 
   return (
     <>
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {packages.map((p) => (
           <div key={p.id} className={`card p-6 ${p.tier === 'premium' ? 'ring-1 ring-brand' : ''}`}>
             <div className="flex items-baseline justify-between">

@@ -1,5 +1,5 @@
 import { createClient, getUser } from '@/lib/supabase/server'
-import { resolveEntitlement, monthlyUsage } from '@/server/store'
+import { resolveEntitlement, monthlyUsage, planLabel } from '@/server/store'
 import { Chrome, MousePointerClick, Gauge } from 'lucide-react'
 import { PageHeader } from '@/components/app/ui'
 import { CHROME_STORE_URL } from '@/lib/links'
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   const subtitleParts = [
     ent.source === 'none'
       ? t.subtitle.noPlan
-      : fill(t.subtitle.plan, { tier: ent.tier === 'premium' ? 'Premium' : 'Base' }),
+      : fill(t.subtitle.plan, { name: planLabel(ent) }),
     ent.unlimited
       ? fill(t.subtitle.usageUnlimited, { used })
       : fill(t.subtitle.usage, { used, quota: ent.quota }),

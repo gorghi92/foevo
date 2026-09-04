@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { getUser } from '@/lib/supabase/server'
-import { resolveEntitlement, monthlyUsage } from '@/server/store'
+import { resolveEntitlement, monthlyUsage, planLabel } from '@/server/store'
 import { isSuperadmin } from '@/lib/superadmin'
 import { unreadAlerts } from '@/lib/affiliate/admin'
 import { LogOut } from 'lucide-react'
@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-semibold leading-tight">{user.email}</p>
                 <p className="text-[11px] leading-tight text-muted">
-                  {ent.tier === 'premium' ? t.plan.premium : t.plan.base}
+                  {t.plan.replace('{name}', planLabel(ent))}
                 </p>
               </div>
             </div>

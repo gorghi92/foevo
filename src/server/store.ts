@@ -8,26 +8,42 @@ export interface Entitlement {
   unlimited: boolean
   source: 'whop' | 'manual' | 'none'
   status: string
+  /** Pacchetto acquistato: due piani possono condividere il tier (Starter e
+   *  Base girano entrambi sul motore `base`), quindi il nome del piano da
+   *  mostrare e lo slug da confrontare arrivano da qui, non dal tier. */
+  planSlug: string | null
+  planName: string | null
 }
 
 export async function resolveEntitlement(userId: string): Promise<Entitlement> {
   const sc = createServiceClient()
   const { data } = await sc
     .from('entitlements')
-    .select('tier, monthly_quota, unlimited, source, status')
+    .select('tier, monthly_quota, unlimited, source, status, packages(slug, name)')
     .eq('user_id', userId)
     .maybeSingle()
   if (data && data.status === 'active') {
+    // Gli entitlement assegnati a mano dal superadmin non hanno un pacchetto.
+    const pkg = (Array.isArray(data.packages) ? data.packages[0] : data.packages) as
+      { slug?: string; name?: string } | null | undefined
     return {
       tier: (data.tier as Tier) === 'premium' ? 'premium' : 'base',
       quota: Number(data.monthly_quota ?? 0),
       unlimited: !!data.unlimited,
       source: (data.source as Entitlement['source']) ?? 'manual',
       status: data.status as string,
+      planSlug: pkg?.slug ?? null,
+      planName: pkg?.name ?? null,
     }
   }
   // Nessuna prova gratuita: senza un abbonamento attivo non si analizza.
-  return { tier: 'base', quota: 0, unlimited: false, source: 'none', status: 'none' }
+  return { tier: 'base', quota: 0, unlimited: false, source: 'none', status: 'none', planSlug: null, planName: null }
+}
+
+/** Etichetta del piano da mostrare: il nome del pacchetto se c'è, altrimenti
+ *  il tier (è il caso degli entitlement creati a mano dall'admin). */
+export function planLabel(ent: Entitlement): string {
+  return ent.planName ?? (ent.tier === 'premium' ? 'Premium' : 'Base')
 }
 
 export async function monthlyUsage(userId: string): Promise<number> {

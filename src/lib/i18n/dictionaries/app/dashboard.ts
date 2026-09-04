@@ -6,7 +6,7 @@ export const it = {
   // punteggio medio, quest'ultimo solo quando c'è almeno un'analisi conclusa.
   subtitle: {
     noPlan: 'Nessun piano attivo',
-    plan: 'Piano **{tier}**',
+    plan: 'Piano **{name}**',
     usage: '{used} di {quota} analisi questo mese',
     usageUnlimited: '{used} analisi questo mese',
     avgScore: 'punteggio medio **{avg}**',
@@ -55,7 +55,7 @@ export const en: typeof it = {
   title: 'My analyses',
   subtitle: {
     noPlan: 'No active plan',
-    plan: '**{tier}** plan',
+    plan: '**{name}** plan',
     usage: '{used} of {quota} analyses this month',
     usageUnlimited: '{used} analyses this month',
     avgScore: 'average score **{avg}**',

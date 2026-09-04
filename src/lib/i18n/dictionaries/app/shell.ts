@@ -6,10 +6,9 @@ export const it = {
   logout: 'Esci',
 
   /** Etichetta del piano attivo sotto l'email nella sidebar. */
-  plan: {
-    premium: 'Piano Premium',
-    base: 'Piano Base',
-  },
+  /** Il nome del piano arriva dal pacchetto acquistato ({name}): i pacchetti
+   *  possono essere più di due e condividere lo stesso tier. */
+  plan: 'Piano {name}',
 
   nav: {
     analyses: 'Analisi',
@@ -40,10 +39,7 @@ export const it = {
 export const en: typeof it = {
   logout: 'Sign out',
 
-  plan: {
-    premium: 'Premium plan',
-    base: 'Base plan',
-  },
+  plan: '{name} plan',
 
   nav: {
     analyses: 'Analyses',

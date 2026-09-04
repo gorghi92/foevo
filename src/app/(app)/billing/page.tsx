@@ -1,5 +1,5 @@
 import { createClient, getUser } from '@/lib/supabase/server'
-import { resolveEntitlement, monthlyUsage } from '@/server/store'
+import { resolveEntitlement, monthlyUsage, planLabel } from '@/server/store'
 import { Download } from 'lucide-react'
 import { PageHeader, UsageMeter } from '@/components/app/ui'
 import { DowngradeButton, CancelButton } from './billing-actions'
@@ -51,7 +51,7 @@ export default async function BillingPage() {
             <span className="heat-dot h-9 w-9 rounded-xl" aria-hidden />
             <div>
               <div className="font-display text-lg font-extrabold leading-tight">
-                {ent.source === 'none' ? t.noPlan : ent.tier === 'premium' ? 'Premium' : 'Base'}
+                {ent.source === 'none' ? t.noPlan : planLabel(ent)}
               </div>
               <div className="text-xs text-muted">{t.currentPlanNote}</div>
             </div>
@@ -77,7 +77,7 @@ export default async function BillingPage() {
         packages={pkgs}
         email={user!.email || ''}
         fullName={profile?.full_name || ''}
-        currentTier={ent.tier}
+        currentSlug={ent.planSlug ?? ''}
         currentStatus={ent.status}
         t={t.plans}
       />

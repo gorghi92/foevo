@@ -307,10 +307,12 @@ export default function Landing({ params }: Params) {
             <p className="mt-4 text-lg text-muted">{h.pricing.sub}</p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-3xl gap-5 md:grid-cols-2">
-            {h.pricing.plans.map((plan, i) => {
-              const featured = i === 1
-              const href = i === 0 ? '/signup?plan=base' : '/signup?plan=premium'
+          <div className="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
+            {h.pricing.plans.map((plan) => {
+              // Evidenza e destinazione vengono dallo slug, non dalla posizione:
+              // così aggiungere o riordinare un piano non sposta il badge.
+              const featured = plan.slug === 'premium'
+              const href = `/signup?plan=${plan.slug}`
               const card = (
                 <PlanCard
                   plan={plan}
@@ -416,7 +418,7 @@ export default function Landing({ params }: Params) {
 function PlanCard({
   plan, featured, href, perMonth, badge,
 }: {
-  plan: { name: string; per: string; price: string; note: string; cta: string; feats: string[] }
+  plan: { slug: string; name: string; per: string; price: string; note: string; cta: string; feats: string[] }
   featured: boolean
   href: string
   perMonth: string
