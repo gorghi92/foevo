@@ -127,7 +127,7 @@ export const en: Dictionary = {
         {
           slug: 'starter',
           name: 'Starter',
-          per: 'To get going: a few pages, the ones that really matter',
+          per: 'To start with the pages that matter',
           price: '5',
           note: '€1 per analysis',
           cta: 'Get Starter',

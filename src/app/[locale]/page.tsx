@@ -432,7 +432,7 @@ function PlanCard({
         </span>
       )}
       <h3 className="text-xl font-bold">{plan.name}</h3>
-      <p className="mt-1 text-sm text-muted">{plan.per}</p>
+      <p className="mt-1 text-sm text-muted md:min-h-[2.75rem]">{plan.per}</p>
       <p className="mt-5">
         <span className="font-display text-4xl font-extrabold">€{plan.price}</span>
         <span className="text-muted"> {perMonth}</span>

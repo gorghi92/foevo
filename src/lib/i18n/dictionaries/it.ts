@@ -129,7 +129,7 @@ export const it = {
         {
           slug: 'starter',
           name: 'Starter',
-          per: 'Per iniziare: poche pagine, quelle che contano davvero',
+          per: 'Per iniziare dalle pagine che contano',
           price: '5',
           note: '€1 ad analisi',
           cta: 'Attiva Starter',
